@@ -1,0 +1,33 @@
+env:
+  global:
+  - GCC_BASE=gcc-arm-none-eabi-8-2018-q4-major
+  - GCC_SHORT=8-2018q4
+sudo: required
+language: generic
+dist: xenial
+addons:
+  apt:
+    packages: libc6-i386 sox python3-numpy valgrind fonts-freefont-otf
+              libspeexdsp-dev libsamplerate0-dev portaudio19-dev
+              libasound2-dev libao-dev libgsm1-dev libsndfile-dev
+             
+cache:
+  directories:
+  - "$HOME/$GCC_BASE"
+install:
+- export GCC_DIR=$HOME/$GCC_BASE
+- export GCC_ARCHIVE=$HOME/$GCC_BASE-linux.tar.bz2
+- export GCC_URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/$GCC_SHORT/$GCC_BASE-linux.tar.bz2
+- if [ ! -e $GCC_DIR/bin/arm-none-eabi-g++ ]; then wget -q $GCC_URL -O $GCC_ARCHIVE;
+  tar xfj $GCC_ARCHIVE -C $HOME; fi
+- export HABLIBDIR=${PWD}
+- export MAKEFLAGS=-j2
+
+script:
+
+# build hablib -------------------------
+- cd ${HABLIBDIR} && mkdir -p build_linux && cd build_linux
+- cmake $HABLIBDIR && make -j4
+# Now run all the ctests
+- ctest --output-on-failure
+
