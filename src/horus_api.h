@@ -35,20 +35,78 @@
 #include <stdint.h>
 #include "modem_stats.h"
       
-#define HORUS_MODE_BINARY            0
-#define HORUS_MODE_RTTY              1
+/* Horus API Modes */
+#define HORUS_MODE_BINARY_V1            0  // Legacy binary mode
+#define HORUS_MODE_BINARY_V2_256BIT     1  // New 256-bit LDPC-encoded mode
+#define HORUS_MODE_BINARY_V2_128BIT     2  // New 128-bit LDPC-encoded mode
+#define HORUS_MODE_RTTY                 99 // RTTY Decoding
+
+
+// Settings for Legacy Horus Binary Mode (Golay Encoding)
+#define HORUS_BINARY_V1_NUM_CODED_BITS             360
+#define HORUS_BINARY_V1_NUM_UNCODED_PAYLOAD_BYTES  22
+#define HORUS_BINARY_V1_DEFAULT_BAUD               100
+#define HORUS_BINARY_V1_DEFAULT_TONE_SPACING       270  // This is the minimum tone spacing possible on the RS41 
+                                                        // reference implementation of this modem.
+                                                        // Note that mask estimation is turned off by default for 
+                                                        // this mode, and hence this spacing is not used.
+
+// Settings for Horus Binary 256-bit mode (LDPC Encoding, r=1/3)
+#define HORUS_BINARY_V2_256BIT_NUM_CODED_BITS               768
+#define HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES    32
+#define HORUS_BINARY_V2_256BIT_DEFAULT_BAUD                 100
+#define HORUS_BINARY_V2_256BIT_DEFAULT_TONE_SPACING         270
+
+// Settings for Horus Binary 128-bit mode (LDPC Encoding, r=1/3)
+#define HORUS_BINARY_V2_128BIT_NUM_CODED_BITS                  384
+#define HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES       16
+#define HORUS_BINARY_V2_128BIT_DEFAULT_BAUD                    25
+#define HORUS_BINARY_V2_128BIT_DEFAULT_TONE_SPACING            270 
+
+// Settings for RTTY Decoder
+#define HORUS_RTTY_NUM_BITS                     1000   // Limit the RTTY decoder to 100 characters per line (frame).
+#define HORUS_RTTY_DEFAULT_BAUD                 100
 
 struct horus;
 struct MODEM_STATS;
 
-struct horus *horus_open  (int mode, int Rs);
+/*
+ * Create an Horus Demod config/state struct using default mode parameters.
+ * 
+ * int mode - Horus Mode Type (refer list above)
+ */
+struct horus *horus_open  (int mode);
+
+/*
+ * Create an Horus Demod config/state struct with more customizations.
+ * 
+ * int mode - Horus Mode Type (refer list above)
+ * int Rs - Symbol Rate (Hz). Set to -1 to use the default value for the mode (refer above)
+ * int tx_tone_spacing - FSK Tone Spacing, to configure mask estimator. Set to -1 to disable mask estimator.
+ */
+
+struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing);
+
+/*
+ * Close a Horus demodulator struct and free memory.
+ */
 void          horus_close (struct horus *hstates);
 
 /* call before horus_rx() to determine how many shorts to pass in */
 
 uint32_t      horus_nin   (struct horus *hstates);
 
-/* returns 1 if ascii_out[] is valid */
+/*
+ * Demodulate some number of Horus modem samples. The number of samples to be 
+ * demodulated can be found by calling horus_nin().
+ * 
+ * Returns 1 if the data in ascii_out[] is valid.
+ * 
+ * struct horus *hstates - Horus API config/state struct, set up by horus_open / horus_open_advanced
+ * char ascii_out[] - Buffer for returned packet / text.
+ * short fsk_in[] - nin samples of modulated FSK.
+ * int quadrature - Set to 1 if input samples are complex samples.
+ */
       
 int           horus_rx    (struct horus *hstates, char ascii_out[], short demod_in[], int quadrature);
 
