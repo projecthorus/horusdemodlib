@@ -59,14 +59,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include "mpdecode_core.h"
 #include "horus_l2.h"
 #include "golay23.h"
+#include "H_128_384_23.h"
+#include "H_256_768_22.h"
 
 #ifdef HORUS_L2_UNITTEST
 #define HORUS_L2_RX
 #endif
 
-static char uw[] = {'$','$'};
+static const char uw[] = {'$','$'}; // UW for Horus Binary v1
+static const char uw_v2[] =  {0x96, 0x69, 0x69, 0x96}; // UW for Horus Binary v2 modes
 
 /* Function Prototypes ------------------------------------------------*/
 
@@ -780,6 +784,43 @@ struct TBinaryPacket
     uint16_t    Checksum;    // CRC16-CCITT Checksum.
 }  __attribute__ ((packed));
 
+
+struct V2SmallBinaryPacket
+{
+// 4 byte preamble for high error rates ("0x96696996")
+//	- to improve soft bit prediction
+uint8_t   PayloadID;	// Legacy list
+uint8_t   Counter;	// 8 bit counter
+uint16_t  BiSeconds;	// Time of day / 2
+uint8_t   Latitude[3];	// (int)(float * 1.0e7) / (1<<8)
+uint8_t   Longitude[3];	// ( better than 10m precision )
+uint16_t  Altitude;	// 0 - 65 km
+uint8_t   Voltage;	// scaled 5.0v in 255 range
+uint8_t   User;		// Temp / Sats
+	// Temperature	6 bits MSB => (+30 to -32)
+	// Satellites	2 bits LSB => 0,4,8,12 is good enough
+uint16_t  Checksum;	// CRC16-CCITT Checksum.
+}  __attribute__ ((packed));
+
+
+struct V2LargeBinaryPacket
+{
+    uint16_t     PayloadID;
+    uint16_t	Counter;
+    uint8_t	Hours;
+    uint8_t	Minutes;
+    uint8_t	Seconds;
+    float	Latitude;
+    float	Longitude;
+    uint16_t  	Altitude;
+    uint8_t     Speed;       // Speed in Knots (1-255 knots)
+    uint8_t     Sats;
+    int8_t      Temp;        // Twos Complement Temp value.
+    uint8_t     BattVoltage; // 0 = 0.5v, 255 = 2.0V, linear steps in-between.
+    uint8_t     User[9];
+    uint16_t    Checksum;    // CRC16-CCITT Checksum.
+}  __attribute__ ((packed));
+
 #ifdef GEN_TX_BITS
 /* generate a file of tx_bits to modulate using fsk_horus.m for modem simulations */
 
@@ -888,42 +929,103 @@ int main(void) {
 }
 #endif
 
-
 #ifdef GEN_TX_BITSTREAM
 /* Generate a stream of encoded Horus packets in a format suitable to feed into fsk_mod */
 
 int main(int argc,char *argv[]) {
-    int nbytes = sizeof(struct TBinaryPacket);
-    struct TBinaryPacket input_payload;
-    int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(nbytes);
-    unsigned char tx[num_tx_data_bytes];
-    int i, framecnt;
 
-    if(argc != 2){
-        fprintf(stderr,"usage: %s numFrames\n",argv[0]);
+    int i, framecnt, mode;
+    int num_tx_data_bytes = 0;
+
+    if(argc != 3){
+        fprintf(stderr,"usage: %s numFrames mode\n",argv[0]);
         exit(1);
     }
 
     framecnt = atoi(argv[1]);
+    mode = atoi(argv[2]);
 
-    /* all zeros is nastiest sequence for demod before scrambling */
 
-    memset(&input_payload, 0, nbytes);
-    input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
+    if (mode == 0){
+        // Horus Mode v1
+        int nbytes = sizeof(struct TBinaryPacket);
+        struct TBinaryPacket input_payload;
+        int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(nbytes);
+        unsigned char tx[num_tx_data_bytes];
 
-    horus_l2_encode_tx_packet(tx, (unsigned char*)&input_payload, nbytes);
+        memset(&input_payload, 0, nbytes);
+        input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
 
-    int b;
-    uint8_t tx_bit;
-    while(framecnt >= 0){
-        for(i=0; i<num_tx_data_bytes; i++) {
-            for(b=0; b<8; b++) {
-                tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
-                fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
-                fflush(stdout);
+        horus_l2_encode_tx_packet(tx, (unsigned char*)&input_payload, nbytes);
+
+        int b;
+        uint8_t tx_bit;
+        while(framecnt >= 0){
+            for(i=0; i<num_tx_data_bytes; i++) {
+                for(b=0; b<8; b++) {
+                    tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+                    fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+                    fflush(stdout);
+                }
             }
+            framecnt -= 1;
         }
-        framecnt -= 1;
+
+    } else if (mode == 1) {
+        // 32-byte horus mode
+        int nbytes = sizeof(struct V2LargeBinaryPacket);
+        struct V2LargeBinaryPacket input_payload;
+
+        int num_tx_data_bytes = sizeof(uw_v2) + H_256_768_22_DATA_BYTES + H_256_768_22_PARITY_BYTES;
+        unsigned char tx[num_tx_data_bytes];
+        memset(&input_payload, 0, nbytes);
+
+        input_payload.PayloadID = 1;
+        input_payload.Counter = 2;
+        input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
+
+        int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 2);
+
+        int b;
+        uint8_t tx_bit;
+        while(framecnt >= 0){
+            for(i=0; i<num_tx_data_bytes; i++) {
+                for(b=0; b<8; b++) {
+                    tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+                    fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+                    fflush(stdout);
+                }
+            }
+            framecnt -= 1;
+        }
+
+    } else if (mode == 2) {
+        // 16-byte horus mode
+        int nbytes = sizeof(struct V2SmallBinaryPacket);
+        struct V2SmallBinaryPacket input_payload;
+
+        int num_tx_data_bytes = sizeof(uw_v2) + H_128_384_23_DATA_BYTES + H_128_384_23_PARITY_BYTES;
+        unsigned char tx[num_tx_data_bytes];
+        memset(&input_payload, 0, nbytes);
+        input_payload.PayloadID = 1;
+        input_payload.Counter = 2;
+
+        input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
+
+        int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 2);
+
+        int b;
+        uint8_t tx_bit;
+        while(framecnt >= 0){
+            for(i=0; i<num_tx_data_bytes; i++) {
+                for(b=0; b<8; b++) {
+                    tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+                    fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+                    fflush(stdout);
+                }
+            }
+            framecnt -= 1;
+        }
     }
 
     return 0;
@@ -944,3 +1046,236 @@ unsigned short horus_l2_gen_crc16(unsigned char* data_p, unsigned char length) {
     return crc;
 }
 
+
+//  Take payload data bytes, prepend a unique word and append parity bits
+int ldpc_encode_packet(unsigned char *out_data, unsigned char *in_data, int mode) {
+    unsigned int   i, last = 0;
+    unsigned char *pout;
+
+    unsigned int data_bytes, parity_bytes, number_parity_bits, max_row_weight;
+
+    if (mode == 1){
+        // 32-byte Mode.
+        data_bytes = H_256_768_22_DATA_BYTES;
+        parity_bytes = H_256_768_22_PARITY_BYTES;
+        number_parity_bits = H_256_768_22_NUMBERPARITYBITS;
+        max_row_weight = H_256_768_22_MAX_ROW_WEIGHT;
+    } else {
+        // 16-byte Mode.
+        data_bytes = H_128_384_23_DATA_BYTES;
+        parity_bytes = H_128_384_23_PARITY_BYTES;
+        number_parity_bits = H_128_384_23_NUMBERPARITYBITS;
+        max_row_weight = H_128_384_23_MAX_ROW_WEIGHT;
+    }
+
+    pout = out_data;
+    memcpy(pout, uw_v2, sizeof(uw_v2));
+    pout += sizeof(uw_v2);
+    memcpy(pout, in_data, data_bytes);
+    pout += data_bytes;
+    memset(pout, 0, parity_bytes);
+
+    // process parity bit offsets
+    for (i = 0; i < number_parity_bits; i++) {
+        unsigned int shift, j;
+        uint8_t tmp;
+
+	for(j = 0; j < max_row_weight; j++) {
+        // This is a bit silly, move this out of this loop.
+        if (mode  == 1){
+            uint8_t tmp  = H_256_768_22_H_rows[i + number_parity_bits * j];
+        } else if (mode == 2) {
+		    uint8_t tmp  = H_128_384_23_H_rows[i + number_parity_bits * j];
+        }
+		if (!tmp)
+			continue;
+		tmp--;
+		shift = 7 - (tmp & 7); // MSB
+		last ^= in_data[tmp >> 3] >> shift;
+	}
+	shift = 7 - (i & 7); // MSB
+	pout[i >> 3] |= (last & 1) << shift;
+    }
+
+    pout = out_data + sizeof(uw_v2);
+    interleave(pout, data_bytes + parity_bytes, 0);
+    scramble(pout, data_bytes + parity_bytes);
+
+    return data_bytes + parity_bytes + sizeof(uw_v2);
+}
+
+/* Scramble and interleave are 8bit lsb, but bitstream is sent msb */
+#define LSB2MSB(X) (X + 7 - 2 * (X & 7) )
+
+/* Invert bits - ldpc expects negative floats for high hits */
+void soft_unscramble(float *in, float* out, int nbits) {
+	int i, ibit;
+	uint16_t scrambler = 0x4a80;  /* init additive scrambler at start of every frame */
+	uint16_t scrambler_out;
+
+	for ( i = 0; i < nbits; i++ ) {
+		scrambler_out = ( (scrambler >> 1) ^ scrambler) & 0x1;
+
+		/* modify i-th bit by xor-ing with scrambler output sequence */
+		ibit = LSB2MSB(i);
+		if ( scrambler_out ) {
+			out[ibit] = in[ibit];
+		} else {
+			out[ibit] = -in[ibit];
+		}
+
+		scrambler >>= 1;
+		scrambler |= scrambler_out << 14;
+	}
+}
+
+// soft bit deinterleave
+void soft_deinterleave(float *in, float* out, int mode) {
+	int n, i, j, bits_per_packet, coprime;
+
+    if (mode == 1) {
+        // 256_768
+        bits_per_packet = H_256_768_22_BITS_PER_PACKET;
+        coprime = H_256_768_22_COPRIME;
+    } else {
+        bits_per_packet = H_128_384_23_BITS_PER_PACKET;
+        coprime = H_128_384_23_COPRIME;
+    }
+
+
+	for ( n = 0; n < bits_per_packet; n++ ) {
+		i = LSB2MSB(n);
+		j = LSB2MSB( (coprime * n) % bits_per_packet);
+		out[i] = in[j];
+	}
+}
+
+// // packed bit deinterleave - same as Golay version , but different Coprime
+// void bitwise_deinterleave(uint8_t *inout, int nbytes)
+// {
+//     uint16_t nbits = (uint16_t)nbytes*8;
+//     uint32_t i, j, ibit, ibyte, ishift, jbyte, jshift;
+//     uint8_t out[nbytes];
+
+//     memset(out, 0, nbytes);
+//     for(j = 0; j < nbits; j++) {
+//         i = (COPRIME * j) % nbits;
+
+//         /* read bit i */
+//         ibyte = i>>3;
+//         ishift = i&7;
+//         ibit = (inout[ibyte] >> ishift) & 0x1;
+
+// 	/* write bit i to bit j position */
+//         jbyte = j>>3;
+//         jshift = j&7;
+//         out[jbyte] |= ibit << jshift;
+//     }
+ 
+//     memcpy(inout, out, nbytes);
+// }
+
+// /* Compare detected bits to corrected bits */
+// void ldpc_errors( const uint8_t *outbytes, uint8_t *rx_bytes ) {
+// 	int	length = DATA_BYTES + PARITY_BYTES;
+// 	uint8_t temp[length];
+// 	int	i, percentage, count = 0;
+// 	memcpy(temp, rx_bytes, length);
+
+// 	scramble(temp, length); // use scrambler from Golay code
+// 	bitwise_deinterleave(temp, length);
+
+// 	// count bits changed during error correction
+// 	for(i = 0; i < BITS_PER_PACKET; i++) {
+// 		int x, y, offset, shift;
+
+// 		shift = i & 7;
+// 		offset = i >> 3;
+// 		x = temp[offset] >> shift;
+// 		y = outbytes[offset] >> shift;
+// 		count += (x ^ y) & 1;
+// 	}
+
+// 	// scale errors against a maximum of 20% BER
+// 	percentage = (count * 5 * 100) / BITS_PER_PACKET;
+// 	if (percentage > 100)
+// 		percentage = 100;
+// 	set_error_count( percentage );
+// }
+
+/* LDPC decode */
+void horus_ldpc_decode(uint8_t *payload, float *sd, int mode) {
+	float sum, mean, sumsq, estEsN0, x;
+    int bits_per_packet;
+
+    if(mode == 1){
+        bits_per_packet = H_256_768_22_BITS_PER_PACKET;
+    } else {
+        bits_per_packet = H_128_384_23_BITS_PER_PACKET;
+    }
+
+    float llr[bits_per_packet];
+    float temp[bits_per_packet];
+    uint8_t outbits[bits_per_packet];
+
+	int b, i, parityCC;
+	struct LDPC ldpc;
+
+	/* normalise bitstream to log-like */
+	sum = 0.0;
+	for ( i = 0; i < bits_per_packet; i++ )
+		sum += fabs(sd[i]);
+	mean = sum / bits_per_packet;
+
+	sumsq = 0.0;
+	for ( i = 0; i < bits_per_packet; i++ ) {
+		x = fabs(sd[i]) / mean - 1.0;
+		sumsq += x * x;
+	}
+	estEsN0 =  2.0 * bits_per_packet / (sumsq + 1.0e-3) / mean;
+	for ( i = 0; i < bits_per_packet; i++ )
+		llr[i] = estEsN0 * sd[i];
+
+	/* reverse whitening and re-order bits */
+	soft_unscramble(llr, temp, bits_per_packet);
+	soft_deinterleave(temp, llr, mode);
+
+	/* correct errors */
+    if (mode == 1){
+        // 32-byte mode H_256_768_22
+        ldpc.max_iter = H_256_768_22_MAX_ITER;
+        ldpc.dec_type = 0;
+        ldpc.q_scale_factor = 1;
+        ldpc.r_scale_factor = 1;
+        ldpc.CodeLength = H_256_768_22_CODELENGTH;
+        ldpc.NumberParityBits = H_256_768_22_NUMBERPARITYBITS;
+        ldpc.NumberRowsHcols = H_256_768_22_NUMBERROWSHCOLS;
+        ldpc.max_row_weight = H_256_768_22_MAX_ROW_WEIGHT;
+        ldpc.max_col_weight = H_256_768_22_MAX_COL_WEIGHT;
+        ldpc.H_rows = (uint16_t *)H_256_768_22_H_rows;
+        ldpc.H_cols = (uint16_t *)H_256_768_22_H_cols;
+    } else {
+        // 16-byte mode
+        ldpc.max_iter = H_128_384_23_MAX_ITER;
+        ldpc.dec_type = 0;
+        ldpc.q_scale_factor = 1;
+        ldpc.r_scale_factor = 1;
+        ldpc.CodeLength = H_128_384_23_CODELENGTH;
+        ldpc.NumberParityBits = H_128_384_23_NUMBERPARITYBITS;
+        ldpc.NumberRowsHcols = H_128_384_23_NUMBERROWSHCOLS;
+        ldpc.max_row_weight = H_128_384_23_MAX_ROW_WEIGHT;
+        ldpc.max_col_weight = H_128_384_23_MAX_COL_WEIGHT;
+        ldpc.H_rows = (uint16_t *)H_128_384_23_H_rows;
+        ldpc.H_cols = (uint16_t *)H_128_384_23_H_cols;
+    }
+
+	i = run_ldpc_decoder(&ldpc, outbits, llr, &parityCC);
+
+	/* convert MSB bits to a packet of bytes */    
+	for (b = 0; b < (bits_per_packet/8); b++) {
+		uint8_t rxbyte = 0;
+		for(i=0; i<8; i++)
+			rxbyte |= outbits[b*8+i] << (7 - i);
+		payload[b] = rxbyte;
+	}
+}

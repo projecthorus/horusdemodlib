@@ -82,18 +82,17 @@ int main(int argc, char *argv[]) {
         switch(o) {
             case 'm':
                 if ((strcmp(optarg, "RTTY") == 0) || (strcmp(optarg, "rtty") == 0)) {
-                    mode = HORUS_MODE_RTTY;
+                    mode = HORUS_MODE_RTTY_7N2;
                 }
                 if ((strcmp(optarg, "BINARY") == 0) || (strcmp(optarg, "binary") == 0)) {
                     mode = HORUS_MODE_BINARY_V1;
                 }
-                // Commented out until these are implemented.
-                // if ((strcmp(optarg, "256BIT") == 0) || (strcmp(optarg, "256bit") == 0)) {
-                //     mode = HORUS_MODE_BINARY_256BIT;
-                // }
-                // if ((strcmp(optarg, "128BIT") == 0) || (strcmp(optarg, "128bit") == 0)) {
-                //     mode = HORUS_MODE_BINARY_128BIT;
-                // }
+                if ((strcmp(optarg, "256BIT") == 0) || (strcmp(optarg, "256bit") == 0)) {
+                    mode = HORUS_MODE_BINARY_V2_256BIT;
+                }
+                if ((strcmp(optarg, "128BIT") == 0) || (strcmp(optarg, "128bit") == 0)) {
+                    mode = HORUS_MODE_BINARY_V2_128BIT;
+                }
                 if (mode == -1) {
                     fprintf(stderr, "use --mode RTTY or --mode binary\n");
                     exit(1);
@@ -228,6 +227,7 @@ int main(int argc, char *argv[]) {
         if (verbose) {
             fprintf(stderr, "read nin %d\n", horus_nin(hstates));
         }
+
         if (horus_rx(hstates, ascii_out, demod_in, quadrature)) {
             fprintf(stdout, "%s", ascii_out);
             if (crc_results) {

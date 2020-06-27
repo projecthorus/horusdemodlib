@@ -6,6 +6,7 @@ set(horus_srcs
   kiss_fftr.c
   mpdecode_core.c
   H_256_768_22.c
+  H_128_384_23.c
   golay23.c
   phi0.c
   horus_api.c

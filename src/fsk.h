@@ -43,7 +43,7 @@
 
 /* default internal parameters */
 #define FSK_DEFAULT_P 8
-#define FSK_DEFAULT_NSYM 50
+#define FSK_DEFAULT_NSYM  50
 
 struct FSK {
     /*  Static parameters set up by fsk_init */
@@ -188,10 +188,22 @@ void fsk_demod(struct FSK *fsk, uint8_t rx_bits[],COMP fsk_in[]);
  *  demodulated can be found by calling fsk_nin().
  * 
  * struct FSK *fsk - FSK config/state struct, set up by fsk_create
- * float rx_bits[] - Buffer for Nbits soft decision bits to be written
+ * float rx_sd[] - Buffer for Nbits soft decision bits to be written
  * float fsk_in[] - nin samples of modualted FSK
  */
-void fsk_demod_sd(struct FSK *fsk, float rx_bits[],COMP fsk_in[]);
+void fsk_demod_sd(struct FSK *fsk, float rx_sd[], COMP fsk_in[]);
+
+/*
+ * " Why not both? "
+ * Demodulate some number of FSK samples. The number of samples to be 
+ *  demodulated can be found by calling fsk_nin().
+ * 
+ * struct FSK *fsk - FSK config/state struct, set up by fsk_create
+ * float rx_bits[] - Buffer for Nbits soft decision bits to be written
+ * float rx_sd[] - Buffer for Nbits soft decision bits to be written
+ * float fsk_in[] - nin samples of modualted FSK
+ */
+void fsk_demod_core(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], COMP fsk_in[]);
 
 /* enables/disables normalisation of eye diagram samples */
   
