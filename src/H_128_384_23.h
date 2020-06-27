@@ -14,7 +14,7 @@
 #define H_128_384_23_MAX_COL_WEIGHT 5
 #define H_128_384_23_DEC_TYPE 0
 #define H_128_384_23_MAX_ITER 100
-#define H_128_384_23_COPRIME 347
+#define H_128_384_23_COPRIME 383
 
 extern const uint16_t H_128_384_23_H_rows[];
 extern const uint16_t H_128_384_23_H_cols[];

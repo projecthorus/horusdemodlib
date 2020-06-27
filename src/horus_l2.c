@@ -39,10 +39,10 @@
 
   4/ Streaming test bits to stdout, for 'live' testing with fsk_mod and horus_demod:
 
-    $ gcc horus_l2.c golay23.c -o horus_l2 -Wall -DGEN_TX_BITSTREAM -DSCRAMBLER -DINTERLEAVER
+    $ ggcc horus_l2.c golay23.c H_128_384_23.c H_256_768_22.c mpdecode_core.c phi0.c -o horus_l2 -Wall -DGEN_TX_BITSTREAM -DSCRAMBLER -DINTERLEAVER
     $ cp horus_l2 ../build/src/
     $ cd ../build/src/
-    $ ./horus_l2 100 | ./fsk_mod 4 48000 100 750 250 - - | ./horus_demod -m binary - -
+    $ ./horus_l2 100 0 | ./fsk_mod 4 48000 100 750 250 - - | ./horus_demod -m binary - -
    
   5/ Unit testing interleaver:
 
@@ -485,7 +485,8 @@ uint16_t primes[] = {
     127,    131,    137,    139,    149,    151,    157,    163,    167,    173, 
     179,    181,    191,    193,    197,    199,    211,    223,    227,    229, 
     233,    239,    241,    251,    257,    263,    269,    271,    277,    281, 
-    283,    293,    307,    311,    313,    317,    331,    337,    347
+    283,    293,    307,    311,    313,    317,    331,    337,    347,    349,
+    379,    383,    389,    757,    761,    769,    773
 };
 
 void interleave(unsigned char *inout, int nbytes, int dir)
@@ -506,6 +507,8 @@ void interleave(unsigned char *inout, int nbytes, int dir)
     while ((primes[i] < nbits) && (i < imax))
         i++;
     b = primes[i-1];
+
+    fprintf(stderr,"nbits: %d coprime: %d\n", nbits, b);
 
     for(n=0; n<nbits; n++) {
 
@@ -984,7 +987,7 @@ int main(int argc,char *argv[]) {
         input_payload.Counter = 2;
         input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
 
-        int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 2);
+        int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 1);
 
         int b;
         uint8_t tx_bit;
@@ -1216,27 +1219,21 @@ void horus_ldpc_decode(uint8_t *payload, float *sd, int mode) {
         payload_bytes = H_128_384_23_DATA_BYTES;
     }
 
+    double sd_double[bits_per_packet];
     float llr[bits_per_packet];
     float temp[bits_per_packet];
     uint8_t outbits[bits_per_packet];
 
-	int b, i, parityCC;
+    int b, i, parityCC;
 	struct LDPC ldpc;
 
-	/* normalise bitstream to log-like */
-	sum = 0.0;
-	for ( i = 0; i < bits_per_packet; i++ )
-		sum += fabs(sd[i]);
-	mean = sum / bits_per_packet;
+    // cast incoming SDs to doubles for sd_to_llr
+    // For some reason I need to flip the sign ?!?!
+    for ( i = 0; i < bits_per_packet; i++ )
+        sd_double[i] = (double)sd[i]*-1.0;
 
-	sumsq = 0.0;
-	for ( i = 0; i < bits_per_packet; i++ ) {
-		x = fabs(sd[i]) / mean - 1.0;
-		sumsq += x * x;
-	}
-	estEsN0 =  2.0 * bits_per_packet / (sumsq + 1.0e-3) / mean;
-	for ( i = 0; i < bits_per_packet; i++ )
-		llr[i] = estEsN0 * sd[i];
+
+    sd_to_llr(llr, sd_double, bits_per_packet);
 
 	/* reverse whitening and re-order bits */
 	soft_unscramble(llr, temp, bits_per_packet);
@@ -1272,6 +1269,7 @@ void horus_ldpc_decode(uint8_t *payload, float *sd, int mode) {
     }
 
 	i = run_ldpc_decoder(&ldpc, outbits, llr, &parityCC);
+    fprintf(stderr,"iterations: %d\n", i);
 
 	/* convert MSB bits to a packet of bytes */    
 	for (b = 0; b < payload_bytes; b++) {

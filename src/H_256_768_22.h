@@ -14,7 +14,7 @@
 #define H_256_768_22_MAX_COL_WEIGHT 4
 #define H_256_768_22_DEC_TYPE 0
 #define H_256_768_22_MAX_ITER 100
-#define H_256_768_22_COPRIME 347
+#define H_256_768_22_COPRIME 761
 
 extern const uint16_t H_256_768_22_H_rows[];
 extern const uint16_t H_256_768_22_H_cols[];
