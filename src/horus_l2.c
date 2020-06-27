@@ -1083,9 +1083,9 @@ int ldpc_encode_packet(unsigned char *out_data, unsigned char *in_data, int mode
 	for(j = 0; j < max_row_weight; j++) {
         // This is a bit silly, move this out of this loop.
         if (mode  == 1){
-            uint8_t tmp  = H_256_768_22_H_rows[i + number_parity_bits * j];
+            tmp  = H_256_768_22_H_rows[i + number_parity_bits * j];
         } else if (mode == 2) {
-		    uint8_t tmp  = H_128_384_23_H_rows[i + number_parity_bits * j];
+		    tmp  = H_128_384_23_H_rows[i + number_parity_bits * j];
         }
 		if (!tmp)
 			continue;
@@ -1206,12 +1206,14 @@ void soft_deinterleave(float *in, float* out, int mode) {
 /* LDPC decode */
 void horus_ldpc_decode(uint8_t *payload, float *sd, int mode) {
 	float sum, mean, sumsq, estEsN0, x;
-    int bits_per_packet;
+    int bits_per_packet, payload_bytes;
 
     if(mode == 1){
         bits_per_packet = H_256_768_22_BITS_PER_PACKET;
+        payload_bytes = H_256_768_22_DATA_BYTES;
     } else {
         bits_per_packet = H_128_384_23_BITS_PER_PACKET;
+        payload_bytes = H_128_384_23_DATA_BYTES;
     }
 
     float llr[bits_per_packet];
@@ -1272,7 +1274,7 @@ void horus_ldpc_decode(uint8_t *payload, float *sd, int mode) {
 	i = run_ldpc_decoder(&ldpc, outbits, llr, &parityCC);
 
 	/* convert MSB bits to a packet of bytes */    
-	for (b = 0; b < (bits_per_packet/8); b++) {
+	for (b = 0; b < payload_bytes; b++) {
 		uint8_t rxbyte = 0;
 		for(i=0; i<8; i++)
 			rxbyte |= outbits[b*8+i] << (7 - i);

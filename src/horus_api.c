@@ -474,7 +474,7 @@ int extract_horus_binary_v1(struct horus *hstates, char hex_out[], int uw_loc) {
     
     hstates->crc_ok = (crc_tx == crc_rx);
     if ( hstates->crc_ok) {
-        hstates->total_payload_bits += HORUS_BINARY_V1_NUM_UNCODED_PAYLOAD_BYTES;
+        hstates->total_payload_bits = HORUS_BINARY_V1_NUM_UNCODED_PAYLOAD_BYTES;
     }
     return hstates->crc_ok;
 }
@@ -517,7 +517,7 @@ int extract_horus_binary_v2_128(struct horus *hstates, char hex_out[], int uw_lo
         }
         fprintf(stderr, "\n");
     }
-    
+
     uint8_t payload_bytes[HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES];
     float *softbits = hstates->soft_bits + uw_loc + sizeof(uw_horus_binary_v2);
     horus_ldpc_decode( payload_bytes, softbits , HORUS_MODE_BINARY_V2_128BIT);
@@ -549,7 +549,7 @@ int extract_horus_binary_v2_128(struct horus *hstates, char hex_out[], int uw_lo
     
     hstates->crc_ok = (crc_tx == crc_rx);
     if ( hstates->crc_ok) {
-        hstates->total_payload_bits += HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES;
+        hstates->total_payload_bits = HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES;
     }
 
     return hstates->crc_ok;
@@ -628,7 +628,6 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
             packet_detected = extract_horus_binary_v2_128(hstates, ascii_out, uw_loc);
         }
     }
-    
     return packet_detected;
 }
 
