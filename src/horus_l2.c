@@ -39,10 +39,13 @@
 
   4/ Streaming test bits to stdout, for 'live' testing with fsk_mod and horus_demod:
 
-    $ ggcc horus_l2.c golay23.c H_128_384_23.c H_256_768_22.c mpdecode_core.c phi0.c -o horus_l2 -Wall -DGEN_TX_BITSTREAM -DSCRAMBLER -DINTERLEAVER
+    $ gcc horus_l2.c golay23.c H_128_384_23.c H_256_768_22.c mpdecode_core.c phi0.c -o horus_l2 -Wall -DGEN_TX_BITSTREAM -DSCRAMBLER -DINTERLEAVER
     $ cp horus_l2 ../build/src/
     $ cd ../build/src/
     $ ./horus_l2 100 0 | ./fsk_mod 4 48000 100 750 250 - - | ./horus_demod -m binary - -
+
+    Testing LDPC encode/decode
+    $ ./horus_l2 100 1 | ../build/src/fsk_mod 2 48000 100 750 250 - - | ../build/src/cohpsk_ch - - -26 --Fs 48000 --ssbfilt 0 | ../build/src/horus_demod -m 256bit --tonespacing=250 - - | wc -l
    
   5/ Unit testing interleaver:
 
@@ -507,8 +510,6 @@ void interleave(unsigned char *inout, int nbytes, int dir)
     while ((primes[i] < nbits) && (i < imax))
         i++;
     b = primes[i-1];
-
-    fprintf(stderr,"nbits: %d coprime: %d\n", nbits, b);
 
     for(n=0; n<nbits; n++) {
 
