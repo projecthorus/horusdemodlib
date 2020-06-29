@@ -347,7 +347,7 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc) {
             char_dec |= hstates->rx_bits[i+j] * (1<<j);
         }
         if (hstates->verbose) {
-            fprintf(stderr, "  extract_horus_rtty i: %4d 0x%02x %c ", i, char_dec, char_dec);
+            fprintf(stderr, "  extract_horus_rtty i: %4d 0x%02x %c \n", i, char_dec, char_dec);
             if ((nout % 6) == 0) {
                 fprintf(stderr, "\n");
             }
@@ -359,6 +359,11 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc) {
             endpacket = 1;
             rx_crc = horus_l2_gen_crc16((uint8_t*)&ascii_out[5], nout-5);
             ptx_crc = pout + 1; /* start of tx CRC */
+            if (hstates->verbose){
+                fprintf(stderr, "  begin endpacket\n");
+            }
+            // Only process up to the next 5 characters (checksum + line ending)
+            en = i + 10*5;
         }
 
         /* build up output array, really only need up to tx crc but
@@ -377,7 +382,9 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc) {
         for(i=0; i<4; i++) {
             tx_crc <<= 4;
             tx_crc |= hex2int(ptx_crc[i]);
-            //fprintf(stderr, "ptx_crc[%d] %c 0x%02X tx_crc: 0x%04X\n", i, ptx_crc[i], hex2int(ptx_crc[i]), tx_crc);
+            if (hstates->verbose){
+                fprintf(stderr, "ptx_crc[%d] %c 0x%02X tx_crc: 0x%04X\n", i, ptx_crc[i], hex2int(ptx_crc[i]), tx_crc);
+            }
         }
         crc_ok = (tx_crc == rx_crc);
         *(ptx_crc+4) = 0;  /* terminate ASCII string */
