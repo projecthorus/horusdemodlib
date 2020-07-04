@@ -1,0 +1,21 @@
+{
+"HORUSTEST": {
+    "struct": "<BbBfH",
+    "fields": [
+        ["cutdown_battery_voltage", "battery_5v_byte"],
+        ["external_temperature", "none"],
+        ["test_counter", "none"],
+        ["test_float_field", "none"],
+        ["test_int_field", "none"]
+    ]
+},
+"HORUSTEST2": {
+    "struct": "<BbBH4x",
+    "fields": [
+        ["cutdown_battery_voltage", "battery_5v_byte"],
+        ["external_temperature", "none"],
+        ["test_counter", "none"],
+        ["test_int_field", "none"]
+    ]
+}
+}

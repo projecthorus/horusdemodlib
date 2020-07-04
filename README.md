@@ -7,21 +7,33 @@ This library includes the following:
 * The 'Wenet' demodulator, used to downlink imagery from HAB payloads. 
 
 
+## HorusDemodLib C Library
+This contains the demodulator portions of horuslib, which are written in C.
+
 ## Building
 
 ```
-$ git clone https://github.com/projecthorus/horuslib.git
-$ cd horuslib && mkdir build_linux && cd build_linux
+$ git clone https://github.com/projecthorus/horusdemodlib.git
+$ cd horusdemodlib && mkdir build && cd build
 $ cmake ..
 $ make
+$ make install
 ```
 
 ## Testing
 
 ```
-$ cd horus/build_linux
+$ cd build
 $ ctest
 ```
+
+## HorusDemodLib Python Wrapper
+
+```
+$ pip install -r requirements.txt
+$ pip install -e .
+```
+
 
 ## Further Reading
 

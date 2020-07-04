@@ -1,0 +1,31 @@
+# HORUS BINARY PAYLOAD ID LIST
+# 2019-06-02
+#
+# Payload IDs 0 through 255 are available. If we get near this limit,
+# the payload format may need to be re-evaluated.
+#
+# Request a payload ID by either raising an issue, or submitting a pull request
+# on the horusbinary github page: https://github.com/projecthorus/horusbinary
+#
+0, 4FSKTEST
+1, HORUSBINARY
+2, VK5BRL
+3, STRATOS
+4, HORUSBINARY2
+5, HORUSBINARY3
+6, PE2BZ-4FSK
+7, SP8NCG-4FSK
+8, PY2UEP-4FSK
+9, PC4L-4FSK
+10, HAPPYSAT-4FSK
+11, PH1M-4FSK
+12, DK0WT-4FSK
+13, PE1ANS-4FSK
+14, WBLSCOUTS-4FSK
+15, PB0AHX-4FSK
+16, PRESCOTTSOUTH
+17, EAGLE-1-4FSK
+18, VK8TH-4FSK
+19, VK5NTM-4FSK
+23, MAGNU
+31, ICEDVOVO
