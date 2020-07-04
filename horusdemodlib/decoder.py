@@ -6,7 +6,7 @@ import struct
 import time
 from .delegates import *
 from .checksums import *
-from .payloads import HORUS_CUSTOM_FIELDS, HORUS_PAYLOAD_LIST
+from .payloads import HORUS_CUSTOM_FIELDS, HORUS_PAYLOAD_LIST, init_custom_field_list, init_payload_id_list
 
 
 
@@ -173,30 +173,65 @@ def hex_to_bytes(data:str) -> bytes:
 
 
 if __name__ == "__main__":
+    import argparse
+    import sys
 
-    tests = [
-        ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', ''],
-        ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
-        ['horus_binary_v2_16byte', b'\x01\x12\x02\x00\x02\xbc\xeb!AR\x10\x00\xff\x00\xe1\x7e', ''],
-        #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
-        ['horus_binary_v2_32byte', b'\xFF\xFF\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe8\x82', '']
-    ]
 
-    for _test in tests:
-        _format = _test[0]
-        _input = _test[1]
-        _output = _test[2]
+    # Read command-line arguments
+    parser = argparse.ArgumentParser(description="Project Horus Binary Telemetry Decoder", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--test", action="store_true", default=False, help="Run unit tests.")
+    parser.add_argument("--update", action="store_true", default=False, help="Download latest payload ID and custom fields files before continuing.")
+    parser.add_argument("--decode", type=str, default=None, help="Attempt to decode a hexadecial packet.")
+    parser.add_argument("-v", "--verbose", action="store_true", default=False, help="Verbose output (set logging level to DEBUG)")
+    args = parser.parse_args()
 
+    if args.verbose:
+        _log_level = logging.DEBUG
+    else:
+        _log_level = logging.INFO
+
+    # Setup Logging
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s: %(message)s", level=_log_level
+    )
+
+    if args.update:
+        init_payload_id_list()
+        init_custom_field_list()
+    
+    if args.decode is not None:
         try:
-            _decoded = decode_packet(_input)
-            print(f"Input ({_format}): {str(_input)} - Output: {_decoded['ukhas_str']}")
-            print(_decoded)
-            # Insert assert checks here.
-
+            _decoded = decode_packet(hex_to_bytes(args.decode))
+            print(f"Decoded UKHAS String: {_decoded['ukhas_str']}")
         except ValueError as e:
-            print(f"Input ({_format}): {str(_input)} - Caught Error: {str(e)}")
-            assert(_output == 'error')
+            print(f"Error while decoding: {str(e)}")
 
 
-    print("All tests passed!")
+    if args.test:
+
+        tests = [
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', ''],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v2_16byte', b'\x01\x12\x02\x00\x02\xbc\xeb!AR\x10\x00\xff\x00\xe1\x7e', ''],
+            #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
+            ['horus_binary_v2_32byte', b'\xFF\xFF\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe8\x82', '']
+        ]
+
+        for _test in tests:
+            _format = _test[0]
+            _input = _test[1]
+            _output = _test[2]
+
+            try:
+                _decoded = decode_packet(_input)
+                print(f"Input ({_format}): {str(_input)} - Output: {_decoded['ukhas_str']}")
+                print(_decoded)
+                # Insert assert checks here.
+
+            except ValueError as e:
+                print(f"Input ({_format}): {str(_input)} - Caught Error: {str(e)}")
+                assert(_output == 'error')
+
+
+        print("All tests passed!")
 
