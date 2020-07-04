@@ -10,7 +10,7 @@ HORUS_PAYLOAD_LIST = {0:'4FSKTEST', 1:'HORUSBINARY', 65535:'HORUSTEST'}
 
 # URL for payload list
 # TODO: Move this into horusdemodlib repo
-PAYLOAD_ID_LIST_URL = "https://raw.githubusercontent.com/projecthorus/horusbinary/master/payload_id_list.txt"
+PAYLOAD_ID_LIST_URL = "hhttps://raw.githubusercontent.com/projecthorus/horusdemodlib/master/payload_id_list.txt"
 
 # Custom field data. 
 HORUS_CUSTOM_FIELDS = {
@@ -37,7 +37,7 @@ HORUS_CUSTOM_FIELDS = {
 
 
 # Custom Field JSON URL
-HORUS_CUSTOM_FIELD_URL = ""
+HORUS_CUSTOM_FIELD_URL = "https://raw.githubusercontent.com/projecthorus/horusdemodlib/master/custom_field_list.json"
 
 def read_payload_list(filename="payload_id_list.txt"):
     """ Read in the payload ID list, and return the parsed data as a dictionary """
