@@ -1,7 +1,7 @@
 #
 #   HorusLib - Binary Packet Decoder Functions
 #
-
+import codecs
 import struct
 import time
 from .delegates import *
@@ -162,7 +162,14 @@ def decode_packet(data:bytes, packet_format:dict = None) -> dict:
     return _output
 
 
-        
+def hex_to_bytes(data:str) -> bytes:
+    """ Convert a string of hexadeximal digits to a bytes representation """
+    try:
+        _binary_string = codecs.decode(data, 'hex')
+        return _binary_string
+    except TypeError as e:
+        logging.error("Error parsing line as hexadecimal (%s): %s" % (str(e), data))
+        return None
 
 
 if __name__ == "__main__":
