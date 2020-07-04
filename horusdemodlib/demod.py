@@ -376,7 +376,7 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG
     )
 
-    with HorusLib(libpath=".", mode=Mode.BINARY, verbose=False, callback=frame_callback, sample_rate=8000) as horus:
+    with HorusLib(mode=Mode.BINARY, verbose=False, callback=frame_callback, sample_rate=8000) as horus:
         with open(filename, "rb") as f:
             while True:
                 # Fixed read size - 2000 samples
