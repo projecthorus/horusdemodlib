@@ -10,7 +10,7 @@ HORUS_PAYLOAD_LIST = {0:'4FSKTEST', 1:'HORUSBINARY', 65535:'HORUSTEST'}
 
 # URL for payload list
 # TODO: Move this into horusdemodlib repo
-PAYLOAD_ID_LIST_URL = "hhttps://raw.githubusercontent.com/projecthorus/horusdemodlib/master/payload_id_list.txt"
+PAYLOAD_ID_LIST_URL = "https://raw.githubusercontent.com/projecthorus/horusdemodlib/master/payload_id_list.txt"
 
 # Custom field data. 
 HORUS_CUSTOM_FIELDS = {
@@ -94,6 +94,7 @@ def grab_latest_payload_id_list(url=PAYLOAD_ID_LIST_URL, local_file="payload_id_
     with open(local_file, 'w') as f:
         f.write(_r.text)
 
+    logging.info("Updated payload ID list successfully!")
     return True
 
 
@@ -166,6 +167,7 @@ def grab_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, local_file="custom
     with open(local_file, 'w') as f:
         f.write(_r.text)
 
+    logging.info("Updated custom field list successfully!")
     return True
 
 
