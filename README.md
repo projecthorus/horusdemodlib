@@ -10,9 +10,10 @@ This library includes the following:
 ## HorusDemodLib C Library
 This contains the demodulator portions of horuslib, which are written in C.
 
-## Building
+### Building
+The library can be built and installed using:
 
-```
+```console
 $ git clone https://github.com/projecthorus/horusdemodlib.git
 $ cd horusdemodlib && mkdir build && cd build
 $ cmake ..
@@ -20,15 +21,33 @@ $ make
 $ make install
 ```
 
-## Testing
+### Testing
+Unit tests for the various demodulators can be run using:
 
-```
+```console
 $ cd build
 $ ctest
 ```
 
-## HorusDemodLib Python Wrapper
+### API Reference
+The main demodulator API is [horus_api.h](https://github.com/projecthorus/horusdemodlib/blob/master/src/horus_api.h). An example of it in use in a C program is available in [horus_demod.c](https://github.com/projecthorus/horusdemodlib/blob/master/src/horus_demod.c)
 
+A Python wrapper is also available (via the horusdemodlib Python library which is also part of this repository). An example of its use is available [here](https://github.com/projecthorus/horusdemodlib/blob/master/horusdemodlib/demod.py#L379).
+
+
+## HorusDemodLib Python Library
+The horusdemodlib Python library contains decoders for the different Project Horus telemetry formats, including:
+* Horus Binary v1 (Legacy 22-byte Golay-encoded format)
+* Horus Binary v2 (LDPC-Encoded 16 and 32-byte formats)
+
+It also contains a wrapper around the C library (mentioned above), which contains the Horus modem demodulators.
+
+The easiest way to install horusdemodlib is via pypi:
+```
+$ pip install horusdemodlib
+```
+
+If you want to install directly from this repository, you can run:
 ```
 $ pip install -r requirements.txt
 $ pip install -e .
