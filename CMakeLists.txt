@@ -59,6 +59,13 @@ enable_testing()
               )
              set_tests_properties(test_horus_binary PROPERTIES PASS_REGULAR_EXPRESSION "1C9A9545")
 
+     add_test(NAME test_horus_rtty_7n2
+             COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
+                            sox ${CMAKE_CURRENT_SOURCE_DIR}/samples/rtty_7n2.wav -r 48000 -t raw - |
+                            ./horus_demod -m rtty -c - - | grep OK | wc -l"
+              )
+             set_tests_properties(test_horus_rtty_7n2 PROPERTIES PASS_REGULAR_EXPRESSION "6")
+
      add_test(NAME test_horus_binary_iq
              COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
                             cat ${CMAKE_CURRENT_SOURCE_DIR}/samples/horusb_iq_s16.raw | 

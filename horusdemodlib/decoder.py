@@ -184,69 +184,68 @@ def parse_ukhas_string(sentence:str) -> dict:
         sentence = sentence.decode('ascii')
 
     # Try and proceed through the following. If anything fails, we have a corrupt sentence.
+    # Strip out any leading/trailing whitespace.
+    _sentence = sentence.strip()
+
+    # First, try and find the start of the sentence, which always starts with '$$''
+    _sentence = _sentence.split('$')[-1]
+    # Now try and split out the telemetry from the CRC16.
+    _telem = _sentence.split('*')[0]
     try:
-        # Strip out any leading/trailing whitespace.
-        _sentence = sentence.strip()
-
-        # First, try and find the start of the sentence, which always starts with '$$''
-        _sentence = _sentence.split('$$')[-1]
-        # Hack to handle odd numbers of $$'s at the start of a sentence
-        if _sentence[0] == '$':
-            _sentence = _sentence[1:]
-        # Now try and split out the telemetry from the CRC16.
-        _telem = _sentence.split('*')[0]
         _crc = _sentence.split('*')[1]
+    except IndexError:
+        raise ValueError("Could not parse RTTY Sentence - Could not locate CRC.")
 
-        # Now check if the CRC matches.
-        _calc_crc = ukhas_crc(_telem.encode('ascii'))
+    # Now check if the CRC matches.
+    _calc_crc = ukhas_crc(_telem.encode('ascii'))
 
-        if _calc_crc != _crc:
-            raise ValueError("Could not parse RTTY Sentence - CRC Fail.")
+    if _calc_crc != _crc:
+        raise ValueError("Could not parse RTTY Sentence - CRC Fail.")
 
-        # We now have a valid sentence! Extract fields..
-        _fields = _telem.split(',')
-
+    # We now have a valid sentence! Extract fields..
+    _fields = _telem.split(',')
+    try:
         _callsign = _fields[0]
         _time = _fields[2]
         _latitude = float(_fields[3])
         _longitude = float(_fields[4])
         _altitude = int(_fields[5])
-        # The rest we don't care about.
+    except IndexError:
+        raise ValueError("Could not parse RTTY Sentence - Could not decode all fields.")
+    # The rest we don't care about.
 
-        # Perform some sanity checks on the data.
+    # Perform some sanity checks on the data.
 
-        # Attempt to parse the time string. This will throw an error if any values are invalid.
-        try:
-            _time_dt = datetime.datetime.strptime(_time, "%H:%M:%S")
-        except:
-            raise ValueError("Could not parse RTTY Sentence - Invalid Time.")
+    # Attempt to parse the time string. This will throw an error if any values are invalid.
+    try:
+        _time_dt = datetime.datetime.strptime(_time, "%H:%M:%S")
+    except:
+        raise ValueError("Could not parse RTTY Sentence - Invalid Time.")
 
-        # Check if the lat/long is 0.0,0.0 - no point passing this along.
-        if _latitude == 0.0 or _longitude == 0.0:
-            raise ValueError("Could not parse RTTY Sentence - Zero Lat/Long.")
+    # Check if the lat/long is 0.0,0.0 - no point passing this along.
+    # Commented out for now... passing through no-lock sentences is useful for debugging.
+    #if _latitude == 0.0 or _longitude == 0.0:
+    #    raise ValueError("Could not parse RTTY Sentence - Zero Lat/Long.")
 
-        # Place a limit on the altitude field. We generally store altitude on the payload as a uint16, so it shouldn't fall outside these values.
-        if _altitude > 65535 or _altitude < 0:
-            raise ValueError("Could not parse RTTY Sentence - Invalid Altitude.")
+    # Place a limit on the altitude field. We generally store altitude on the payload as a uint16, so it shouldn't fall outside these values.
+    if _altitude > 65535 or _altitude < 0:
+        raise ValueError("Could not parse RTTY Sentence - Invalid Altitude.")
 
-        # Produce a dict output which is compatible with the output of the binary decoder.
-        _telem = {
-            'callsign': _callsign,
-            'time': _time,
-            'latitude': _latitude,
-            'longitude': _longitude,
-            'altitude': _altitude,
-            'speed': -1,
-            'heading': -1,
-            'temp': -1,
-            'sats': -1,
-            'batt_voltage': -1
-        }
+    # Produce a dict output which is compatible with the output of the binary decoder.
+    _telem = {
+        'callsign': _callsign,
+        'time': _time,
+        'latitude': _latitude,
+        'longitude': _longitude,
+        'altitude': _altitude,
+        'speed': -1,
+        'heading': -1,
+        'temp': -1,
+        'sats': -1,
+        'batt_voltage': -1
+    }
 
-        return _telem
-
-    except Exception as e:
-        raise ValueError("Could not parse ASCII Sentence - %s" % str(e))
+    return _telem
 
 
 if __name__ == "__main__":
