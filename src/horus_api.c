@@ -64,9 +64,9 @@ struct horus {
 int8_t uw_horus_rtty_7N2[] = {
   0,0,1,0,0,1,0,1,1,0,
   0,0,1,0,0,1,0,1,1,0,
-  0,0,1,0,0,1,0,1,1,0,
-  0,0,1,0,0,1,0,1,1,0,
-  0,0,1,0,0,1,0,1,1,0
+//  0,0,1,0,0,1,0,1,1,0,
+//  0,0,1,0,0,1,0,1,1,0,
+//  0,0,1,0,0,1,0,1,1,0
 };
 
 /* Unique word for Horus Binary V1 */
@@ -330,7 +330,7 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc) {
     int st = uw_loc;                                    /* first bit of first char        */
     int en = hstates->max_packet_len - nfield;          /* last bit of max length packet  */
 
-    int      i, j, endpacket, nout, crc_ok;
+    int      i, j, k, endpacket, nout, crc_ok, rtty_start;
     uint8_t  char_dec;
     char    *pout, *ptx_crc;
     uint16_t rx_crc, tx_crc;
@@ -357,7 +357,19 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc) {
 
         if (!endpacket && (char_dec == 42)) {
             endpacket = 1;
-            rx_crc = horus_l2_gen_crc16((uint8_t*)&ascii_out[5], nout-5);
+            rtty_start = 0;
+            // Find the end of the $$s
+            for(k = 0; k<8; k++){
+                if(ascii_out[k] != 36){
+                    rtty_start = k;
+                    break;
+                }
+            }
+            if(hstates->verbose){
+                fprintf(stderr, "  Found %d $s\n", rtty_start);
+            }
+
+            rx_crc = horus_l2_gen_crc16((uint8_t*)&ascii_out[rtty_start], nout-rtty_start);
             ptx_crc = pout + 1; /* start of tx CRC */
             if (hstates->verbose){
                 fprintf(stderr, "  begin endpacket\n");
@@ -692,6 +704,16 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
 
         if (hstates->mode == HORUS_MODE_RTTY_7N2) {
             packet_detected = extract_horus_rtty(hstates, ascii_out, uw_loc);
+
+            if (packet_detected){
+                // If we have found a packet, advance the bits enough that we don't detect the
+                // same packet again, if it has more than 2x $$s.
+                // NEED TO CHECK THIS DOESN'T CAUSE SEGFAULTS!
+                for(i=0,j=100; i<100; i++,j++) {
+                    hstates->rx_bits[i] = hstates->rx_bits[j];
+                    hstates->soft_bits[i] = hstates->soft_bits[j];
+                }
+            }
         }
         if (hstates->mode == HORUS_MODE_BINARY_V1) {
             packet_detected = extract_horus_binary_v1(hstates, ascii_out, uw_loc);

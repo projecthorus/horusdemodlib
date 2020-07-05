@@ -217,11 +217,21 @@ def parse_ukhas_string(sentence:str) -> dict:
     # Perform some sanity checks on the data.
 
     # Attempt to parse the time string. This will throw an error if any values are invalid.
-    try:
-        _time_dt = datetime.datetime.strptime(_time, "%H:%M:%S")
-    except:
-        raise ValueError("Could not parse RTTY Sentence - Invalid Time.")
+    if ':' in _time:
+        try:
+            _time_dt = datetime.datetime.strptime(_time, "%H:%M:%S")
+        except:
+            raise ValueError("Could not parse RTTY Sentence - Invalid Time.")
+    else:
+        # Also handle cases where no :'s are used.
+        try:
+            _time_dt = datetime.datetime.strptime(_time, "%H%M%S")
+        except:
+            raise ValueError("Could not parse RTTY Sentence - Invalid Time.")
 
+    # Convert time back to something consistent.
+    _time = _time_dt.strftime("%H:%M:%S")
+    
     # Check if the lat/long is 0.0,0.0 - no point passing this along.
     # Commented out for now... passing through no-lock sentences is useful for debugging.
     #if _latitude == 0.0 or _longitude == 0.0:
@@ -311,7 +321,8 @@ if __name__ == "__main__":
 
         # RTTY Decoder Tests
         tests = [
-            '$$HORUS,6,06:43:16,0.000000,0.000000,0,0,0,1801,20*1DA2'
+            '$$HORUS,6,06:43:16,0.000000,0.000000,0,0,0,1801,20*1DA2',
+            '$$$DirkDuyvel,416,143957,53.15629,7.29188,10925,14,2.88,11,2640,1,80*3C6C'
         ]
 
         for _test in tests:
