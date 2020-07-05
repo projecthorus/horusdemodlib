@@ -81,7 +81,7 @@ def decode_degree_float(data:float) -> str:
     if type(data) != float:
         raise ValueError("decimal_degrees - Invalid input type.")
 
-    return (data, f"{data:.6f}")
+    return (data, f"{data:.5f}")
 
 
 def decode_degree_fixed3(data:bytes) -> str:
@@ -110,7 +110,7 @@ def decode_degree_fixed3(data:bytes) -> str:
     _value = struct.unpack('<i', _temp)[0]
     _value_degrees = _value * 1e-7
 
-    return (_value_degrees, f"{_value_degrees:.6f}")
+    return (_value_degrees, f"{_value_degrees:.5f}")
 
 
 def decode_battery_5v_byte(data: int) -> str:
@@ -205,11 +205,11 @@ if __name__ == "__main__":
         ['time_biseconds', 1, "00:00:02"],
         ['time_biseconds', 43199, "23:59:58"],
         ['time_biseconds', 43200, "00:00:00"],
-        ['degree_float', 0.0, "0.000000"],
-        ['degree_float', 0.001, "0.001000"],
-        ['degree_float', -34.01, "-34.010000"],
-        ['degree_float', -138.000001, "-138.000001"],
-        ['degree_fixed3', b'\x00\x00\x00', "0.0"],
+        ['degree_float', 0.0, "0.00000"],
+        ['degree_float', 0.001, "0.00100"],
+        ['degree_float', -34.01, "-34.01000"],
+        ['degree_float', -138.000001, "-138.00000"],
+        ['degree_fixed3', b'\x00\x00\x00', "0.00000"],
         ['battery_5v_byte', 0, "0.00"],
         ['battery_5v_byte', 128, "2.51"],
         ['battery_5v_byte', 255, "5.00"],
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         _input = _test[1]
         _output = _test[2]
 
-        _decoded = decode_field(_field_type, _input)
+        _decoded_dict, _decoded = decode_field(_field_type, _input)
         print(f"{_field_type} {str(_input)} -> {_decoded}")
         assert(_decoded == _output)
     
