@@ -98,11 +98,11 @@ def grab_latest_payload_id_list(url=PAYLOAD_ID_LIST_URL, local_file="payload_id_
     return True
 
 
-def init_payload_id_list():
+def init_payload_id_list(filename="payload_id_list.txt"):
     """ Initialise and update the local payload ID list. """
 
-    grab_latest_payload_id_list()
-    HORUS_PAYLOAD_LIST = read_payload_list()
+    grab_latest_payload_id_list(local_file=filename)
+    HORUS_PAYLOAD_LIST = read_payload_list(filename=filename)
 
 
 
@@ -171,10 +171,10 @@ def grab_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, local_file="custom
     return True
 
 
-def init_custom_field_list():
+def init_custom_field_list(filename="custom_field_list.json"):
     """ Initialise and update the local custom field list """
-    grab_latest_custom_field_list()
-    HORUS_CUSTOM_FIELDS = read_custom_field_list()
+    grab_latest_custom_field_list(local_file=filename)
+    HORUS_CUSTOM_FIELDS = read_custom_field_list(filename=filename)
 
 
 if __name__ == "__main__":

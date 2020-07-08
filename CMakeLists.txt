@@ -62,9 +62,16 @@ enable_testing()
      add_test(NAME test_horus_rtty_7n2
              COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
                             sox ${CMAKE_CURRENT_SOURCE_DIR}/samples/rtty_7n2.wav -r 48000 -t raw - |
-                            ./horus_demod -m rtty -c - - | grep OK | wc -l"
+                            ./horus_demod -c -m rtty - - | grep OK | wc -l"
               )
              set_tests_properties(test_horus_rtty_7n2 PROPERTIES PASS_REGULAR_EXPRESSION "6")
+
+     add_test(NAME test_horus_rtty_8n2
+             COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
+                            sox ${CMAKE_CURRENT_SOURCE_DIR}/samples/rtty_8n2.wav -r 48000 -t raw - |
+                            ./horus_demod -c --rate=300 -m rtty8n2 - - | grep OK | wc -l"
+              )
+             set_tests_properties(test_horus_rtty_8n2 PROPERTIES PASS_REGULAR_EXPRESSION "4")
 
      add_test(NAME test_horus_binary_iq
              COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;

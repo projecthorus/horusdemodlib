@@ -84,6 +84,9 @@ int main(int argc, char *argv[]) {
                 if ((strcmp(optarg, "RTTY") == 0) || (strcmp(optarg, "rtty") == 0)) {
                     mode = HORUS_MODE_RTTY_7N2;
                 }
+                if ((strcmp(optarg, "RTTY8N2") == 0) || (strcmp(optarg, "rtty8n2") == 0)) {
+                    mode = HORUS_MODE_RTTY_8N2;
+                }
                 if ((strcmp(optarg, "BINARY") == 0) || (strcmp(optarg, "binary") == 0)) {
                     mode = HORUS_MODE_BINARY_V1;
                 }

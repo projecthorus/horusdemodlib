@@ -64,6 +64,7 @@ class Mode(Enum):
     BINARY_V1 = 0
     RTTY_7N2 = 90
     RTTY = 90
+    RTTY_8N2 = 91
     BINARY_V2_256BIT = 1
     BINARY_V2_128BIT = 2
 
