@@ -306,16 +306,20 @@ class HorusLib():
             data_out = (
                 b""  # check if bytes is just null and return an empty bytes instead
             )
-        elif self.mode != Mode.RTTY_7N2:
+        elif (self.mode != Mode.RTTY_7N2) and (self.mode != Mode.RTTY_8N2):
             try:
                 data_out = bytes.fromhex(data_out.decode("ascii"))
             except ValueError:
                 logging.debug(data_out)
                 logging.error("Couldn't decode the hex from the modem")
-                return bytes()
+                data_out = (b'')
         else:
             # Ascii
-            data_out = data_out.decode("ascii")
+            try:
+                data_out = data_out.decode("ascii")
+            except Exception as e:
+                logging.error(f"Couldn't decode ASCII - {str(e)} - {str(data_out)}")
+                data_out = ""
             # Strip of all null characters.
             data_out = data_out.rstrip('\x00')
 
@@ -358,18 +362,28 @@ class HorusLib():
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 2:
-        raise ArgumentError("Usage python3 -m horusdemodlib.demod filename")
-    filename = sys.argv[1]
+    if len(sys.argv) != 3:
+        raise ArgumentError("Usage python3 -m horusdemodlib.demod mode filename")
+    filename = sys.argv[2]
+
+    if sys.argv[1] == 'rtty7n2':
+        mode = Mode.RTTY_7N2
+    elif sys.argv[1] == 'rtty8n2':
+        mode = Mode.RTTY_8N2
+    else:
+        mode = Mode.BINARY
 
     def frame_callback(frame):
-        print(f"Callback: {frame.data.hex()} SNR: {frame.snr}")
+        if type(frame) == bytes:
+            print(f"Callback: {frame.data.hex()} SNR: {frame.snr}")
 
-        try:
-            _packet = decode_packet(frame.data)
-            print(f"Decoded Packet: {_packet['ukhas_str']}")
-        except Exception as e:
-            print(f"Error decoding packet: {str(e)}.")
+            try:
+                _packet = decode_packet(frame.data)
+                print(f"Decoded Packet: {_packet['ukhas_str']}")
+            except Exception as e:
+                print(f"Error decoding packet: {str(e)}.")
+        else:
+            print(f"Callback: {frame.data} SNR: {frame.snr}")
 
 
     # Setup Logging
@@ -377,7 +391,7 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG
     )
 
-    with HorusLib(mode=Mode.BINARY, verbose=False, callback=frame_callback, sample_rate=8000) as horus:
+    with HorusLib(mode=mode, verbose=False, callback=frame_callback, sample_rate=48000, rate=300) as horus:
         with open(filename, "rb") as f:
             while True:
                 # Fixed read size - 2000 samples
