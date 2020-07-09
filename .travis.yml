@@ -29,7 +29,7 @@ before_deploy:
 deploy:
   provider: releases
   api_key:
-    secure: #Use travis setup releases to configure this
+    secure: ox3iS56JBJVo7nhFwTLUDjSIa9tASIUvXAj3wQPncRCiSfd24zr5Q2PM6e+CSXEHlDkOnEjJmSK+5pdrJLs3NJIfoF75dc/jAD4kf3dFGOZLHB4H/zZBDPsjXcdiuvEqwgFj+d4gFmFYh3VAQR1Goc1zlNrXmhAmBIOBVvdijqtHqaZZa7ib6AVeJF2J2ZyXaCpgwhMIhGiO+Zt+Jr10kCR/+WuxY2iwxI3OYNgNj+IeH06bmclxdj4QV+8uTlPHRe3o+v10xjf55zxkaxS+3pyDaX8ErjxtAhMchA+D44bmhji6NxCetaiswy5W4hQ4Gp4VB8i1LtmtQFPBKDbVVzN3pBLTCSfHB2y97hOt3l7TGgDJmbhzowarZb8d6FQo+T/ePJ6g+L7agq9jsj4Hm45rN3FS1IcoirblX2/Nm4gBhwL/hyN/j6ElJKnSNde8AOZLruB0dSHdJfxAOfgIQDjxYm19itF0kQVJLN5XkFwu1zrNy4leEDOe4NiDAWLk/87Q5KhmKYyJWpMbE6VlHq9nWGfpK+xHBcHYvqZbqjCj3vY67qGcyMB3saaoKhW7JkRlL9ajOg4u/czITit5+6Kl/8ApiulmXzwC8BdKt1ts0VWFbBm3vhwqajArd+nfr+sDdcpxdEfH9119l1YAouqRbp0jURvnylCiIO1D5cw=
   file: 
     - build_linux/src/libhorus.so # we might want to cross compile an arm version as well :)
     - build_linux/src/libhorus.dylib
