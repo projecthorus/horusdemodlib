@@ -10,13 +10,16 @@ addons:
     packages: libc6-i386 sox python3-numpy valgrind fonts-freefont-otf libspeexdsp-dev
       libsamplerate0-dev portaudio19-dev libasound2-dev libao-dev libgsm1-dev libsndfile-dev
       mingw-w64
+  homebrew:
+    packages:
+      - sox
+    update: true
 install:
   - export HABLIBDIR=${PWD}
   - export MAKEFLAGS=-j2
 script:
   - cd ${HABLIBDIR} && mkdir -p build_linux && cd build_linux
   - cmake $HABLIBDIR && make -j4
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install sox; fi
   - ctest --output-on-failure
   - cd ${HABLIBDIR} && mkdir -p build_windows/src && cd build_windows
   - if [ "$TRAVIS_OS_NAME" != "osx" ]; then cmake $HABLIBDIR -DCMAKE_TOOLCHAIN_FILE=$HABLIBDIR/mingw-w64-x86_64.cmake && make -j4 ; fi
