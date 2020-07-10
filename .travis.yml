@@ -1,33 +1,39 @@
 env:
-  global:
-  - GCC_BASE=gcc-arm-none-eabi-8-2018-q4-major
-  - GCC_SHORT=8-2018q4
 sudo: required
 language: generic
 dist: xenial
+os:
+  - linux
+  - osx
 addons:
   apt:
-    packages: libc6-i386 sox python3-numpy valgrind fonts-freefont-otf
-              libspeexdsp-dev libsamplerate0-dev portaudio19-dev
-              libasound2-dev libao-dev libgsm1-dev libsndfile-dev
-             
-cache:
-  directories:
-  - "$HOME/$GCC_BASE"
+    packages: libc6-i386 sox python3-numpy valgrind fonts-freefont-otf libspeexdsp-dev
+      libsamplerate0-dev portaudio19-dev libasound2-dev libao-dev libgsm1-dev libsndfile-dev
+      mingw-w64
+  homebrew:
+    packages:
+      - sox
+    update: true
 install:
-- export GCC_DIR=$HOME/$GCC_BASE
-- export GCC_ARCHIVE=$HOME/$GCC_BASE-linux.tar.bz2
-- export GCC_URL=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/$GCC_SHORT/$GCC_BASE-linux.tar.bz2
-- if [ ! -e $GCC_DIR/bin/arm-none-eabi-g++ ]; then wget -q $GCC_URL -O $GCC_ARCHIVE;
-  tar xfj $GCC_ARCHIVE -C $HOME; fi
-- export HABLIBDIR=${PWD}
-- export MAKEFLAGS=-j2
-
+  - export HABLIBDIR=${PWD}
+  - export MAKEFLAGS=-j2
 script:
+  - cd ${HABLIBDIR} && mkdir -p build_linux && cd build_linux
+  - cmake $HABLIBDIR && make -j4
+  - ctest --output-on-failure
+  - cd ${HABLIBDIR} && mkdir -p build_windows/src && cd build_windows
+  - if [ "$TRAVIS_OS_NAME" != "osx" ]; then cmake $HABLIBDIR -DCMAKE_TOOLCHAIN_FILE=$HABLIBDIR/mingw-w64-x86_64.cmake && make -j4 ; fi
 
-# build hablib -------------------------
-- cd ${HABLIBDIR} && mkdir -p build_linux && cd build_linux
-- cmake $HABLIBDIR && make -j4
-# Now run all the ctests
-- ctest --output-on-failure
-
+before_deploy:
+  - cd ${HABLIBDIR}
+deploy:
+  provider: releases
+  api_key:
+    secure: qkvk9+tNLYwfGaxiPtQBd8KsQeCEUu0FAmMdu3QeUBw4kSp+vferp7cE3Txl4uAR2cbNMszAggbyDNSYFGpubX8YkV/eeCFYrEDpPZQv/VjySTWPjWOYQRXdeQKD0Kjb4+foGfXmvNoAaim3pE54plOin/8e2aI2pu/xcmBpgRvuIb4cGPGOw1hAV1/UC6GKlYenVYYvxcu4leC/YCPPwKCUlrPsajuK6cvBF715aZ70Ugow97IEgo3MVqCBQf0OceeuqcSPRNKXe8yO4zUVyq4y0nZvPDIKwvmw8hCs86fcrtvrhKvDOQYP+3iQigPLoAP80Nq4qD+eJrvVdmpdTZ2MOJfORaBblk6slLeZ/46IL64kBIqZ9MJrKeabLd7WJ0A66UgK9/VswyiephGe5iAZmmOpArheRqAdz7eh0yAOb7l6G5MYhv6nqVvVVJgDdNYnChbsQFkjVgJsyFEYKYAlXbWJH1v5X5e4lHE9ReANSb1VIWOpW9YAliAMAJhKQqJ3LzK14K+xLkecpRwyFgYt652Vewmw79C+iNV8UZYj64NQmYAgw/arhgVHhzitwFm0Gc6GGFZuqtnCjPNWgqsm3i2u/x9tgej6AjjRiI/4vHGROiISJpXLh7zaWRbjKBGL286dECYsFpMi+o7goqDuNYG75UxkSGyHFZKXJ1U=
+  file: 
+    - build_linux/src/libhorus.so # we might want to cross compile an arm version as well :)
+    - build_linux/src/libhorus.dylib
+    - build_windows/src/libhorus.dll
+  on:
+    repo: projecthorus/horusdemodlib
+  skip_cleanup: 'true'
