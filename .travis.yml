@@ -36,4 +36,5 @@ deploy:
     - build_windows/src/libhorus.dll
   on:
     repo: projecthorus/horusdemodlib
+    tags: true
   skip_cleanup: 'true'
