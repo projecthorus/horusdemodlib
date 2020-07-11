@@ -35,13 +35,11 @@ import scipy.interpolate
 # Default: 0 through 5 dB in 0.5 db steps, then up to 20 db in 1db steps.
 EBNO_RANGE = np.append(np.arange(0, 5, 0.5), np.arange(5, 20.5, 1))
 
-EBNO_RANGE = [0,5,10,20]
-
 # Modes to test.
-MODES = ['256bit']
+MODES = ['binary']
 
 # Baud rates to test:
-BAUD_RATE = 100
+BAUD_RATE = 1000
 
 # Test Length (frames)
 TEST_LENGTH = 100
