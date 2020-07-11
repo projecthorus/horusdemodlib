@@ -56,7 +56,7 @@ add_executable(drs232_ldpc drs232_ldpc.c)
 target_link_libraries(drs232_ldpc m horus ${CMAKE_REQUIRED_LIBRARIES})
 
 add_definitions(-DINTERLEAVER -DSCRAMBLER -DRUN_TIME_TABLES)
-add_executable(horus_gen_test_bits horus_gen_test_bits.c)
+add_executable(horus_gen_test_bits horus_gen_test_bits.c horus_l2.c)
 target_link_libraries(horus_gen_test_bits m horus)
 
 add_definitions(-DHORUS_L2_RX -DINTERLEAVER -DSCRAMBLER -DRUN_TIME_TABLES)

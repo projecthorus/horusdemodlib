@@ -19,6 +19,8 @@
 #include <getopt.h>
 
 #include "horus_l2.h"
+#include "H_128_384_23.h"
+#include "H_256_768_22.h"
 
 // TODO: Move these packet format definitions to somehwere common.
 
@@ -134,17 +136,14 @@ int main(int argc,char *argv[]) {
       int nbytes = sizeof(struct TBinaryPacket1);
       struct TBinaryPacket1 input_payload;
 
-      // TODO: Add Calculation of expected number of TX bytes based on LDPC code.
-      int num_tx_data_bytes = nbytes;
+      int num_tx_data_bytes = 4 + H_256_768_22_DATA_BYTES + H_256_768_22_PARITY_BYTES;
       unsigned char tx[num_tx_data_bytes];
 
       /* all zeros is nastiest sequence for demod before scrambling */
       memset(&input_payload, 0, nbytes);
       input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
 
-
-      // TODO: Replaced with LDPC Encoding
-      memcpy(tx, (unsigned char*)&input_payload, nbytes);
+      int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 1);
 
       int b;
       uint8_t tx_bit;
@@ -164,7 +163,7 @@ int main(int argc,char *argv[]) {
       struct TBinaryPacket2 input_payload;
 
       // TODO: Add Calculation of expected number of TX bytes based on LDPC code.
-      int num_tx_data_bytes = nbytes;
+      int num_tx_data_bytes = 4 + H_128_384_23_DATA_BYTES + H_128_384_23_PARITY_BYTES;
       unsigned char tx[num_tx_data_bytes];
 
       /* all zeros is nastiest sequence for demod before scrambling */
@@ -172,8 +171,7 @@ int main(int argc,char *argv[]) {
       input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
 
 
-      // TODO: Replaced with LDPC Encoding
-      memcpy(tx, (unsigned char*)&input_payload, nbytes);
+      int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 2);
 
       int b;
       uint8_t tx_bit;
