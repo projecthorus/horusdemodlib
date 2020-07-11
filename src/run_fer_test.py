@@ -39,10 +39,10 @@ EBNO_RANGE = np.append(np.arange(0, 5, 0.5), np.arange(5, 20.5, 1))
 MODES = ['binary']
 
 # Baud rates to test:
-BAUD_RATE = 1000
+BAUD_RATE = 100
 
 # Test Length (frames)
-TEST_LENGTH = 100
+TEST_LENGTH = 1000
 
 # Allow the loss of N frames, at the start or end of the recording.
 FRAME_IGNORE = 1
