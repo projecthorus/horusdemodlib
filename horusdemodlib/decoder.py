@@ -7,8 +7,8 @@ import struct
 import time
 from .delegates import *
 from .checksums import *
-from .payloads import HORUS_CUSTOM_FIELDS, HORUS_PAYLOAD_LIST, init_custom_field_list, init_payload_id_list
-
+from .payloads import init_custom_field_list, init_payload_id_list
+import horusdemodlib.payloads
 
 
 #
@@ -135,7 +135,7 @@ def decode_packet(data:bytes, packet_format:dict = None) -> dict:
         if _field_name == 'custom':
             # Attempt to interpret custom fields.
             # Note: This requires that the payload ID has been decoded prior to this field being parsed.
-            if _output['payload_id'] in HORUS_CUSTOM_FIELDS:
+            if _output['payload_id'] in horusdemodlib.payloads.HORUS_CUSTOM_FIELDS:
                 (_custom_data, _custom_str) = decode_custom_fields(_field_data, _output['payload_id'])
 
                 # Add custom fields to string

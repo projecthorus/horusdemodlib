@@ -274,6 +274,13 @@ def init_custom_field_list(filename="custom_field_list.json"):
         HORUS_CUSTOM_FIELDS = read_custom_field_list(filename=filename)
 
 
+def update_payload_lists(payload_list, custom_field_list):
+    """ Helper function to get updated lists into the right namespace """
+    global HORUS_PAYLOAD_LIST, HORUS_CUSTOM_FIELDS
+    HORUS_PAYLOAD_LIST = payload_list
+    HORUS_CUSTOM_FIELDS = custom_field_list
+
+
 if __name__ == "__main__":
 
     # Setup Logging

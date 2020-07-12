@@ -5,7 +5,7 @@
 import struct
 import time
 
-from .payloads import HORUS_PAYLOAD_LIST, HORUS_CUSTOM_FIELDS
+import horusdemodlib.payloads
 
 # Payload ID
 
@@ -17,8 +17,8 @@ def decode_payload_id(data: int) -> str:
     if type(data) != int:
         return ValueError("payload_id - Invalid input type.")
 
-    if data in HORUS_PAYLOAD_LIST:
-        _str = HORUS_PAYLOAD_LIST[data]
+    if data in horusdemodlib.payloads.HORUS_PAYLOAD_LIST:
+        _str = horusdemodlib.payloads.HORUS_PAYLOAD_LIST[data]
     else:
         _str = "UNKNOWN_PAYLOAD_ID"
 
@@ -155,10 +155,10 @@ def decode_field(field_type:str, data):
 def decode_custom_fields(data:bytes, payload_id:str):
     """ Attempt to decode custom field data from the 9-byte custom section of a 32-byte payload """
 
-    if payload_id not in HORUS_CUSTOM_FIELDS:
+    if payload_id not in horusdemodlib.payloads.HORUS_CUSTOM_FIELDS:
         raise ValueError(f"Custom Field Decoder - Unknown payload ID {payload_id}")
 
-    _custom_field = HORUS_CUSTOM_FIELDS[payload_id]
+    _custom_field = horusdemodlib.payloads.HORUS_CUSTOM_FIELDS[payload_id]
     _struct = _custom_field['struct']
     _struct_len = struct.calcsize(_struct)
     _field_names = _custom_field['fields']
@@ -213,6 +213,7 @@ if __name__ == "__main__":
         ['battery_5v_byte', 0, "0.00"],
         ['battery_5v_byte', 128, "2.51"],
         ['battery_5v_byte', 255, "5.00"],
+        ['payload_id', 0, '4FSKTEST']
     ]
 
     for _test in tests:
