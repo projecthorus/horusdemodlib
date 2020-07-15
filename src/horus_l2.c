@@ -11,7 +11,7 @@
 
   1/ Unit test on a PC:
 
-     $ gcc horus_l2.c -o horus_l2 -Wall -DHORUS_L2_UNITTEST
+     $ gcc horus_l2.c golay23.c H_128_384_23.c H_256_768_22.c mpdecode_core.c phi0.c -o horus_l2 -Wall -DHORUS_L2_UNITTEST
      $ ./horus_l2
 
      test 0: 22 bytes of payload data BER: 0.00 errors: 0
@@ -49,7 +49,7 @@
    
   5/ Unit testing interleaver:
 
-    $ gcc horus_l2.c golay23.c -o horus_l2 -Wall -DINTERLEAVER -DTEST_INTERLEAVER -DSCRAMBLER
+    $ gcc horus_l2.c golay23.c H_128_384_23.c H_256_768_22.c mpdecode_core.c phi0.c -o horus_l2 -Wall -DINTERLEAVER -DTEST_INTERLEAVER -DSCRAMBLER
 
   6/ Compile for use as decoder called by fsk_horus.m and fsk_horus_stream.m:
 
@@ -559,6 +559,7 @@ void interleave(unsigned char *inout, int nbytes, int dir)
 #ifdef TEST_INTERLEAVER
 int main(void) {
     int nbytes = 43;
+    //int nbytes = 63; // v2 large packet
     unsigned char inout[nbytes];
     unsigned char inter[nbytes];
     unsigned char incopy[nbytes];
@@ -747,6 +748,7 @@ int test_sending_bytes(int nbytes, float ber, int error_pattern) {
 /* unit test designed to run on a PC */
 
 int main(void) {
+    printf("Horus v1 length packets (22 bytes)\n");
     printf("test 0: BER: 0.00 ...........: %d\n", test_sending_bytes(22, 0.00, 0));
     printf("test 1: BER: 0.01 ...........: %d\n", test_sending_bytes(22, 0.01, 0));
     printf("test 2: BER: 0.05 ...........: %d\n", test_sending_bytes(22, 0.05, 0));
@@ -765,6 +767,46 @@ int main(void) {
        codeword after interleaving */
 
     printf("test 5: 1 error every 12 bits: %d\n", test_sending_bytes(22, 0.00, 2));
+
+    printf("Horus v2 length packets (16 bytes)\n");
+    printf("test 0: BER: 0.00 ...........: %d\n", test_sending_bytes(16, 0.00, 0));
+    printf("test 1: BER: 0.01 ...........: %d\n", test_sending_bytes(16, 0.01, 0));
+    printf("test 2: BER: 0.05 ...........: %d\n", test_sending_bytes(16, 0.05, 0));
+
+    /* we expect this always to fail, as chance of > 3 errors/codeword is high */
+
+    printf("test 3: BER: 0.10 ...........: %d\n", test_sending_bytes(16, 0.10, 0));
+
+    /* -DINTERLEAVER will make this puppy pass */
+
+    printf("test 4: 8 bit burst error....: %d\n", test_sending_bytes(16, 0.00, 1));
+
+    /* Insert 2 errors in every codeword, the maximum correction
+       capability of a Golay (23,12) code. note this one will fail
+       with -DINTERLEAVER, as we can't guarantee <= 3 errors per
+       codeword after interleaving */
+
+    printf("test 5: 1 error every 12 bits: %d\n", test_sending_bytes(16, 0.00, 2));
+
+    printf("Horus v2 length packets (32 bytes)\n");
+    printf("test 0: BER: 0.00 ...........: %d\n", test_sending_bytes(32, 0.00, 0));
+    printf("test 1: BER: 0.01 ...........: %d\n", test_sending_bytes(32, 0.01, 0));
+    printf("test 2: BER: 0.05 ...........: %d\n", test_sending_bytes(32, 0.05, 0));
+
+    /* we expect this always to fail, as chance of > 3 errors/codeword is high */
+
+    printf("test 3: BER: 0.10 ...........: %d\n", test_sending_bytes(32, 0.10, 0));
+
+    /* -DINTERLEAVER will make this puppy pass */
+
+    printf("test 4: 8 bit burst error....: %d\n", test_sending_bytes(32, 0.00, 1));
+
+    /* Insert 2 errors in every codeword, the maximum correction
+       capability of a Golay (23,12) code. note this one will fail
+       with -DINTERLEAVER, as we can't guarantee <= 3 errors per
+       codeword after interleaving */
+
+    printf("test 5: 1 error every 12 bits: %d\n", test_sending_bytes(32, 0.00, 2));
     return 0;
 }
 #endif

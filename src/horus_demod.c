@@ -81,8 +81,11 @@ int main(int argc, char *argv[]) {
         
         switch(o) {
             case 'm':
-                if ((strcmp(optarg, "RTTY") == 0) || (strcmp(optarg, "rtty") == 0)) {
+                if ((strcmp(optarg, "RTTY") == 0) || (strcmp(optarg, "rtty") == 0) || (strcmp(optarg, "RTTY7N2") == 0) || (strcmp(optarg, "rtty7n2") == 0)) {
                     mode = HORUS_MODE_RTTY_7N2;
+                }
+                if ((strcmp(optarg, "RTTY7N1") == 0) || (strcmp(optarg, "rtty7n1") == 0)) {
+                    mode = HORUS_MODE_RTTY_7N1;
                 }
                 if ((strcmp(optarg, "RTTY8N2") == 0) || (strcmp(optarg, "rtty8n2") == 0)) {
                     mode = HORUS_MODE_RTTY_8N2;

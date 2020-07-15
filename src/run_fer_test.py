@@ -82,17 +82,17 @@ MODE_TYPES = {
     'binary': {
         'id': 0,
         'nfsk': 4,
-        'bits_per_frame': 360
+        'bits_per_frame': 22*8 # UNCODED bits per frame.
     },
     '128bit': {
         'id': 1,
         'nfsk': 2, # Convert back to 4FSK once 4FSK SD/LLRs are working.
-        'bits_per_frame': 384
+        'bits_per_frame': 128
     },
     '256bit': {
         'id': 1,
         'nfsk': 2, # Convert back to 4FSK once 4FSK SD/LLRs are working.
-        'bits_per_frame': 768
+        'bits_per_frame': 256
     }
 }
 

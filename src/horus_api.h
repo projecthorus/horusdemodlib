@@ -39,6 +39,7 @@
 #define HORUS_MODE_BINARY_V1            0  // Legacy binary mode
 #define HORUS_MODE_BINARY_V2_256BIT     1  // New 256-bit LDPC-encoded mode
 #define HORUS_MODE_BINARY_V2_128BIT     2  // New 128-bit LDPC-encoded mode
+#define HORUS_MODE_RTTY_7N1             89 // RTTY Decoding - 7N1
 #define HORUS_MODE_RTTY_7N2             90 // RTTY Decoding - 7N2
 #define HORUS_MODE_RTTY_8N2             91 // RTTY Decoding - 8N2
 
@@ -66,6 +67,7 @@
 
 // Settings for RTTY Decoder
 #define HORUS_RTTY_MAX_CHARS                    120
+#define HORUS_RTTY_7N1_NUM_BITS                 (HORUS_RTTY_MAX_CHARS*9)
 #define HORUS_RTTY_7N2_NUM_BITS                 (HORUS_RTTY_MAX_CHARS*10)
 #define HORUS_RTTY_8N2_NUM_BITS                 (HORUS_RTTY_MAX_CHARS*11)
 #define HORUS_RTTY_DEFAULT_BAUD                 100

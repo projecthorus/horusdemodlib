@@ -64,21 +64,17 @@ RTTY Unique word = $ characters, repeated at least 2 times.
 $ = (0)010 0100
 Reversed = 0010010(0)
 */
-
+int8_t uw_horus_rtty_7N1[] = {
+  0,0,1,0,0,1,0,1,0,
+  0,0,1,0,0,1,0,1,0,
+};
 int8_t uw_horus_rtty_7N2[] = {
   0,0,1,0,0,1,0,1,1,0,
   0,0,1,0,0,1,0,1,1,0,
-//  0,0,1,0,0,1,0,1,1,0, 
-//  0,0,1,0,0,1,0,1,1,0,
-//  0,0,1,0,0,1,0,1,1,0
 };
-
 int8_t uw_horus_rtty_8N2[] = {
   0,0,1,0,0,1,0,0,1,1,0,
   0,0,1,0,0,1,0,0,1,1,0,
-//  0,0,1,0,0,1,0,1,1,0,
-//  0,0,1,0,0,1,0,1,1,0,
-//  0,0,1,0,0,1,0,1,1,0
 };
 
 /* Unique word for Horus Binary V1 */
@@ -101,27 +97,72 @@ int8_t uw_horus_binary_v2[] = {
 
 
 struct horus *horus_open (int mode) {
-    assert((mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_BINARY_V1) || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
+    assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
 
+    if (mode == HORUS_MODE_RTTY_7N1){
+        // RTTY Mode defaults - 100 baud, no assumptions about tone spacing.
+        return horus_open_advanced(HORUS_MODE_RTTY_7N1, HORUS_RTTY_DEFAULT_BAUD, -1);
+    }
     if (mode == HORUS_MODE_RTTY_7N2){
         // RTTY Mode defaults - 100 baud, no assumptions about tone spacing.
         return horus_open_advanced(HORUS_MODE_RTTY_7N2, HORUS_RTTY_DEFAULT_BAUD, -1);
-    } else {
-        // Placeholder until we have more definition of the new modes.
+    } 
+    if (mode == HORUS_MODE_RTTY_8N2){
+        // RTTY Mode defaults - 100 baud, no assumptions about tone spacing.
+        return horus_open_advanced(HORUS_MODE_RTTY_8N2, HORUS_RTTY_DEFAULT_BAUD, -1);
+    } 
+    if (mode == HORUS_MODE_BINARY_V1){
         // Legacy Horus Binary Mode defaults - 100 baud, Disable mask estimation.
         return horus_open_advanced(HORUS_MODE_BINARY_V1, HORUS_BINARY_V1_DEFAULT_BAUD, -1);
+    }
+    if (mode == HORUS_MODE_BINARY_V2_128BIT){
+        // V2 Horus Binary Mode defaults - 100 baud, Disable mask estimation.
+        return horus_open_advanced(HORUS_MODE_BINARY_V2_128BIT, HORUS_BINARY_V2_128BIT_DEFAULT_BAUD, -1);
+    }
+    if (mode == HORUS_MODE_BINARY_V2_256BIT){
+        // V2 Horus Binary Mode defaults - 100 baud, Disable mask estimation.
+        return horus_open_advanced(HORUS_MODE_BINARY_V2_256BIT, HORUS_BINARY_V2_256BIT_DEFAULT_BAUD, -1);
     }
 }
 
 
 struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
     int i, mask;
-    assert((mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
+    assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
 
     struct horus *hstates = (struct horus *)malloc(sizeof(struct horus));
     assert(hstates != NULL);
 
     hstates->Fs = 48000; hstates->Rs = Rs; hstates->verbose = 0; hstates->mode = mode;
+
+    if (mode == HORUS_MODE_RTTY_7N1) {
+        // Parameter setup for RTTY 7N2 Reception
+
+        hstates->mFSK = 2;
+        hstates->max_packet_len = HORUS_RTTY_7N1_NUM_BITS;
+
+        // If baud rate not provided, use default
+        if (hstates->Rs == -1){
+            hstates->Rs = HORUS_RTTY_DEFAULT_BAUD;
+        }
+
+        if (tx_tone_spacing == -1){
+            // No tone spacing provided. Use dummy value to keep fsk modem happy, and disable mask estimation.
+            tx_tone_spacing = 2*hstates->Rs;
+            mask = 0;
+        } else {
+            mask = 1;
+        }
+
+        /* map UW to make it easier to search for */
+
+        for (i=0; i<sizeof(uw_horus_rtty_7N1); i++) {
+            hstates->uw[i] = 2*uw_horus_rtty_7N1[i] - 1;
+        }        
+        hstates->uw_len = sizeof(uw_horus_rtty_7N1);
+        hstates->uw_thresh = sizeof(uw_horus_rtty_7N1) - 2;  /* allow a few bit errors in UW detection */
+        hstates->rx_bits_len = hstates->max_packet_len;
+    }
 
     if (mode == HORUS_MODE_RTTY_7N2) {
         // Parameter setup for RTTY 7N2 Reception
@@ -742,6 +783,19 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
         
         /* OK we have found a unique word, and therefore the start of
            a packet, so lets try to extract valid packets */
+        if (hstates->mode == HORUS_MODE_RTTY_7N1) {
+            packet_detected = extract_horus_rtty(hstates, ascii_out, uw_loc, 7, 1);
+
+            if (packet_detected){
+                // If we have found a packet, advance the bits enough that we don't detect the
+                // same packet again, if it has more than 2x $$s.
+                // NEED TO CHECK THIS DOESN'T CAUSE SEGFAULTS!
+                for(i=0,j=100; i<100; i++,j++) {
+                    hstates->rx_bits[i] = hstates->rx_bits[j];
+                    hstates->soft_bits[i] = hstates->soft_bits[j];
+                }
+            }
+        }
 
         if (hstates->mode == HORUS_MODE_RTTY_7N2) {
             packet_detected = extract_horus_rtty(hstates, ascii_out, uw_loc, 7, 2);
@@ -817,6 +871,9 @@ int horus_get_max_demod_in(struct horus *hstates) {
 
 int horus_get_max_ascii_out_len(struct horus *hstates) {
     assert(hstates != NULL);
+    if (hstates->mode == HORUS_MODE_RTTY_7N1) {
+        return hstates->max_packet_len/9;     /* 7 bit ASCII, plus 3 sync bits */
+    }
     if (hstates->mode == HORUS_MODE_RTTY_7N2) {
         return hstates->max_packet_len/10;     /* 7 bit ASCII, plus 3 sync bits */
     }
