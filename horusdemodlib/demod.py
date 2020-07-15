@@ -62,6 +62,7 @@ class Mode(Enum):
     """
     BINARY = 0
     BINARY_V1 = 0
+    RTTY_7N1 = 89
     RTTY_7N2 = 90
     RTTY = 90
     RTTY_8N2 = 91
@@ -306,7 +307,7 @@ class HorusLib():
             data_out = (
                 b""  # check if bytes is just null and return an empty bytes instead
             )
-        elif (self.mode != Mode.RTTY_7N2) and (self.mode != Mode.RTTY_8N2):
+        elif (self.mode != Mode.RTTY_7N2) and (self.mode != Mode.RTTY_8N2) and (self.mode != Mode.RTTY_7N1):
             try:
                 data_out = bytes.fromhex(data_out.decode("ascii"))
             except ValueError:
@@ -368,6 +369,8 @@ if __name__ == "__main__":
 
     if sys.argv[1] == 'rtty7n2':
         mode = Mode.RTTY_7N2
+    elif sys.argv[1] == 'rtty7n1':
+        mode = Mode.RTTY_7N1
     elif sys.argv[1] == 'rtty8n2':
         mode = Mode.RTTY_8N2
     else:
