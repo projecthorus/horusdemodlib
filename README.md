@@ -17,6 +17,13 @@ The modem in this library can also decode the standard UKHAS RTTY telemetry used
 
 **If you're looking for a way to decode telemetry from a Horus Binary (or even an old-school RTTY) High-Altitude Balloon payload, read the [guides available here.](https://github.com/projecthorus/horusdemodlib/wiki#how-do-i-receive-it)**
 
+### Authors
+Written by: 
+* Python Library - Mark Jessop <vk5qi@rfhead.net>
+* FSK Modem - [David Rowe](http://rowetel.com)
+* FSK Modem Python Wrapper - [XSSFox](https://twitter.com/xssfox)
+* LDPC Codes - [Bill Cowley](http://lowsnr.org/)
+
 ## HorusDemodLib C Library
 This contains the demodulator portions of horuslib, which are written in C.
 
