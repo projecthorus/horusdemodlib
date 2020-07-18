@@ -47,9 +47,9 @@
 int main(int argc, char *argv[]) {
     struct   horus *hstates;
     struct   MODEM_STATS stats;
-    FILE    *fin,*fout;
+    FILE    *fin,*fout,*stats_outfile;
     int      i,j,Ndft,mode;
-    int      stats_ctr,stats_loop, stats_rate, verbose, crc_results;
+    int      stats_ctr,stats_loop, stats_rate, verbose, crc_results, stdout_stats;
     float    loop_time;
     int      enable_stats = 0;
     int      quadrature = 0;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     stats_loop = 0;
     stats_rate = 8;
     mode = -1;
-    verbose = crc_results = 0;
+    verbose = crc_results = stdout_stats = 0;
     
     int o = 0;
     int opt_idx = 0;
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
             {0, 0, 0, 0}
         };
         
-        o = getopt_long(argc,argv,"hvcqm:t::",long_opts,&opt_idx);
+        o = getopt_long(argc,argv,"hvcgqm:t::",long_opts,&opt_idx);
         
         switch(o) {
             case 'm':
@@ -118,7 +118,10 @@ int main(int argc, char *argv[]) {
                 break;    
             case 'c':
                 crc_results = 1;
-                break;    
+                break;   
+            case 'g':
+                stdout_stats = 1;
+                break;  
             case 'h':
             case '?':
                 goto helpmsg;
@@ -170,6 +173,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr," -t[r] --stats=[r]     Print out modem statistics to stderr in JSON.\n");
         fprintf(stderr,"                       r, if provided, sets the number of modem frames\n"
                        "                       between statistic printouts\n");
+        fprintf(stderr," -g                    Emit Stats on stdout instead of stderr\n");
         fprintf(stderr," -q                    use stereo (IQ) input\n");
         fprintf(stderr," -v                    verbose debug info\n");
         fprintf(stderr," -c                    display CRC results for each packet\n");
@@ -196,6 +200,12 @@ int main(int argc, char *argv[]) {
     if ((fin==NULL) || (fout==NULL)) {
         fprintf(stderr,"Couldn't open test vector files\n");
         exit(1);
+    }
+
+    if (stdout_stats){
+        stats_outfile = stdout;
+    } else {
+        stats_outfile = stderr;
     }
 
     /* end command line processing */
@@ -252,30 +262,30 @@ int main(int argc, char *argv[]) {
 
 	    /* Print standard 2FSK stats */
 
-            fprintf(stderr,"{\"EbNodB\": %2.2f,\t\"ppm\": %d,",stats.snr_est, (int)stats.clock_offset);
-            fprintf(stderr,"\t\"f1_est\":%.1f,\t\"f2_est\":%.1f",stats.f_est[0], stats.f_est[1]);
+            fprintf(stats_outfile,"{\"EbNodB\": %2.2f,\t\"ppm\": %d,",stats.snr_est, (int)stats.clock_offset);
+            fprintf(stats_outfile,"\t\"f1_est\":%.1f,\t\"f2_est\":%.1f",stats.f_est[0], stats.f_est[1]);
 
 	    /* Print 4FSK stats if in 4FSK mode */
 
             if (horus_get_mFSK(hstates) == 4) {
-                fprintf(stderr,",\t\"f3_est\":%.1f,\t\"f4_est\":%.1f", stats.f_est[2], stats.f_est[3]);
+                fprintf(stats_outfile,",\t\"f3_est\":%.1f,\t\"f4_est\":%.1f", stats.f_est[2], stats.f_est[3]);
             }
 	    
 	    /* Print the eye diagram */
 
-            fprintf(stderr,",\t\"eye_diagram\":[");
+            fprintf(stats_outfile,",\t\"eye_diagram\":[");
             for(i=0;i<stats.neyetr;i++){
-                fprintf(stderr,"[");
+                fprintf(stats_outfile,"[");
                 for(j=0;j<stats.neyesamp;j++){
-                    fprintf(stderr,"%f ",stats.rx_eye[i][j]);
-                    if(j<stats.neyesamp-1) fprintf(stderr,",");
+                    fprintf(stats_outfile,"%f ",stats.rx_eye[i][j]);
+                    if(j<stats.neyesamp-1) fprintf(stats_outfile,",");
                 }
-                fprintf(stderr,"]");
-                if(i<stats.neyetr-1) fprintf(stderr,",");
+                fprintf(stats_outfile,"]");
+                if(i<stats.neyetr-1) fprintf(stats_outfile,",");
             }
-            fprintf(stderr,"],");
+            fprintf(stats_outfile,"],");
 	    
-	    fprintf(stderr,"\"samp_fft\":[");
+	    fprintf(stats_outfile,"\"samp_fft\":[");
 
             #ifdef FIXME_LATER
             /* TODO: need a horus_ function to dig into modem spectrum */
@@ -293,13 +303,13 @@ int main(int argc, char *argv[]) {
 
  	    Ndft = 128;
 	    for(i=0; i<Ndft; i++) {
-		fprintf(stderr,"%f ", 0.0);
-		if(i<Ndft-1) fprintf(stderr,",");
+		fprintf(stats_outfile,"%f ", 0.0);
+		if(i<Ndft-1) fprintf(stats_outfile,",");
 	    }
             
             #endif
 
-	    fprintf(stderr,"]}\n");
+	    fprintf(stats_outfile,"]}\n");
             stats_ctr = stats_loop;
         }
         stats_ctr--;

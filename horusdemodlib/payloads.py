@@ -142,6 +142,8 @@ def init_payload_id_list(filename="payload_id_list.txt"):
     else:
         logging.warning("Could not download Payload ID List - attempting to use local version.")
         HORUS_PAYLOAD_LIST = read_payload_list(filename=filename)
+    
+    return HORUS_PAYLOAD_LIST
 
 
 
@@ -272,6 +274,8 @@ def init_custom_field_list(filename="custom_field_list.json"):
     else:
         logging.warning("Could not download Custom Field List - attempting to use local version.")
         HORUS_CUSTOM_FIELDS = read_custom_field_list(filename=filename)
+    
+    return HORUS_CUSTOM_FIELDS
 
 
 def update_payload_lists(payload_list, custom_field_list):

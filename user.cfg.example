@@ -1,0 +1,27 @@
+#
+# Horus Binary Uploader Example Configuration File
+#
+
+[user]
+# Your callsign -  used when uploading to the HabHub Tracker.
+callsign = YOUR_CALL_HERE
+
+# Your station latitude/longitude, which will show up on tracker.habhub.org.
+# These values must be in Decimal Degree format.
+# Leave the lat/lon at 0.0 if you do not wish your station plotted on the map,
+# or if you are uploading your position via other means (i.e. using chasemapper)
+station_lat = 0.0
+station_lon = 0.0
+# Radio/Antenna descriptions.
+# An optional short description of your radio/antenna setup.
+radio_comment = HorusDemodLib + Your Radio Description Here
+antenna_comment = Your Antenna Description Here
+
+
+[horus_udp]
+# Horus-UDP Message Output port. This is the preferred output for use with mapping systems
+# such as ChaseMapper.
+summary_port = 55672
+
+# OziMux UDP Broadcast port, for use with other mapping systems.
+ozimux_port = 55683

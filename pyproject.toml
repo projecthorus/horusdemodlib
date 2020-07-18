@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "horusdemodlib"
-version = "0.1.15"
+version = "0.1.16"
 description = "Project Horus HAB Telemetry Demodulators"
 authors = ["Mark Jessop"]
 license = "LGPL-2.1-or-later"
@@ -9,6 +9,7 @@ license = "LGPL-2.1-or-later"
 python = "^3.6"
 requests = "^2.24.0"
 crcmod = "^1.7"
+numpy = "^1.17"
 
 [tool.poetry.dev-dependencies]
 
