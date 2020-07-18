@@ -90,6 +90,8 @@ def decode_packet(data:bytes, packet_format:dict = None) -> dict:
         # Attempt to lookup the format based on the length of the data if it has not been provided.
         if len(data) in HORUS_LENGTH_TO_FORMAT:
             packet_format = HORUS_PACKET_FORMATS[HORUS_LENGTH_TO_FORMAT[len(data)]]
+        else:
+            raise ValueError(f"Unknown Packet Length ({len(data)}).")
 
 
     # Output dictionary
