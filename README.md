@@ -1,11 +1,21 @@
-# High Altitude Balloon (HAB) Telemetry Library
+# Project Horus's Telemetry Demodulator Library
 
-This library contains software used to encode and decode telemetry used by the Project Horus High-Altitude Balloon (HAB) project (amongst other users). This software was originally developed as part of the [codec2](https://github.com/drowe67/codec2) project, but as of 2020 has been broken out into this separate project, to keep codec2 targeted at low-level voice-codec and modem development.
+![Horus Binary Modem FFT](https://github.com/projecthorus/horusdemodlib/raw/master/doc/modem_fft.jpg)
+Above: Spectrogram of the Horus Binary 4-FSK modem signal.
 
-This library includes the following:
-* The 'HorusBinary' demodulator, a high performance 4FSK modem used for low-rate positional telemetry from HABs. More information on this modem can be found here: https://github.com/projecthorus/horusbinary  (This repository will eventually be re-worked to use this library)
-* The 'Wenet' demodulator, used to downlink imagery from HAB payloads. 
+## What is it?
+This repository contains:
+* libhorus - A C library containing a high performance 2/4-FSK-demodulator (originally developed as part of the [Codec2](https://github.com/drowe67/codec2) project by [David Rowe](http://rowetel.com)), along with Golay and LDPC forward-error correction algorithms.
+* horus_demod - A command-line version of the FSK demodulator.
+* horusdemodlib - A Python library which wraps libhorus, and provides additional functions to decode telemetry into formats suitable for uploading to the [Habhub tracker](http://tracker.habhub.org) and other services.
 
+In particular, this library provides a decoder for the 'Horus Binary' telemetry system, which is the primary tracking system used in [Project Horus's](https://www.areg.org.au/archives/category/activities/project-horus) High-Altitude Balloon launches.
+
+The modem in this library can also decode the standard UKHAS RTTY telemetry used on many other high-altitude balloon flights.
+
+**For the latest information on how and why to use this library, please visit the [wiki pages.](https://github.com/projecthorus/horusdemodlib/wiki)**
+
+**If you're looking for a way to decode telemetry from a Horus Binary (or even an old-school RTTY) High-Altitude Balloon payload, read the [guides available here.](https://github.com/projecthorus/horusdemodlib/wiki#how-do-i-receive-it)**
 
 ## HorusDemodLib C Library
 This contains the demodulator portions of horuslib, which are written in C.
@@ -56,9 +66,9 @@ $ pip install -e .
 
 ## Further Reading
 
-   Here are some links to projects and blog posts that use this code:
+Here are some links to projects and blog posts that use this code:
 
-   1. [Horus Binary](https://github.com/projecthorus/horusbinary) High Altitude Balloon (HAB) telemetry protocol, 3 second updates, works at 7dB lower SNR that RTTY.
+   1. [Horus-GUI](https://github.com/projecthorus/horus-gui) - A cross-platform high-altitude balloon telemetry decoder.
    1. [Testing HAB Telemetry, Horus binary waveform](http://www.rowetel.com/?p=5906)
-   1. [Wenet](https://github.com/projecthorus/wenet) - high speed SSTV images from balloons at the edge of space
+   1. [Wenet](https://github.com/projecthorus/wenet) - high speed SSTV images from balloons at the edge of space.
    1. [Wenet High speed SSTV images](http://www.rowetel.com/?p=5344)
