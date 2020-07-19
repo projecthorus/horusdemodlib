@@ -111,16 +111,18 @@ int main(int argc,char *argv[]) {
       int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(nbytes);
       unsigned char tx[num_tx_data_bytes];
 
+      uint16_t counter = 0;
+
       /* all zeros is nastiest sequence for demod before scrambling */
-
-      memset(&input_payload, 0, nbytes);
-      input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
-
-      horus_l2_encode_tx_packet(tx, (unsigned char*)&input_payload, nbytes);
-
-      int b;
-      uint8_t tx_bit;
       while(framecnt > 0){
+        memset(&input_payload, 0, nbytes);
+        input_payload.Counter = counter;
+        input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
+
+        horus_l2_encode_tx_packet(tx, (unsigned char*)&input_payload, nbytes);
+
+        int b;
+        uint8_t tx_bit;
           for(i=0; i<num_tx_data_bytes; i++) {
               for(b=0; b<8; b++) {
                   tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
@@ -129,6 +131,7 @@ int main(int argc,char *argv[]) {
               }
           }
           framecnt -= 1;
+          counter += 1;
       }
 
     } else if(horus_mode == 1){
