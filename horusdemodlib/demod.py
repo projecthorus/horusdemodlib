@@ -333,6 +333,11 @@ class HorusLib():
         )
         return frame
     
+    def set_estimator_limits(self, lower: float, upper: float):
+        """ Update the modems internal frequency estimator limits """
+        self.c_lib.horus_set_freq_est_limits(self.hstates, c_float(lower), c_float(upper))
+
+
     def add_samples(self, samples: bytes):
         """ Add samples to a input buffer, to pass on to demodulate when we have nin samples """
 
@@ -363,9 +368,10 @@ class HorusLib():
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 3:
-        raise ArgumentError("Usage python3 -m horusdemodlib.demod mode filename")
+    if len(sys.argv) != 4:
+        raise ArgumentError("Usage python3 -m horusdemodlib.demod mode filename sample_rate")
     filename = sys.argv[2]
+    rate = int(sys.argv[3])
 
     if sys.argv[1] == 'rtty7n2':
         mode = Mode.RTTY_7N2
@@ -394,7 +400,8 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG
     )
 
-    with HorusLib(mode=mode, verbose=False, callback=frame_callback, sample_rate=48000, rate=300) as horus:
+    with HorusLib(mode=mode, verbose=False, callback=frame_callback, sample_rate=rate, rate=100) as horus:
+        #horus.set_estimator_limits(10.0, 3000.0)
         with open(filename, "rb") as f:
             while True:
                 # Fixed read size - 2000 samples

@@ -921,7 +921,12 @@ void horus_get_modem_extended_stats (struct horus *hstates, struct MODEM_STATS *
 
     assert(hstates->mFSK <= MODEM_STATS_MAX_F_EST);
     for (i=0; i<hstates->mFSK; i++) {
-        stats->f_est[i] = hstates->fsk->f_est[i];
+        // Grab the appropriate frequency estimator data.
+        if (hstates->fsk->freq_est_type){
+            stats->f_est[i] = hstates->fsk->f2_est[i];
+        } else {
+            stats->f_est[i] = hstates->fsk->f_est[i];
+        }
     }
 }
 

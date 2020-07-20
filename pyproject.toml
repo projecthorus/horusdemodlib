@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "horusdemodlib"
-version = "0.1.16"
+version = "0.1.17"
 description = "Project Horus HAB Telemetry Demodulators"
 authors = ["Mark Jessop"]
 license = "LGPL-2.1-or-later"
