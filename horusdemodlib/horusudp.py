@@ -11,7 +11,8 @@ import socket
 
 
 def send_payload_summary(telemetry, port=55672, comment="HorusDemodLib"):
-    """ Send a payload summary message into the network via UDP broadcast.
+    """
+    Send a payload summary message into the network via UDP broadcast.
 
     Args:
     telemetry (dict): Telemetry dictionary to send.
@@ -71,6 +72,44 @@ def send_payload_summary(telemetry, port=55672, comment="HorusDemodLib"):
         logging.error("Horus UDP - Error sending Payload Summary: %s" % str(e))
 
 
+def send_ozimux_message(telemetry, port=55683):
+    """ 
+    Send an OziMux-compatible message via UDP broadcast, of the form:
+
+    TELEMETRY,HH:MM:SS,lat,lon,alt\n
+
+    """
+    try:
+        _sentence = f"TELEMETRY,{telemetry['time']},{telemetry['latitude']:.5f},{telemetry['longitude']:.5f},{telemetry['altitude']}\n"
+    except Exception as e:
+        logging.error(f"OziMux Message - Could not convert telemetry - {str(e)}")
+        return
+
+    try:
+        _ozisock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+
+        # Set up socket for broadcast, and allow re-use of the address
+        _ozisock.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
+        _ozisock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # SO_REUSEPORT doesn't work on all platforms, so catch the exception if it fails
+        try:
+            _ozisock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except:
+            pass
+        # Send!
+        try:
+            _ozisock.sendto(_sentence.encode('ascii'),('<broadcast>',port))
+        except socket.error as e:
+            logging.warning("OziMux Message - Send to broadcast address failed, sending to localhost instead.")
+            _ozisock.sendto(_sentence.encode('ascii'),('127.0.0.1',port))
+
+        _ozisock.close()
+        logging.debug(f"Sent Telemetry to OziMux ({port}): {sentence.strip()}")
+        return _sentence
+    except Exception as e:
+        logging.error(f"Failed to send OziMux packet: {str(e)}")
+
+
 if __name__ == "__main__":
     # Test script for the above functions
     from horusdemodlib.decoder import parse_ukhas_string
@@ -89,3 +128,5 @@ if __name__ == "__main__":
     print(_decoded)
 
     send_payload_summary(_decoded)
+
+    print(send_ozimux_message(_decoded))
