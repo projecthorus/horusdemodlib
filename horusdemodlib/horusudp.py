@@ -104,7 +104,7 @@ def send_ozimux_message(telemetry, port=55683):
             _ozisock.sendto(_sentence.encode('ascii'),('127.0.0.1',port))
 
         _ozisock.close()
-        logging.debug(f"Sent Telemetry to OziMux ({port}): {sentence.strip()}")
+        logging.debug(f"Sent Telemetry to OziMux ({port}): {_sentence.strip()}")
         return _sentence
     except Exception as e:
         logging.error(f"Failed to send OziMux packet: {str(e)}")
