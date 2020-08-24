@@ -1,11 +1,11 @@
 # HORUS BINARY PAYLOAD ID LIST
-# 2019-06-02
+# 2020-08-24
 #
 # Payload IDs 0 through 255 are available. If we get near this limit,
 # the payload format may need to be re-evaluated.
 #
 # Request a payload ID by either raising an issue, or submitting a pull request
-# on the horusbinary github page: https://github.com/projecthorus/horusbinary
+# on the horusdemodlib github page: https://github.com/projecthorus/horusdemodlib
 #
 0, 4FSKTEST
 1, HORUSBINARY
