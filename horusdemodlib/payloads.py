@@ -73,7 +73,7 @@ def read_payload_list(filename="payload_id_list.txt"):
     return payload_list
 
 
-def download_latest_payload_id_list(url=PAYLOAD_ID_LIST_URL, filename=None):
+def download_latest_payload_id_list(url=PAYLOAD_ID_LIST_URL, filename=None, timeout=5):
     """
     Attempt to download the latest payload ID list from Github, and parse into a dictionary. 
     Optionally, save it to a file.
@@ -81,7 +81,7 @@ def download_latest_payload_id_list(url=PAYLOAD_ID_LIST_URL, filename=None):
     # Download the list.
     try:
         logging.info("Attempting to download latest payload ID list from GitHub...")
-        _r = requests.get(url, timeout=10)
+        _r = requests.get(url, timeout=timeout)
     except Exception as e:
         logging.error("Unable to get latest payload ID list: %s" % str(e))
         return None
@@ -212,13 +212,13 @@ def grab_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, local_file="custom
     return True
 
 
-def download_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, filename=None):
+def download_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, filename=None, timeout=5):
     """ Attempt to download the latest custom field list from Github """
 
     # Download the list.
     try:
         logging.info("Attempting to download latest custom field list from GitHub...")
-        _r = requests.get(url, timeout=10)
+        _r = requests.get(url, timeout=timeout)
     except Exception as e:
         logging.error("Unable to get latest custom field list: %s" % str(e))
         return None
