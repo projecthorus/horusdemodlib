@@ -43,6 +43,16 @@ def send_payload_summary(telemetry, port=55672, comment="HorusDemodLib"):
 
         if 'snr' in telemetry:
             packet['snr'] = telemetry['snr']
+        
+        if 'satellites' in telemetry:
+            packet['sats'] = telemetry['satellites']
+        
+        if 'battery_voltage' in telemetry:
+            packet['batt_voltage'] = telemetry['battery_voltage']
+
+        if 'speed' in telemetry:
+            packet['speed'] = telemetry['speed']
+
 
         # Set up our UDP socket
         _s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

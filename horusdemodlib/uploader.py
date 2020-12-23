@@ -61,7 +61,7 @@ def main():
     parser.add_argument('-c', '--config', type=str, default='user.cfg', help="Configuration file to use. Default: user.cfg")
     parser.add_argument("--noupload", action="store_true", default=False, help="Disable Habitat upload.")
     parser.add_argument("--rtty", action="store_true", default=False, help="Expect only RTTY inputs, do not update payload lists.")
-    parser.add_argument("--log", type=str, default="telemetry.log", help="Write decoded telemetry to this log file.")
+    parser.add_argument("--log", type=str, default="none", help="Write decoded telemetry to this log file.")
     parser.add_argument("--debuglog", type=str, default="horusb_debug.log", help="Write debug log to this file.")
     parser.add_argument("--payload-list", type=str, default="payload_id_list.txt", help="List of known payload IDs.")
     parser.add_argument("--custom-fields", type=str, default="custom_field_list.json", help="List of payload Custom Fields")
@@ -85,6 +85,12 @@ def main():
     if user_config == None:
         logging.critical(f"Could not load {args.config}, exiting...")
         sys.exit(1)
+
+    if args.log != "none":
+        _logfile = open(args.log, 'a')
+        logging.info(f"Opened log file {args.log}.")
+    else:
+        _logfile = None
 
 
     if args.rtty == False:
@@ -148,6 +154,10 @@ def main():
                     _decoded_str = "$$" + data.split('$')[-1] + '\n'
                     habitat_uploader.add(_decoded_str)
 
+                    if _logfile:
+                        _logfile.write(_decoded_str)
+                        _logfile.flush()
+
                     logging.info(f"Decoded String (SNR {demod_stats.snr:.1f} dB): {_decoded_str[:-1]}")
 
                 except Exception as e:
@@ -179,6 +189,10 @@ def main():
 
                     # Upload to Habitat
                     habitat_uploader.add(_decoded['ukhas_str']+'\n')
+
+                    if _logfile:
+                        _logfile.write(_decoded['ukhas_str']+'\n')
+                        _logfile.flush()
 
                     logging.info(f"Decoded Binary Packet (SNR {demod_stats.snr:.1f} dB): {_decoded['ukhas_str']}")
                 except Exception as e:
