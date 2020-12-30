@@ -61,7 +61,7 @@ def main():
     parser.add_argument('-c', '--config', type=str, default='user.cfg', help="Configuration file to use. Default: user.cfg")
     parser.add_argument("--noupload", action="store_true", default=False, help="Disable Habitat upload.")
     parser.add_argument("--rtty", action="store_true", default=False, help="Expect only RTTY inputs, do not update payload lists.")
-    parser.add_argument("--log", type=str, default="none", help="Write decoded telemetry to this log file.")
+    parser.add_argument("--log", type=str, default="telemetry.log", help="Write decoded telemetry to this log file.")
     parser.add_argument("--debuglog", type=str, default="horusb_debug.log", help="Write debug log to this file.")
     parser.add_argument("--payload-list", type=str, default="payload_id_list.txt", help="List of known payload IDs.")
     parser.add_argument("--custom-fields", type=str, default="custom_field_list.json", help="List of payload Custom Fields")
