@@ -40,8 +40,16 @@ def decode_time_hms(data: bytes) -> str:
         raise ValueError(f"time_hms - Input has incorrect length ({len(data)}), should be 3.")
     
     _hour = int(data[0])
+    if _hour >= 24:
+        raise ValueError(f"time_hms - Hour value ({_hour}) out of range 0-23.")
+
     _minute = int(data[1])
+    if _minute >= 60:
+        raise ValueError(f"time_hms - Minute value ({_minute}) out of range 0-59.")
+
     _second = int(data[2])
+    if _second >= 60:
+        raise ValueError(f"time_hms - Second value ({_second}) out of range 0-59.")
 
     _str = f"{_hour:02d}:{_minute:02d}:{_second:02d}"
 
@@ -65,7 +73,7 @@ def decode_time_biseconds(data:int) -> str:
         raise ValueError("time_biseconds - Invalid input type.")
 
     if (data < 0) or data > 43200:
-        raise ValueError("time_biseconds - Input of of range (0-43200)")
+        raise ValueError("time_biseconds - Input out of range (0-43200)")
 
     _str = time.strftime("%H:%M:%S", time.gmtime(data*2))
 
@@ -80,6 +88,9 @@ def decode_degree_float(data:float) -> str:
     """
     if type(data) != float:
         raise ValueError("decimal_degrees - Invalid input type.")
+
+    if (data < -180.0) or (data > 180.0):
+        raise ValueError(f"decimal_degrees - Value ({data}) out of range -180 - 180.")
 
     return (data, f"{data:.5f}")
 
@@ -109,6 +120,9 @@ def decode_degree_fixed3(data:bytes) -> str:
     # Parse as a signed int.
     _value = struct.unpack('<i', _temp)[0]
     _value_degrees = _value * 1e-7
+
+    if (_value_degrees < -180.0) or (_value_degrees > 180.0):
+        raise ValueError(f"degree_fixed3 - Value ({_value_degrees}) out of range -180 - 180.")
 
     return (_value_degrees, f"{_value_degrees:.5f}")
 

@@ -80,7 +80,7 @@ HORUS_LENGTH_TO_FORMAT = {
     32: 'horus_binary_v2_32byte'
 }
 
-def decode_packet(data:bytes, packet_format:dict = None) -> dict:
+def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False) -> dict:
     """ 
     Attempt to decode a set of bytes based on a provided packet format.
 
@@ -113,7 +113,7 @@ def decode_packet(data:bytes, packet_format:dict = None) -> dict:
     # Check the Checksum
     _crc_ok = check_packet_crc(data, checksum=packet_format['checksum'])
 
-    if not _crc_ok:
+    if (not _crc_ok) and (not ignore_crc):
         raise ValueError("Decoder - CRC Failure.")
     else:
         _output['crc_ok'] = True
@@ -321,6 +321,32 @@ if __name__ == "__main__":
                 print(f"Input ({_format}): {str(_input)} - Caught Error: {str(e)}")
                 assert(_output == 'error')
 
+        # Binary packet tests that break various fields
+        tests = [
+            #                      ID  Seq---|  HH  MM  SS  Lat----------| Lon-----------| Alt---|
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', ''],
+            ['horus_binary_v1', b'\x01\x12\x00\x18\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x3c\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x3c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x35\x43\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x80\x34\xc3\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+        ]
+
+        for _test in tests:
+            _format = _test[0]
+            _input = _test[1]
+            _output = _test[2]
+
+            try:
+                _decoded = decode_packet(_input, ignore_crc=True)
+                print(f"Input ({_format}): {str(_input)} - Output: {_decoded['ukhas_str']}")
+                print(_decoded)
+                # Insert assert checks here.
+
+            except ValueError as e:
+                print(f"Input ({_format}): {str(_input)} - Caught Error: {str(e)}")
+                assert(_output == 'error')
+        
         # RTTY Decoder Tests
         tests = [
             '$$HORUS,6,06:43:16,0.000000,0.000000,0,0,0,1801,20*1DA2',
