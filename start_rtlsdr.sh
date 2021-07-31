@@ -7,7 +7,7 @@
 
 # Receive *centre* frequency, in Hz
 # Note: The SDR will be tuned to RXBANDWIDTH/2 below this frequency.
-RXFREQ=434660000
+RXFREQ=434200000
 
 # Receiver Gain. Set this to 0 to use automatic gain control, otherwise if running a
 # preamplifier, you may want to experiment with different gain settings to optimize
