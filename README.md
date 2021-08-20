@@ -35,8 +35,10 @@ $ git clone https://github.com/projecthorus/horusdemodlib.git
 $ cd horusdemodlib && mkdir build && cd build
 $ cmake ..
 $ make
-$ make install
+$ sudo make install
 ```
+
+Refer to the [install guide](https://github.com/projecthorus/horusdemodlib/wiki/1.2--Raspberry-Pi-'Headless'-RX-Guide) for a more complete guide, including what dependencies are required.
 
 ### Testing
 Unit tests for the various demodulators can be run using:
