@@ -42,7 +42,7 @@ struct TBinaryPacket0
     uint16_t    Checksum;    // CRC16-CCITT Checksum.
 }  __attribute__ ((packed));
 
-/* Horus Mode 1 (32-byte) Binary Packet */
+/* Horus v2 Mode 1 (32-byte) Binary Packet */
 struct TBinaryPacket1
 {
     uint16_t     PayloadID;
@@ -69,7 +69,7 @@ struct TBinaryPacket1
     uint16_t    Checksum;    // CRC16-CCITT Checksum.
 }  __attribute__ ((packed));
 
-/* Horus Mode 2 (16-byte) Binary Packet */
+/* Horus v2 Mode 2 (16-byte) Binary Packet (Not currently used) */
 struct TBinaryPacket2
 {
     uint8_t     PayloadID;
@@ -92,7 +92,7 @@ int main(int argc,char *argv[]) {
     int i, framecnt;
     int horus_mode = 0;
 
-    char usage[] = "usage: %s horus_mode numFrames\nMode 0 = Legacy 22-byte Golay FEC\nMode 1 = 32-byte LDPC FEC\nMode 2 = 16-byte LDPC FEC\n";
+    char usage[] = "usage: %s horus_mode numFrames\nMode 0 = Legacy 22-byte Golay FEC\nMode 1 = 32-byte Golay FEC\n";
 
     if (argc < 3) {
         fprintf(stderr, usage, argv[0]);
@@ -135,22 +135,27 @@ int main(int argc,char *argv[]) {
       }
 
     } else if(horus_mode == 1){
-      // 32-Byte LDPC Encoded mode.
       int nbytes = sizeof(struct TBinaryPacket1);
       struct TBinaryPacket1 input_payload;
-
-      int num_tx_data_bytes = 4 + H_256_768_22_DATA_BYTES + H_256_768_22_PARITY_BYTES;
+      int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(nbytes);
       unsigned char tx[num_tx_data_bytes];
 
+      uint16_t counter = 0;
+
       /* all zeros is nastiest sequence for demod before scrambling */
-      memset(&input_payload, 0, nbytes);
-      input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
-
-      int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 1);
-
-      int b;
-      uint8_t tx_bit;
       while(framecnt > 0){
+        memset(&input_payload, 0, nbytes);
+        input_payload.PayloadID = 257;
+        input_payload.Hours = 12;
+        input_payload.Minutes = 34;
+        input_payload.Seconds = 56;
+        input_payload.Counter = counter;
+        input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
+
+        horus_l2_encode_tx_packet(tx, (unsigned char*)&input_payload, nbytes);
+
+        int b;
+        uint8_t tx_bit;
           for(i=0; i<num_tx_data_bytes; i++) {
               for(b=0; b<8; b++) {
                   tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
@@ -159,35 +164,37 @@ int main(int argc,char *argv[]) {
               }
           }
           framecnt -= 1;
+          counter += 1;
       }
-    } else if(horus_mode == 2){
-      // 16-Byte LDPC Encoded mode.
-      int nbytes = sizeof(struct TBinaryPacket2);
-      struct TBinaryPacket2 input_payload;
+    // Leaving this in place unless we ever decide to do an LDPC mode.
+    // } else if(horus_mode == 2){
+    //   // 16-Byte LDPC Encoded mode.
+    //   int nbytes = sizeof(struct TBinaryPacket2);
+    //   struct TBinaryPacket2 input_payload;
 
-      // TODO: Add Calculation of expected number of TX bytes based on LDPC code.
-      int num_tx_data_bytes = 4 + H_128_384_23_DATA_BYTES + H_128_384_23_PARITY_BYTES;
-      unsigned char tx[num_tx_data_bytes];
+    //   // TODO: Add Calculation of expected number of TX bytes based on LDPC code.
+    //   int num_tx_data_bytes = 4 + H_128_384_23_DATA_BYTES + H_128_384_23_PARITY_BYTES;
+    //   unsigned char tx[num_tx_data_bytes];
 
-      /* all zeros is nastiest sequence for demod before scrambling */
-      memset(&input_payload, 0, nbytes);
-      input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
+    //   /* all zeros is nastiest sequence for demod before scrambling */
+    //   memset(&input_payload, 0, nbytes);
+    //   input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
 
 
-      int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 2);
+    //   int ldpc_tx_bytes = ldpc_encode_packet(tx, (unsigned char*)&input_payload, 2);
 
-      int b;
-      uint8_t tx_bit;
-      while(framecnt > 0){
-          for(i=0; i<num_tx_data_bytes; i++) {
-              for(b=0; b<8; b++) {
-                  tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
-                  fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
-                  fflush(stdout);
-              }
-          }
-          framecnt -= 1;
-      }
+    //   int b;
+    //   uint8_t tx_bit;
+    //   while(framecnt > 0){
+    //       for(i=0; i<num_tx_data_bytes; i++) {
+    //           for(b=0; b<8; b++) {
+    //               tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+    //               fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+    //               fflush(stdout);
+    //           }
+    //       }
+    //       framecnt -= 1;
+    //   }
     } else {
       fprintf(stderr, "Unknown Mode!");
     }
