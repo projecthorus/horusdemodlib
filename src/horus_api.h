@@ -37,14 +37,14 @@
       
 /* Horus API Modes */
 #define HORUS_MODE_BINARY_V1            0  // Legacy binary mode
-#define HORUS_MODE_BINARY_V2_256BIT     1  // New 256-bit LDPC-encoded mode
-#define HORUS_MODE_BINARY_V2_128BIT     2  // New 128-bit LDPC-encoded mode
+#define HORUS_MODE_BINARY_V2_256BIT     1  // New 256-bit Golay Encoded Mode
+#define HORUS_MODE_BINARY_V2_128BIT     2  // New 128-bit Golay Encoded Mode (Not used yet)
 #define HORUS_MODE_RTTY_7N1             89 // RTTY Decoding - 7N1
 #define HORUS_MODE_RTTY_7N2             90 // RTTY Decoding - 7N2
 #define HORUS_MODE_RTTY_8N2             91 // RTTY Decoding - 8N2
 
 
-// Settings for Legacy Horus Binary Mode (Golay Encoding)
+// Settings for Legacy Horus Binary Mode (Golay (23,12) encoding)
 #define HORUS_BINARY_V1_NUM_CODED_BITS             360
 #define HORUS_BINARY_V1_NUM_UNCODED_PAYLOAD_BYTES  22
 #define HORUS_BINARY_V1_DEFAULT_BAUD               100
@@ -53,17 +53,35 @@
                                                         // Note that mask estimation is turned off by default for 
                                                         // this mode, and hence this spacing is not used.
 
-// Settings for Horus Binary 256-bit mode (LDPC Encoding, r=1/3)
-#define HORUS_BINARY_V2_256BIT_NUM_CODED_BITS               (768+32)
+// Settings for Horus Binary 256-bit mode (Golay (23,12) encoding)
+#define HORUS_BINARY_V2_256BIT_NUM_CODED_BITS               520
 #define HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES    32
 #define HORUS_BINARY_V2_256BIT_DEFAULT_BAUD                 100
 #define HORUS_BINARY_V2_256BIT_DEFAULT_TONE_SPACING         270
 
-// Settings for Horus Binary 128-bit mode (LDPC Encoding, r=1/3)
-#define HORUS_BINARY_V2_128BIT_NUM_CODED_BITS                  (384+32)
+// Settings for Horus Binary 128-bit mode (Golay (23,12) encoding) - not used yet
+#define HORUS_BINARY_V2_128BIT_NUM_CODED_BITS                  272
 #define HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES       16
 #define HORUS_BINARY_V2_128BIT_DEFAULT_BAUD                    100
 #define HORUS_BINARY_V2_128BIT_DEFAULT_TONE_SPACING            270 
+
+
+#define HORUS_BINARY_V1V2_MAX_BITS      HORUS_BINARY_V2_256BIT_NUM_CODED_BITS 
+#define HORUS_BINARY_V1V2_MAX_UNCODED_BYTES   HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES
+
+// Not using LDPC any more...
+// // Settings for Horus Binary 256-bit mode (LDPC Encoding, r=1/3)
+// #define HORUS_BINARY_V2_256BIT_NUM_CODED_BITS               (768+32)
+// #define HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES    32
+// #define HORUS_BINARY_V2_256BIT_DEFAULT_BAUD                 100
+// #define HORUS_BINARY_V2_256BIT_DEFAULT_TONE_SPACING         270
+
+// // Settings for Horus Binary 128-bit mode (LDPC Encoding, r=1/3)
+// #define HORUS_BINARY_V2_128BIT_NUM_CODED_BITS                  (384+32)
+// #define HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES       16
+// #define HORUS_BINARY_V2_128BIT_DEFAULT_BAUD                    100
+// #define HORUS_BINARY_V2_128BIT_DEFAULT_TONE_SPACING            270 
+
 
 // Settings for RTTY Decoder
 #define HORUS_RTTY_MAX_CHARS                    120

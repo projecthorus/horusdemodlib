@@ -27,10 +27,10 @@ void horus_l2_decode_rx_packet(unsigned char *output_payload_data,
 
 unsigned short horus_l2_gen_crc16(unsigned char* data_p, unsigned char length);
 
-int ldpc_encode_packet(uint8_t *buff_mfsk, uint8_t *FSK, int mode);
+// int ldpc_encode_packet(uint8_t *buff_mfsk, uint8_t *FSK, int mode);
 
-void soft_unscramble(float *in, float* out, int nbits);
-void soft_deinterleave(float *in, float* out, int mode);
-void horus_ldpc_decode(uint8_t *payload, float *sd, int mode);
+// void soft_unscramble(float *in, float* out, int nbits);
+// void soft_deinterleave(float *in, float* out, int mode);
+// void horus_ldpc_decode(uint8_t *payload, float *sd, int mode);
 
 #endif

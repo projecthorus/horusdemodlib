@@ -77,7 +77,7 @@ int8_t uw_horus_rtty_8N2[] = {
   0,0,1,0,0,1,0,0,1,1,0,
 };
 
-/* Unique word for Horus Binary V1 */
+/* Unique word for Horus Binary V1 / V2 */
 
 int8_t uw_horus_binary_v1[] = {
     0,0,1,0,0,1,0,0,
@@ -85,19 +85,20 @@ int8_t uw_horus_binary_v1[] = {
 };
 
 
-/* Unique word for Horus Binary V2 128/256 bit modes (Last row in the 32x32 Hadamard matrix) */
+// Old LDPC-mode stuff.
+// /* Unique word for Horus Binary V2 128/256 bit modes (Last row in the 32x32 Hadamard matrix) */
 
-int8_t uw_horus_binary_v2[] = {
-    1, 0, 0, 1, 0, 1, 1, 0,  // 0x96
-    0, 1, 1, 0, 1, 0, 0, 1,  // 0x69
-    0, 1, 1, 0, 1, 0, 0, 1,  // 0x69
-    1, 0, 0, 1, 0, 1, 1, 0   // 0x96
-};
+// int8_t uw_horus_binary_v2[] = {
+//     1, 0, 0, 1, 0, 1, 1, 0,  // 0x96
+//     0, 1, 1, 0, 1, 0, 0, 1,  // 0x69
+//     0, 1, 1, 0, 1, 0, 0, 1,  // 0x69
+//     1, 0, 0, 1, 0, 1, 1, 0   // 0x96
+// };
 
 
 
 struct horus *horus_open (int mode) {
-    assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
+    assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) );  //|| (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
 
     if (mode == HORUS_MODE_RTTY_7N1){
         // RTTY Mode defaults - 100 baud, no assumptions about tone spacing.
@@ -115,20 +116,20 @@ struct horus *horus_open (int mode) {
         // Legacy Horus Binary Mode defaults - 100 baud, Disable mask estimation.
         return horus_open_advanced(HORUS_MODE_BINARY_V1, HORUS_BINARY_V1_DEFAULT_BAUD, -1);
     }
-    if (mode == HORUS_MODE_BINARY_V2_128BIT){
-        // V2 Horus Binary Mode defaults - 100 baud, Disable mask estimation.
-        return horus_open_advanced(HORUS_MODE_BINARY_V2_128BIT, HORUS_BINARY_V2_128BIT_DEFAULT_BAUD, -1);
-    }
-    if (mode == HORUS_MODE_BINARY_V2_256BIT){
-        // V2 Horus Binary Mode defaults - 100 baud, Disable mask estimation.
-        return horus_open_advanced(HORUS_MODE_BINARY_V2_256BIT, HORUS_BINARY_V2_256BIT_DEFAULT_BAUD, -1);
-    }
+    // if (mode == HORUS_MODE_BINARY_V2_128BIT){
+    //     // V2 Horus Binary Mode defaults - 100 baud, Disable mask estimation.
+    //     return horus_open_advanced(HORUS_MODE_BINARY_V2_128BIT, HORUS_BINARY_V2_128BIT_DEFAULT_BAUD, -1);
+    // }
+    // if (mode == HORUS_MODE_BINARY_V2_256BIT){
+    //     // V2 Horus Binary Mode defaults - 100 baud, Disable mask estimation.
+    //     return horus_open_advanced(HORUS_MODE_BINARY_V2_256BIT, HORUS_BINARY_V2_256BIT_DEFAULT_BAUD, -1);
+    // }
 }
 
 
 struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
     int i, mask;
-    assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
+    assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) );// || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
 
     struct horus *hstates = (struct horus *)malloc(sizeof(struct horus));
     assert(hstates != NULL);
@@ -226,7 +227,7 @@ struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
         // Parameter setup for the Legacy Horus Binary Mode (22 byte frames, Golay encoding)
 
         hstates->mFSK = 4;
-        hstates->max_packet_len = HORUS_BINARY_V1_NUM_CODED_BITS;
+        hstates->max_packet_len = HORUS_BINARY_V1V2_MAX_BITS;// HORUS_BINARY_V1_NUM_CODED_BITS;
 
         // If baud rate not provided, use default
         if (hstates->Rs == -1){
@@ -251,64 +252,64 @@ struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
         hstates->rx_bits_len = hstates->max_packet_len;
     }
 
-    if (mode == HORUS_MODE_BINARY_V2_256BIT) {
+    // if (mode == HORUS_MODE_BINARY_V2_256BIT) {
 
-        hstates->mFSK = 2;
-        hstates->max_packet_len = HORUS_BINARY_V2_256BIT_NUM_CODED_BITS ;
+    //     hstates->mFSK = 2;
+    //     hstates->max_packet_len = HORUS_BINARY_V2_256BIT_NUM_CODED_BITS ;
 
-        // If baud rate not provided, use default
-        if (hstates->Rs == -1){
-            hstates->Rs = HORUS_BINARY_V2_256BIT_DEFAULT_BAUD;
-        }
+    //     // If baud rate not provided, use default
+    //     if (hstates->Rs == -1){
+    //         hstates->Rs = HORUS_BINARY_V2_256BIT_DEFAULT_BAUD;
+    //     }
 
-        if (tx_tone_spacing == -1){
-            // No tone spacing provided. Disable mask estimation, and use the default tone spacing value as a dummy value.
-            tx_tone_spacing = HORUS_BINARY_V2_256BIT_DEFAULT_TONE_SPACING;
-            mask = 0;
-        } else {
-            // Tone spacing provided, enable mask estimation.
-            mask = 1;
-        }
+    //     if (tx_tone_spacing == -1){
+    //         // No tone spacing provided. Disable mask estimation, and use the default tone spacing value as a dummy value.
+    //         tx_tone_spacing = HORUS_BINARY_V2_256BIT_DEFAULT_TONE_SPACING;
+    //         mask = 0;
+    //     } else {
+    //         // Tone spacing provided, enable mask estimation.
+    //         mask = 1;
+    //     }
 
-        for (i=0; i<sizeof(uw_horus_binary_v2); i++) {
-            hstates->uw[i] = 2*uw_horus_binary_v2[i] - 1;
-        }
-        hstates->uw_len = sizeof(uw_horus_binary_v2);
-        hstates->uw_thresh = sizeof(uw_horus_binary_v2) - 2; /* allow a few bit errors in UW detection */
-        // TODO: Any initialization required?
-        // horus_l2_init();
-        hstates->rx_bits_len = hstates->max_packet_len;
-    }
+    //     for (i=0; i<sizeof(uw_horus_binary_v2); i++) {
+    //         hstates->uw[i] = 2*uw_horus_binary_v2[i] - 1;
+    //     }
+    //     hstates->uw_len = sizeof(uw_horus_binary_v2);
+    //     hstates->uw_thresh = sizeof(uw_horus_binary_v2) - 2; /* allow a few bit errors in UW detection */
+    //     // TODO: Any initialization required?
+    //     // horus_l2_init();
+    //     hstates->rx_bits_len = hstates->max_packet_len;
+    // }
 
-    if (mode == HORUS_MODE_BINARY_V2_128BIT) {
-        // Parameter setup for the New v2 Horus Binary mode. 
+    // if (mode == HORUS_MODE_BINARY_V2_128BIT) {
+    //     // Parameter setup for the New v2 Horus Binary mode. 
 
-        hstates->mFSK = 2; // Lock to 2FSK until we have decent LLRs for 4FSK.
-        hstates->max_packet_len = HORUS_BINARY_V2_128BIT_NUM_CODED_BITS ;
+    //     hstates->mFSK = 2; // Lock to 2FSK until we have decent LLRs for 4FSK.
+    //     hstates->max_packet_len = HORUS_BINARY_V2_128BIT_NUM_CODED_BITS ;
 
-        // If baud rate not provided, use default
-        if (hstates->Rs == -1){
-            hstates->Rs = HORUS_BINARY_V2_128BIT_DEFAULT_BAUD;
-        }
+    //     // If baud rate not provided, use default
+    //     if (hstates->Rs == -1){
+    //         hstates->Rs = HORUS_BINARY_V2_128BIT_DEFAULT_BAUD;
+    //     }
 
-        if (tx_tone_spacing == -1){
-            // No tone spacing provided. Disable mask estimation, and use the default tone spacing value as a dummy value.
-            tx_tone_spacing = HORUS_BINARY_V2_128BIT_DEFAULT_TONE_SPACING;
-            mask = 0;
-        } else {
-            // Tone spacing provided, enable mask estimation.
-            mask = 1;
-        }
+    //     if (tx_tone_spacing == -1){
+    //         // No tone spacing provided. Disable mask estimation, and use the default tone spacing value as a dummy value.
+    //         tx_tone_spacing = HORUS_BINARY_V2_128BIT_DEFAULT_TONE_SPACING;
+    //         mask = 0;
+    //     } else {
+    //         // Tone spacing provided, enable mask estimation.
+    //         mask = 1;
+    //     }
 
-        for (i=0; i<sizeof(uw_horus_binary_v2); i++) {
-            hstates->uw[i] = 2*uw_horus_binary_v2[i] - 1;
-        }
-        hstates->uw_len = sizeof(uw_horus_binary_v2);
-        hstates->uw_thresh = sizeof(uw_horus_binary_v2) - 2; /* allow a few bit errors in UW detection */
-        // TODO: Any initialization required?
-        // horus_l2_init();
-        hstates->rx_bits_len = hstates->max_packet_len;
-    }
+    //     for (i=0; i<sizeof(uw_horus_binary_v2); i++) {
+    //         hstates->uw[i] = 2*uw_horus_binary_v2[i] - 1;
+    //     }
+    //     hstates->uw_len = sizeof(uw_horus_binary_v2);
+    //     hstates->uw_thresh = sizeof(uw_horus_binary_v2) - 2; /* allow a few bit errors in UW detection */
+    //     // TODO: Any initialization required?
+    //     // horus_l2_init();
+    //     hstates->rx_bits_len = hstates->max_packet_len;
+    // }
 
     // Create the FSK modedm struct. Note that the low-tone-frequency parameter is unused.
     #define UNUSED 1000
@@ -579,83 +580,6 @@ int extract_horus_binary_v1(struct horus *hstates, char hex_out[], int uw_loc) {
     return hstates->crc_ok;
 }
 
-
-int extract_horus_binary_v2_128(struct horus *hstates, char hex_out[], int uw_loc) {
-    const int nfield = 8;                      /* 8 bit binary                   */
-    int st = uw_loc;                           /* first bit of first char        */
-    int en = uw_loc + hstates->max_packet_len; /* last bit of max length packet  */
-
-    int      j, b, nout;
-    uint8_t  rxpacket[hstates->max_packet_len];
-    uint8_t  rxbyte, *pout;
- 
-    /* convert bits to a packet of bytes */
-    
-    pout = rxpacket; nout = 0;
-    
-    for (b=st; b<en; b+=nfield) {
-
-        /* assemble bytes MSB to LSB */
-
-        rxbyte = 0;
-        for(j=0; j<nfield; j++) {
-            assert(hstates->rx_bits[b+j] <= 1);
-            rxbyte <<= 1;
-            rxbyte |= hstates->rx_bits[b+j];
-        }
-        
-        /* build up output array */
-        
-        *pout++ = rxbyte;
-        nout++;
-    }
-
-    if (hstates->verbose) {
-        fprintf(stderr, "  extract_horus_binary_v2_128 nout: %d\n  Received Packet before decoding:\n  ", nout);
-        for (b=0; b<nout; b++) {
-            fprintf(stderr, "%02X", rxpacket[b]);
-        }
-        fprintf(stderr, "\n");
-    }
-
-    uint8_t payload_bytes[HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES];
-    float *softbits = hstates->soft_bits + uw_loc + sizeof(uw_horus_binary_v2);
-    horus_ldpc_decode( payload_bytes, softbits , HORUS_MODE_BINARY_V2_128BIT);
-
-    uint16_t crc_tx, crc_rx;
-    crc_rx = horus_l2_gen_crc16(payload_bytes, HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES-2);
-    crc_tx = (uint16_t)payload_bytes[HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES-2] +
-        ((uint16_t)payload_bytes[HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES-1]<<8);
-    
-    if (hstates->verbose) {
-        fprintf(stderr, "  extract_horus_binary_v2_128 crc_tx: %04X crc_rx: %04X\n", crc_tx, crc_rx);
-    }
-    
-    /* convert to ASCII string of hex characters */
-
-    hex_out[0] = 0;
-    char hex[3];
-    for (b=0; b<HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES; b++) {
-        sprintf(hex, "%02X", payload_bytes[b]);
-        strcat(hex_out, hex);
-    }
-   
-    if (hstates->verbose) {
-        fprintf(stderr, "  nout: %d Decoded Payload bytes:\n  %s\n", nout, hex_out);
-    }
-
-    /* With noise input to FSK demod we can get occasinal UW matches,
-       so a good idea to only pass on any packets that pass CRC */
-    
-    hstates->crc_ok = (crc_tx == crc_rx);
-    if ( hstates->crc_ok) {
-        hstates->total_payload_bits = HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES;
-    }
-
-    return hstates->crc_ok;
-
-}
-
 int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_loc) {
     const int nfield = 8;                      /* 8 bit binary                   */
     int st = uw_loc;                           /* first bit of first char        */
@@ -693,10 +617,9 @@ int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_lo
         }
         fprintf(stderr, "\n");
     }
-
+    
     uint8_t payload_bytes[HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES];
-    float *softbits = hstates->soft_bits + uw_loc + sizeof(uw_horus_binary_v2);
-    horus_ldpc_decode( payload_bytes, softbits , HORUS_MODE_BINARY_V2_256BIT);
+    horus_l2_decode_rx_packet(payload_bytes, rxpacket, HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES);
 
     uint16_t crc_tx, crc_rx;
     crc_rx = horus_l2_gen_crc16(payload_bytes, HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES-2);
@@ -717,7 +640,7 @@ int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_lo
     }
    
     if (hstates->verbose) {
-        fprintf(stderr, "  nout: %d Decoded Payload bytes:\n  %s\n", nout, hex_out);
+        fprintf(stderr, "  nout: %d Decoded Payload bytes:\n  %s", nout, hex_out);
     }
 
     /* With noise input to FSK demod we can get occasinal UW matches,
@@ -727,10 +650,161 @@ int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_lo
     if ( hstates->crc_ok) {
         hstates->total_payload_bits = HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES;
     }
-
     return hstates->crc_ok;
-
 }
+
+
+// int extract_horus_binary_v2_128(struct horus *hstates, char hex_out[], int uw_loc) {
+//     const int nfield = 8;                      /* 8 bit binary                   */
+//     int st = uw_loc;                           /* first bit of first char        */
+//     int en = uw_loc + hstates->max_packet_len; /* last bit of max length packet  */
+
+//     int      j, b, nout;
+//     uint8_t  rxpacket[hstates->max_packet_len];
+//     uint8_t  rxbyte, *pout;
+ 
+//     /* convert bits to a packet of bytes */
+    
+//     pout = rxpacket; nout = 0;
+    
+//     for (b=st; b<en; b+=nfield) {
+
+//         /* assemble bytes MSB to LSB */
+
+//         rxbyte = 0;
+//         for(j=0; j<nfield; j++) {
+//             assert(hstates->rx_bits[b+j] <= 1);
+//             rxbyte <<= 1;
+//             rxbyte |= hstates->rx_bits[b+j];
+//         }
+        
+//         /* build up output array */
+        
+//         *pout++ = rxbyte;
+//         nout++;
+//     }
+
+//     if (hstates->verbose) {
+//         fprintf(stderr, "  extract_horus_binary_v2_128 nout: %d\n  Received Packet before decoding:\n  ", nout);
+//         for (b=0; b<nout; b++) {
+//             fprintf(stderr, "%02X", rxpacket[b]);
+//         }
+//         fprintf(stderr, "\n");
+//     }
+
+//     uint8_t payload_bytes[HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES];
+//     float *softbits = hstates->soft_bits + uw_loc + sizeof(uw_horus_binary_v2);
+//     horus_ldpc_decode( payload_bytes, softbits , HORUS_MODE_BINARY_V2_128BIT);
+
+//     uint16_t crc_tx, crc_rx;
+//     crc_rx = horus_l2_gen_crc16(payload_bytes, HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES-2);
+//     crc_tx = (uint16_t)payload_bytes[HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES-2] +
+//         ((uint16_t)payload_bytes[HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES-1]<<8);
+    
+//     if (hstates->verbose) {
+//         fprintf(stderr, "  extract_horus_binary_v2_128 crc_tx: %04X crc_rx: %04X\n", crc_tx, crc_rx);
+//     }
+    
+//     /* convert to ASCII string of hex characters */
+
+//     hex_out[0] = 0;
+//     char hex[3];
+//     for (b=0; b<HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES; b++) {
+//         sprintf(hex, "%02X", payload_bytes[b]);
+//         strcat(hex_out, hex);
+//     }
+   
+//     if (hstates->verbose) {
+//         fprintf(stderr, "  nout: %d Decoded Payload bytes:\n  %s\n", nout, hex_out);
+//     }
+
+//     /* With noise input to FSK demod we can get occasinal UW matches,
+//        so a good idea to only pass on any packets that pass CRC */
+    
+//     hstates->crc_ok = (crc_tx == crc_rx);
+//     if ( hstates->crc_ok) {
+//         hstates->total_payload_bits = HORUS_BINARY_V2_128BIT_NUM_UNCODED_PAYLOAD_BYTES;
+//     }
+
+//     return hstates->crc_ok;
+
+// }
+
+// int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_loc) {
+//     const int nfield = 8;                      /* 8 bit binary                   */
+//     int st = uw_loc;                           /* first bit of first char        */
+//     int en = uw_loc + hstates->max_packet_len; /* last bit of max length packet  */
+
+//     int      j, b, nout;
+//     uint8_t  rxpacket[hstates->max_packet_len];
+//     uint8_t  rxbyte, *pout;
+ 
+//     /* convert bits to a packet of bytes */
+    
+//     pout = rxpacket; nout = 0;
+    
+//     for (b=st; b<en; b+=nfield) {
+
+//         /* assemble bytes MSB to LSB */
+
+//         rxbyte = 0;
+//         for(j=0; j<nfield; j++) {
+//             assert(hstates->rx_bits[b+j] <= 1);
+//             rxbyte <<= 1;
+//             rxbyte |= hstates->rx_bits[b+j];
+//         }
+        
+//         /* build up output array */
+        
+//         *pout++ = rxbyte;
+//         nout++;
+//     }
+
+//     if (hstates->verbose) {
+//         fprintf(stderr, "  extract_horus_binary_v2_256 nout: %d\n  Received Packet before decoding:\n  ", nout);
+//         for (b=0; b<nout; b++) {
+//             fprintf(stderr, "%02X", rxpacket[b]);
+//         }
+//         fprintf(stderr, "\n");
+//     }
+
+//     uint8_t payload_bytes[HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES];
+//     float *softbits = hstates->soft_bits + uw_loc + sizeof(uw_horus_binary_v2);
+//     horus_ldpc_decode( payload_bytes, softbits , HORUS_MODE_BINARY_V2_256BIT);
+
+//     uint16_t crc_tx, crc_rx;
+//     crc_rx = horus_l2_gen_crc16(payload_bytes, HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES-2);
+//     crc_tx = (uint16_t)payload_bytes[HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES-2] +
+//         ((uint16_t)payload_bytes[HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES-1]<<8);
+    
+//     if (hstates->verbose) {
+//         fprintf(stderr, "  extract_horus_binary_v2_256 crc_tx: %04X crc_rx: %04X\n", crc_tx, crc_rx);
+//     }
+    
+//     /* convert to ASCII string of hex characters */
+
+//     hex_out[0] = 0;
+//     char hex[3];
+//     for (b=0; b<HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES; b++) {
+//         sprintf(hex, "%02X", payload_bytes[b]);
+//         strcat(hex_out, hex);
+//     }
+   
+//     if (hstates->verbose) {
+//         fprintf(stderr, "  nout: %d Decoded Payload bytes:\n  %s\n", nout, hex_out);
+//     }
+
+//     /* With noise input to FSK demod we can get occasinal UW matches,
+//        so a good idea to only pass on any packets that pass CRC */
+    
+//     hstates->crc_ok = (crc_tx == crc_rx);
+//     if ( hstates->crc_ok) {
+//         hstates->total_payload_bits = HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES;
+//     }
+
+//     return hstates->crc_ok;
+
+// }
 
 int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quadrature) {
     int i, j, uw_loc, packet_detected;
@@ -825,6 +899,10 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
         }
         if (hstates->mode == HORUS_MODE_BINARY_V1) {
             packet_detected = extract_horus_binary_v1(hstates, ascii_out, uw_loc);
+            if (!packet_detected){
+                // Try v2 256 bit decoder instead
+                packet_detected = extract_horus_binary_v2_256(hstates, ascii_out, uw_loc);
+            }
             //#define DUMP_BINARY_PACKET
             #ifdef DUMP_BINARY_PACKET
             FILE *f = fopen("packetbits.txt", "wt"); assert(f != NULL);
@@ -835,12 +913,12 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
             exit(0);
             #endif
         }
-        if (hstates->mode == HORUS_MODE_BINARY_V2_128BIT){
-            packet_detected = extract_horus_binary_v2_128(hstates, ascii_out, uw_loc);
-        }
-        if (hstates->mode == HORUS_MODE_BINARY_V2_256BIT){
-            packet_detected = extract_horus_binary_v2_256(hstates, ascii_out, uw_loc);
-        }
+        // if (hstates->mode == HORUS_MODE_BINARY_V2_128BIT){
+        //     packet_detected = extract_horus_binary_v2_128(hstates, ascii_out, uw_loc);
+        // }
+        // if (hstates->mode == HORUS_MODE_BINARY_V2_256BIT){
+        //     packet_detected = extract_horus_binary_v2_256(hstates, ascii_out, uw_loc);
+        // }
     }
     return packet_detected;
 }
@@ -881,7 +959,8 @@ int horus_get_max_ascii_out_len(struct horus *hstates) {
         return hstates->max_packet_len/11;     /* 8 bit ASCII, plus 3 sync bits */
     }
     if (hstates->mode == HORUS_MODE_BINARY_V1) {
-        return (HORUS_BINARY_V1_NUM_UNCODED_PAYLOAD_BYTES*2+1);     /* Hexadecimal encoded */
+        //return (HORUS_BINARY_V1_NUM_UNCODED_PAYLOAD_BYTES*2+1);     /* Hexadecimal encoded */
+        return (HORUS_BINARY_V1V2_MAX_UNCODED_BYTES*2+1);
     }
     if (hstates->mode == HORUS_MODE_BINARY_V2_256BIT) {
         return (HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES*2+1);     /* Hexadecimal encoded */
