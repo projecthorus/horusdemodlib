@@ -75,3 +75,5 @@
 65, LUX3
 66, OH3VHH-4FSK
 67, SQ3KNL-4FSK
+# IDs for 32-byte payloads
+257, 4FSKTEST32

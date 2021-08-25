@@ -6,7 +6,7 @@ import logging
 import requests
 
 # Global payload list - Basic version
-HORUS_PAYLOAD_LIST = {0:'4FSKTEST', 1:'HORUSBINARY', 65535:'HORUSTEST'}
+HORUS_PAYLOAD_LIST = {0:'4FSKTEST', 1:'HORUSBINARY', 257:'4FSKTEST32', 65535:'HORUSTEST'}
 
 # URL for payload list
 PAYLOAD_ID_LIST_URL = "https://raw.githubusercontent.com/projecthorus/horusdemodlib/master/payload_id_list.txt"
@@ -31,6 +31,20 @@ HORUS_CUSTOM_FIELDS = {
             ["test_counter", "none"],
             ["test_int_field", "none"]
         ]
+    },
+    "4FSKTEST32": {
+        "struct": "<BBBBBBBBB",
+        "fields": [
+            ["test_field 1", "none"],
+            ["test_field 2", "none"],
+            ["test_field 3", "none"],
+            ["test_field 4", "none"],
+            ["test_field 5", "none"],
+            ["test_field 6", "none"],
+            ["test_field 7", "none"],
+            ["test_field 8", "none"],
+            ["test_field 9", "none"],
+        ]   
     }
 }
 

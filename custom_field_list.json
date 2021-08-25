@@ -17,5 +17,19 @@
         ["test_counter", "none"],
         ["test_int_field", "none"]
     ]
+},
+"4FSKTEST32": {
+    "struct": "<BBBBBBBBB",
+    "fields": [
+        ["test_field 1", "none"],
+        ["test_field 2", "none"],
+        ["test_field 3", "none"],
+        ["test_field 4", "none"],
+        ["test_field 5", "none"],
+        ["test_field 6", "none"],
+        ["test_field 7", "none"],
+        ["test_field 8", "none"],
+        ["test_field 9", "none"],
+    ]
 }
 }

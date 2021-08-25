@@ -65,6 +65,7 @@ def main():
     parser.add_argument("--debuglog", type=str, default="horusb_debug.log", help="Write debug log to this file.")
     parser.add_argument("--payload-list", type=str, default="payload_id_list.txt", help="List of known payload IDs.")
     parser.add_argument("--custom-fields", type=str, default="custom_field_list.json", help="List of payload Custom Fields")
+    parser.add_argument("--nodownload", action="store_true", default=False, help="Do not download new lists.")
 #   parser.add_argument("--ozimux", type=int, default=-1, help="Override user.cfg OziMux output UDP port. (NOT IMPLEMENTED)")
 #   parser.add_argument("--summary", type=int, default=-1, help="Override user.cfg UDP Summary output port. (NOT IMPLEMENTED)")
     parser.add_argument("-v", "--verbose", action="store_true", default=False, help="Verbose output (set logging level to DEBUG)")
@@ -94,13 +95,18 @@ def main():
 
 
     if args.rtty == False:
-        # Initialize Payload List
-        horusdemodlib.payloads.HORUS_PAYLOAD_LIST = init_payload_id_list(filename=args.payload_list)
 
+        if args.nodownload:
+            logging.info("Using local lists.")
+            horusdemodlib.payloads.HORUS_PAYLOAD_LIST = read_payload_list(filename=args.payload_list)
+            horusdemodlib.payloads.HORUS_CUSTOM_FIELDS = read_custom_field_list(filename=args.custom_fields)
+        else:
+            # Downlaod
+            horusdemodlib.payloads.HORUS_PAYLOAD_LIST = init_payload_id_list(filename=args.payload_list)
+            horusdemodlib.payloads.HORUS_CUSTOM_FIELDS = init_custom_field_list(filename=args.custom_fields)
+            
         logging.info(f"Payload list contains {len(list(horusdemodlib.payloads.HORUS_PAYLOAD_LIST.keys()))} entries.")
 
-        # Init Custom Fields List
-        horusdemodlib.payloads.HORUS_CUSTOM_FIELDS = init_custom_field_list(filename=args.custom_fields)
         logging.info(f"Custom Field list contains {len(list(horusdemodlib.payloads.HORUS_CUSTOM_FIELDS.keys()))} entries.")
 
     # Start the Habitat uploader thread.

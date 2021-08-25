@@ -149,6 +149,15 @@ int main(int argc,char *argv[]) {
         input_payload.Hours = 12;
         input_payload.Minutes = 34;
         input_payload.Seconds = 56;
+        input_payload.dummy1 = 1;
+        input_payload.dummy2 = 2;
+        input_payload.dummy3 = 3;
+        input_payload.dummy4 = 4;
+        input_payload.dummy5 = 5;
+        input_payload.dummy6 = 6;
+        input_payload.dummy7 = 7;
+        input_payload.dummy8 = 8;
+        input_payload.dummy9 = 9;
         input_payload.Counter = counter;
         input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
 
