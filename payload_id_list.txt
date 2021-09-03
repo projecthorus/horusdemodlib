@@ -1,8 +1,8 @@
 # HORUS BINARY PAYLOAD ID LIST
-# 2020-08-24
+# 2021-09-03
 #
-# Payload IDs 0 through 255 are available. If we get near this limit,
-# the payload format may need to be re-evaluated.
+# Payload IDs 0 through 255 are used by the v1 telemetry format (22 byte packet),
+# Payload IDs 256 through 65535 are used by the v2 telemetry format (32 byte packet).
 #
 # Request a payload ID by either raising an issue, or submitting a pull request
 # on the horusdemodlib github page: https://github.com/projecthorus/horusdemodlib
@@ -75,5 +75,7 @@
 65, LUX3
 66, OH3VHH-4FSK
 67, SQ3KNL-4FSK
+68, PE1PSI-4FSK
+69, SP6KZ-4FSK
 # IDs for 32-byte payloads
-257, 4FSKTEST32
+256, 4FSKTEST-V2
