@@ -499,7 +499,9 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc, int 
             
     /* make sure we don't overrun storage */
     
-    assert(nout <= horus_get_max_ascii_out_len(hstates));
+    if(nout > horus_get_max_ascii_out_len(hstates)){
+        return 0;
+    }
 
     hstates->crc_ok = crc_ok;
     

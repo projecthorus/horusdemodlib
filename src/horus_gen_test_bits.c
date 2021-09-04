@@ -145,7 +145,7 @@ int main(int argc,char *argv[]) {
       /* all zeros is nastiest sequence for demod before scrambling */
       while(framecnt > 0){
         memset(&input_payload, 0, nbytes);
-        input_payload.PayloadID = 257;
+        input_payload.PayloadID = 256;
         input_payload.Hours = 12;
         input_payload.Minutes = 34;
         input_payload.Seconds = 56;

@@ -32,7 +32,7 @@ HORUS_CUSTOM_FIELDS = {
             ["test_int_field", "none"]
         ]
     },
-    "4FSKTEST32": {
+    "4FSKTEST-V2": {
         "struct": "<BBBBBBBBB",
         "fields": [
             ["test_field 1", "none"],
@@ -147,14 +147,18 @@ def download_latest_payload_id_list(url=PAYLOAD_ID_LIST_URL, filename=None, time
 
 
 
-def init_payload_id_list(filename="payload_id_list.txt"):
+def init_payload_id_list(filename="payload_id_list.txt", nodownload=False):
     """ Initialise and update the local payload ID list. """
 
-    _list = download_latest_payload_id_list(filename=filename)
-    if _list:
-        HORUS_PAYLOAD_LIST = _list
+    if not nodownload:
+        _list = download_latest_payload_id_list(filename=filename)
+
+        if _list:
+            HORUS_PAYLOAD_LIST = _list
+        else:
+            logging.warning("Could not download Payload ID List - attempting to use local version.")
+            HORUS_PAYLOAD_LIST = read_payload_list(filename=filename)
     else:
-        logging.warning("Could not download Payload ID List - attempting to use local version.")
         HORUS_PAYLOAD_LIST = read_payload_list(filename=filename)
     
     return HORUS_PAYLOAD_LIST
@@ -280,13 +284,17 @@ def download_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, filename=None,
     return _custom_field_list
 
 
-def init_custom_field_list(filename="custom_field_list.json"):
+def init_custom_field_list(filename="custom_field_list.json", nodownload=False):
     """ Initialise and update the local custom field list """
-    _list = download_latest_custom_field_list(filename=filename)
-    if _list:
-        HORUS_CUSTOM_FIELDS = _list
+
+    if not nodownload:
+        _list = download_latest_custom_field_list(filename=filename)
+        if _list:
+            HORUS_CUSTOM_FIELDS = _list
+        else:
+            logging.warning("Could not download Custom Field List - attempting to use local version.")
+            HORUS_CUSTOM_FIELDS = read_custom_field_list(filename=filename)
     else:
-        logging.warning("Could not download Custom Field List - attempting to use local version.")
         HORUS_CUSTOM_FIELDS = read_custom_field_list(filename=filename)
     
     return HORUS_CUSTOM_FIELDS

@@ -269,7 +269,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Project Horus Binary Telemetry Decoder", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--test", action="store_true", default=False, help="Run unit tests.")
     parser.add_argument("--update", action="store_true", default=False, help="Download latest payload ID and custom fields files before continuing.")
-    parser.add_argument("--decode", type=str, default=None, help="Attempt to decode a hexadecial packet.")
+    parser.add_argument("--decode", type=str, default=None, help="Attempt to decode a hexadecial packet supplied as an argument.")
     parser.add_argument("-v", "--verbose", action="store_true", default=False, help="Verbose output (set logging level to DEBUG)")
     args = parser.parse_args()
 
@@ -284,8 +284,14 @@ if __name__ == "__main__":
     )
 
     if args.update:
+        # Download latest list from github.
         init_payload_id_list()
         init_custom_field_list()
+    else:
+        # Use whatever is available in the current directory
+        logging.info("Using existing payload/custom-field files.")
+        init_payload_id_list(nodownload=True)
+        init_custom_field_list(nodownload=True)
     
     if args.decode is not None:
         try:
@@ -303,7 +309,7 @@ if __name__ == "__main__":
             ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
             ['horus_binary_v2_16byte', b'\x01\x12\x02\x00\x02\xbc\xeb!AR\x10\x00\xff\x00\xe1\x7e', ''],
             #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
-            ['horus_binary_v2_32byte', b'\xFF\xFF\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe8\x82', '']
+            ['horus_binary_v2_32byte', b'\x00\x01\x02\x00\x0C\x22\x38\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\xB4\xC6', '']
         ]
 
         for _test in tests:
