@@ -62,12 +62,11 @@ class Mode(Enum):
     """
     BINARY = 0
     BINARY_V1 = 0
+    BINARY_V2 = 0
     RTTY_7N1 = 89
     RTTY_7N2 = 90
     RTTY = 90
     RTTY_8N2 = 91
-    BINARY_V2_256BIT = 1
-    BINARY_V2_128BIT = 2
 
 
 class Frame():
@@ -309,7 +308,8 @@ class HorusLib():
             )
         elif (self.mode != Mode.RTTY_7N2) and (self.mode != Mode.RTTY_8N2) and (self.mode != Mode.RTTY_7N1):
             try:
-                data_out = bytes.fromhex(data_out.decode("ascii"))
+                # Strip out any additional nulls.
+                data_out = bytes.fromhex(data_out.decode("ascii").rstrip('\0'))
             except ValueError:
                 logging.debug(data_out)
                 logging.error("Couldn't decode the hex from the modem")
