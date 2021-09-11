@@ -4,6 +4,7 @@
 import json
 import logging
 import requests
+import struct
 
 # Global payload list - Basic version
 HORUS_PAYLOAD_LIST = {0:'4FSKTEST', 1:'HORUSBINARY', 257:'4FSKTEST32', 65535:'HORUSTEST'}
@@ -12,6 +13,7 @@ HORUS_PAYLOAD_LIST = {0:'4FSKTEST', 1:'HORUSBINARY', 257:'4FSKTEST32', 65535:'HO
 PAYLOAD_ID_LIST_URL = "https://raw.githubusercontent.com/projecthorus/horusdemodlib/master/payload_id_list.txt"
 
 # Custom field data. 
+HORUS_CUSTOM_FIELD_LENGTH = 9
 HORUS_CUSTOM_FIELDS = {
     "HORUSTEST": {
         "struct": "<BbBfH",
@@ -191,11 +193,21 @@ def read_custom_field_list(filename="custom_field_list.json"):
             _data = _field_data[_payload]
 
             if ("struct" in _data) and ("fields" in _data):
-                _custom_field_list[_payload] = {
-                    "struct": _data["struct"],
-                    "fields": _data["fields"]
-                }
-                logging.debug(f"Loaded custom field data for {_payload}.")
+                # Check the struct value has the right length
+                try:
+                    _structsize = struct.calcsize(_data["struct"])
+
+                    if _structsize == HORUS_CUSTOM_FIELD_LENGTH:
+                        _custom_field_list[_payload] = {
+                            "struct": _data["struct"],
+                            "fields": _data["fields"]
+                        }
+                        logging.debug(f"Loaded custom field data for {_payload}.")
+                    else:
+                        logging.error(f"Struct field for {_payload} has incorrect length ({_structsize}).")
+                        
+                except Exception as e:
+                    logging.error(f"Could not parse custom field data for {_payload}: {str(e)}")
         
         return _custom_field_list
 
@@ -264,11 +276,23 @@ def download_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, filename=None,
             _data = _field_data[_payload]
 
             if ("struct" in _data) and ("fields" in _data):
-                _custom_field_list[_payload] = {
-                    "struct": _data["struct"],
-                    "fields": _data["fields"]
-                }
-                logging.debug(f"Loaded custom field data for {_payload}.")
+                # Check the struct value has the right length
+                try:
+                    _structsize = struct.calcsize(_data["struct"])
+
+                    if _structsize == HORUS_CUSTOM_FIELD_LENGTH:
+                        _custom_field_list[_payload] = {
+                            "struct": _data["struct"],
+                            "fields": _data["fields"]
+                        }
+                        logging.debug(f"Loaded custom field data for {_payload}.")
+                    else:
+                        logging.error(f"Struct field for {_payload} has incorrect length ({_structsize}).")
+
+                except Exception as e:
+                    logging.error(f"Could not parse custom field data for {_payload}: {str(e)}")
+
+
 
     except Exception as e:
         logging.error(f"Could not parse downloaded custom field list - {str(e)}")

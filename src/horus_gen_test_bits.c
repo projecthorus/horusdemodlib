@@ -58,14 +58,10 @@ struct TBinaryPacket1
     int8_t      Temp;        // Twos Complement Temp value.
     uint8_t     BattVoltage; // 0 = 0.5v, 255 = 2.0V, linear steps in-between.
     uint8_t     dummy1;      // Dummy values for user-configurable section.
-    uint8_t     dummy2;
-    uint8_t     dummy3;
-    uint8_t     dummy4;
-    uint8_t     dummy5;
-    uint8_t     dummy6;
-    uint8_t     dummy7;
-    uint8_t     dummy8;
-    uint8_t     dummy9;
+    float     dummy2;       // Float 
+    uint8_t     dummy3;     // battery voltage test
+    uint8_t     dummy4;     // divide by 10
+    uint16_t     dummy5;    // divide by 100
     uint16_t    Checksum;    // CRC16-CCITT Checksum.
 }  __attribute__ ((packed));
 
@@ -150,14 +146,10 @@ int main(int argc,char *argv[]) {
         input_payload.Minutes = 34;
         input_payload.Seconds = 56;
         input_payload.dummy1 = 1;
-        input_payload.dummy2 = 2;
-        input_payload.dummy3 = 3;
-        input_payload.dummy4 = 4;
-        input_payload.dummy5 = 5;
-        input_payload.dummy6 = 6;
-        input_payload.dummy7 = 7;
-        input_payload.dummy8 = 8;
-        input_payload.dummy9 = 9;
+        input_payload.dummy2 = 1.23456789;
+        input_payload.dummy3 = 200;
+        input_payload.dummy4 = 123;
+        input_payload.dummy5 = 1234;
         input_payload.Counter = counter;
         input_payload.Checksum = horus_l2_gen_crc16((unsigned char*)&input_payload, nbytes-2);
 

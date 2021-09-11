@@ -141,13 +141,39 @@ def decode_battery_5v_byte(data: int) -> str:
     return (_batt, f"{_batt:.2f}")
 
 
+def decode_divide_by_10(data: int) -> str:
+    """
+    Accepts an fixed-point integer, and returns it as its value divided by 10, as a string.
+    """
+    if type(data) != int:
+        raise ValueError("divide_by_10 - Invalid input type")
+    
+    _val = data/10.0
+
+    return (_val, f"{_val:.1f}")
+
+
+def decode_divide_by_100(data: int) -> str:
+    """
+    Accepts an fixed-point integer, and returns it as its value divided by 100, as a string.
+    """
+    if type(data) != int:
+        raise ValueError("divide_by_100 - Invalid input type")
+    
+    _val = data/100.0
+
+    return (_val, f"{_val:.2f}")
+
+
 delegate_list = {
     'payload_id': decode_payload_id,
     'time_hms': decode_time_hms,
     'time_biseconds': decode_time_biseconds,
     'degree_float': decode_degree_float,
     'degree_fixed3': decode_degree_fixed3,
-    'battery_5v_byte': decode_battery_5v_byte
+    'battery_5v_byte': decode_battery_5v_byte,
+    'divide_by_10': decode_divide_by_10,
+    'divide_by_100': decode_divide_by_100,
 }
 
 def decode_field(field_type:str, data):
@@ -158,7 +184,9 @@ def decode_field(field_type:str, data):
     else:
         if (field_type == 'none') or (field_type == 'None') or (field_type == None):
             # Basic datatype, just convert to a string using Pythons internal conversions.
-            if (type(data) == float) or (type(data) == int) or (type(data) == str):
+            if (type(data) == float):
+                return (data, f"{data:.6f}")
+            elif (type(data) == int) or (type(data) == str):
                 return (data, f"{data}")
             else:
                 raise ValueError(f"Data has unknown type ({str(type(data))}) and could not be decoded.")
@@ -227,7 +255,12 @@ if __name__ == "__main__":
         ['battery_5v_byte', 0, "0.00"],
         ['battery_5v_byte', 128, "2.51"],
         ['battery_5v_byte', 255, "5.00"],
-        ['payload_id', 0, '4FSKTEST']
+        ['payload_id', 0, '4FSKTEST'],
+        ['divide_by_10', 123, "12.3"],
+        ['divide_by_10', -456, "-45.6"],
+        ['divide_by_100', 123, "1.23"],
+        ['divide_by_100', -456, "-4.56"],
+
     ]
 
     for _test in tests:
