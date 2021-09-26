@@ -5,6 +5,12 @@
 #   Uses rtl_fm to receive a chunk of spectrum, and passes it into horus_demod.
 #
 
+
+# Change directory to the horusdemodlib directory.
+# If running as a different user, you will need to change this line
+cd /home/pi/horusdemodlib/
+
+
 # Receive *centre* frequency, in Hz
 # Note: The SDR will be tuned to RXBANDWIDTH/2 below this frequency.
 RXFREQ=434200000

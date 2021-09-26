@@ -7,6 +7,10 @@
 # 	Modem statistics are sent out via a new 'MODEM_STATS' UDP broadcast message every second.
 #
 
+# Change directory to the horusdemodlib directory.
+# If running as a different user, you will need to change this line
+cd /home/pi/horusdemodlib/
+
 # Receive requency, in Hz. This is the frequency the SDR is tuned to.
 RXFREQ=434195000
 
