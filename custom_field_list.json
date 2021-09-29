@@ -27,5 +27,15 @@
         ["test_field 4", "divide_by_10"],
         ["test_field 5", "divide_by_100"]
     ]
+},
+"MAGNU-V2": {
+    "struct": "<hHhHb",
+    "fields": [
+        ["Vertical", "divide_by_100"],
+        ["Lateral", "divide_by_100"],
+        ["Orthogonal", "divide_by_100"],
+        ["Travel", "divide_by_100"],
+        ["Heading", "divide_by_100"]
+    ]
 }
 }
