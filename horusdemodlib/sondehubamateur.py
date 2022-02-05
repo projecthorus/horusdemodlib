@@ -337,8 +337,6 @@ class SondehubAmateurUploader(object):
             "mobile": False,  # Hardcoded mobile=false setting - Mobile stations should be using Chasemapper.
         }
 
-        print(_position)
-
         _retries = 0
         _upload_success = False
 
