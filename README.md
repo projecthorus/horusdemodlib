@@ -48,6 +48,14 @@ $ cd build
 $ ctest
 ```
 
+### Updates
+In most cases, you can update this library by running:
+```
+$ git pull
+```
+and then following the build steps above from the `cd horusdemodlib` line.
+
+
 ### API Reference
 The main demodulator API is [horus_api.h](https://github.com/projecthorus/horusdemodlib/blob/master/src/horus_api.h). An example of it in use in a C program is available in [horus_demod.c](https://github.com/projecthorus/horusdemodlib/blob/master/src/horus_demod.c)
 
@@ -68,6 +76,21 @@ $ pip install horusdemodlib
 
 If you want to install directly from this repository, you can run:
 ```
+$ pip install -r requirements.txt
+$ pip install -e .
+```
+
+### Updating
+If you have installed horusdemodlib via pypi, then you can simply run:
+```
+$ pip install -U horusdemodlib
+```
+This will also install any new dependencies.
+
+If you have installed 'directly', then you will need to run:
+```
+$ git stash 
+$ git pull
 $ pip install -r requirements.txt
 $ pip install -e .
 ```

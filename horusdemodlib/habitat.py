@@ -62,6 +62,8 @@ class HabitatUploader(object):
         self.listener_antenna = listener_antenna
         self.position_uploaded = False
 
+        self.last_freq_hz = None
+
         self.callsign_init = False
         self.uuids = []
 
@@ -93,6 +95,11 @@ class HabitatUploader(object):
                 _user_call: {"time_created": _date, "time_uploaded": _date},
             },
         }
+
+        if self.last_freq_hz:
+            # Add in frequency information if we have it.
+            _data["receivers"][_user_call]["rig_info"] = {"frequency": self.last_freq_hz}
+
 
         # The URl to upload to.
         _url = f"{self.HABITAT_URL}{self.HABITAT_DB}/_design/payload_telemetry/_update/add_listener/{sha256(_sentence_b64).hexdigest()}"

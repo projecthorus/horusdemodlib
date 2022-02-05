@@ -182,6 +182,7 @@ def main():
                     # Add in frequency estimate, if we have been supplied a receiver frequency.
                     if args.freq_hz:
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
+                        habitat_uploader.last_freq_hz = _decoded['f_centre']
 
                     # Send via UDP
                     send_payload_summary(_decoded, port=user_config['summary_port'])
@@ -226,6 +227,7 @@ def main():
                     # Add in frequency estimate, if we have been supplied a receiver frequency.
                     if args.freq_hz:
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
+                        habitat_uploader.last_freq_hz = _decoded['f_centre']
 
                     # Send via UDP
                     send_payload_summary(_decoded, port=user_config['summary_port'])
