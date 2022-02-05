@@ -79,13 +79,15 @@ If you want to install directly from this repository, you can run:
 $ pip install -r requirements.txt
 $ pip install -e .
 ```
+(Note - this has some issues relating to setuptools currently... use pip)
 
 ### Updating
-If you have installed horusdemodlib via pypi, then you can simply run:
+If you have installed horusdemodlib via pypi, then you can run (from within your venv, if you are using one):
 ```
 $ pip install -U horusdemodlib
 ```
 This will also install any new dependencies.
+
 
 If you have installed 'directly', then you will need to run:
 ```
@@ -94,6 +96,7 @@ $ git pull
 $ pip install -r requirements.txt
 $ pip install -e .
 ```
+(Note - this has some issues relating to setuptools currently... use pip)
 
 
 ## Further Reading
