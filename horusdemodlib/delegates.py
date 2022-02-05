@@ -4,8 +4,10 @@
 
 import struct
 import time
-
+import datetime
+from dateutil.parser import parse
 import horusdemodlib.payloads
+
 
 # Payload ID
 
@@ -235,6 +237,41 @@ def decode_custom_fields(data:bytes, payload_id:str):
 
     return (_output_dict, _output_fields_str)
 
+
+def fix_datetime(datetime_str, local_dt_str=None):
+    """
+	Given a HH:MM:SS string from a telemetry sentence, produce a complete timestamp, using the current system time as a guide for the date.
+	"""
+
+    if local_dt_str is None:
+        _now = datetime.datetime.utcnow()
+    else:
+        _now = parse(local_dt_str)
+
+    # Are we in the rollover window?
+    if _now.hour == 23 or _now.hour == 0:
+        _outside_window = False
+    else:
+        _outside_window = True
+
+    # Parsing just a HH:MM:SS will return a datetime object with the year, month and day replaced by values in the 'default'
+    # argument.
+    _imet_dt = parse(datetime_str, default=_now)
+
+    if _outside_window:
+        # We are outside the day-rollover window, and can safely use the current zulu date.
+        return _imet_dt
+    else:
+        # We are within the window, and need to adjust the day backwards or forwards based on the sonde time.
+        if _imet_dt.hour == 23 and _now.hour == 0:
+            # Assume system clock running slightly fast, and subtract a day from the telemetry date.
+            _imet_dt = _imet_dt - datetime.timedelta(days=1)
+
+        elif _imet_dt.hour == 00 and _now.hour == 23:
+            # System clock running slow. Add a day.
+            _imet_dt = _imet_dt + datetime.timedelta(days=1)
+
+        return _imet_dt
 
 
 

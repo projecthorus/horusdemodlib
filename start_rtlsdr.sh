@@ -89,4 +89,6 @@ else
 fi
 
 # Start the receive chain.
-rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $SDR_RX_FREQ | $DECODER -q --stats=5 -g -m binary --fsk_lower=$FSK_LOWER --fsk_upper=$FSK_UPPER - - | python -m horusdemodlib.uploader $@
+# Note that we now pass in the SDR centre frequency ($SDR_RX_FREQ) and 'target' signal frequency ($RXFREQ)
+# to enable providing additional metadata to Habitat / Sondehub.
+rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $SDR_RX_FREQ | $DECODER -q --stats=5 -g -m binary --fsk_lower=$FSK_LOWER --fsk_upper=$FSK_UPPER - - | python -m horusdemodlib.uploader --freq_hz $SDR_RX_FREQ --freq_target_hz $RXFREQ $@

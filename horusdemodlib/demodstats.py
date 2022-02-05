@@ -56,6 +56,7 @@ class FSKDemodStats(object):
         # Output State variables.
         self.snr = -999.0
         self.fest = [0.0,0.0, 0.0,0.0]
+        self.fest_mean = 0.0
         self.fft = []
         self.ppm = 0.0
 
@@ -110,6 +111,8 @@ class FSKDemodStats(object):
                 self.fest[3] = _data['f4_est']
         else:
             self.fest = self.fest[:2]
+        
+        self.fest_mean = np.mean(self.fest)
 
         # Time-series data
         self.in_times = np.append(self.in_times, _time)

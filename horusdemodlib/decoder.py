@@ -98,7 +98,8 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
     _output = {
         'packet_format': packet_format,
         'crc_ok': False,
-        'payload_id': 0
+        'payload_id': 0,
+        'raw': codecs.encode(data, 'hex').decode().upper()
         }
     
     # Check the length provided in the packet format matches up with the length defined by the struct.
@@ -188,6 +189,7 @@ def parse_ukhas_string(sentence:str) -> dict:
     # Try and proceed through the following. If anything fails, we have a corrupt sentence.
     # Strip out any leading/trailing whitespace.
     _sentence = sentence.strip()
+    _raw = _sentence
 
     # First, try and find the start of the sentence, which always starts with '$$''
     _sentence = _sentence.split('$')[-1]
@@ -208,6 +210,7 @@ def parse_ukhas_string(sentence:str) -> dict:
     _fields = _telem.split(',')
     try:
         _callsign = _fields[0]
+        _sequence_number = int(_fields[1])
         _time = _fields[2]
         _latitude = float(_fields[3])
         _longitude = float(_fields[4])
@@ -245,16 +248,18 @@ def parse_ukhas_string(sentence:str) -> dict:
 
     # Produce a dict output which is compatible with the output of the binary decoder.
     _telem = {
+        'raw': _raw,
         'callsign': _callsign,
+        'sequence_number': _sequence_number,
         'time': _time,
         'latitude': _latitude,
         'longitude': _longitude,
         'altitude': _altitude,
-        'speed': -1,
-        'heading': -1,
-        'temp': -1,
-        'sats': -1,
-        'batt_voltage': -1
+        # 'speed': -1,
+        # 'heading': -1,
+        # 'temperature': -1,
+        # 'satellites': -1,
+        # 'battery_voltage': -1
     }
 
     return _telem

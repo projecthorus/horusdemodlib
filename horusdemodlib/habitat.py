@@ -90,7 +90,7 @@ class HabitatUploader(object):
                 )  # Convert back to a string to be serialisable
             },
             "receivers": {
-                _user_call: {"time_created": _date, "time_uploaded": _date,},
+                _user_call: {"time_created": _date, "time_uploaded": _date},
             },
         }
 

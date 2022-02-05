@@ -15,12 +15,14 @@ import traceback
 from configparser import RawConfigParser
 
 from .habitat import *
+from .sondehubamateur import *
 from .decoder import decode_packet, parse_ukhas_string
 from .payloads import *
 from .horusudp import send_payload_summary
 from .payloads import init_custom_field_list, init_payload_id_list
 from .demodstats import FSKDemodStats
 import horusdemodlib.payloads
+import horusdemodlib
 
 def read_config(filename):
     ''' Read in the user configuation file.'''
@@ -68,6 +70,8 @@ def main():
     parser.add_argument("--nodownload", action="store_true", default=False, help="Do not download new lists.")
 #   parser.add_argument("--ozimux", type=int, default=-1, help="Override user.cfg OziMux output UDP port. (NOT IMPLEMENTED)")
 #   parser.add_argument("--summary", type=int, default=-1, help="Override user.cfg UDP Summary output port. (NOT IMPLEMENTED)")
+    parser.add_argument("--freq_hz", type=float, default=None, help="Receiver IQ centre frequency in Hz, used in determine the absolute frequency of a telemetry burst.")
+    parser.add_argument("--freq_target_hz", type=float, default=None, help="Receiver 'target' frequency in Hz, used to add metadata to station position info.")
     parser.add_argument("-v", "--verbose", action="store_true", default=False, help="Verbose output (set logging level to DEBUG)")
     args = parser.parse_args()
 
@@ -110,18 +114,40 @@ def main():
         logging.info(f"Custom Field list contains {len(list(horusdemodlib.payloads.HORUS_CUSTOM_FIELDS.keys()))} entries.")
 
     # Start the Habitat uploader thread.
+
+    if args.freq_target_hz:
+        _listener_freq_str = f" ({args.freq_target_hz/1e6:.3f} MHz)"
+    else:
+        _listener_freq_str = ""
+
     habitat_uploader = HabitatUploader(
         user_callsign = user_config['user_call'],
         listener_lat = user_config['station_lat'],
         listener_lon = user_config['station_lon'],
-        listener_radio = user_config['radio_comment'],
+        listener_radio = user_config['radio_comment'] + _listener_freq_str,
         listener_antenna = user_config['antenna_comment'],
+        inhibit=args.noupload
+    )
+
+    if user_config['station_lat'] == 0.0 and user_config['station_lon'] == 0.0:
+        _sondehub_user_pos = None
+    else:
+        _sondehub_user_pos = [user_config['station_lat'], user_config['station_lon'], 0.0]
+
+    sondehub_uploader = SondehubAmateurUploader(
+        upload_rate = 2,
+        user_callsign = user_config['user_call'],
+        user_position = _sondehub_user_pos,
+        user_radio = user_config['radio_comment'],
+        user_antenna = user_config['antenna_comment'],
+        software_name = "horusdemodlib",
+        software_version = horusdemodlib.__version__,
         inhibit=args.noupload
     )
 
     logging.info("Using User Callsign: %s" % user_config['user_call'])
 
-    demod_stats = FSKDemodStats()
+    demod_stats = FSKDemodStats(peak_hold=True)
 
     logging.info("Started Horus Demod Uploader. Hit CTRL-C to exit.")
     # Main loop
@@ -153,12 +179,19 @@ def main():
                     _snr = demod_stats.snr
                     _decoded['snr'] = _snr
 
+                    # Add in frequency estimate, if we have been supplied a receiver frequency.
+                    if args.freq_hz:
+                        _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
+
                     # Send via UDP
                     send_payload_summary(_decoded, port=user_config['summary_port'])
 
                     # Upload the string to Habitat
                     _decoded_str = "$$" + data.split('$')[-1] + '\n'
                     habitat_uploader.add(_decoded_str)
+
+                    # Upload the string to Sondehub Amateur
+                    sondehub_uploader.add(_decoded)
 
                     if _logfile:
                         _logfile.write(_decoded_str)
@@ -190,11 +223,18 @@ def main():
                     _snr = demod_stats.snr
                     _decoded['snr'] = _snr
 
+                    # Add in frequency estimate, if we have been supplied a receiver frequency.
+                    if args.freq_hz:
+                        _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
+
                     # Send via UDP
                     send_payload_summary(_decoded, port=user_config['summary_port'])
 
                     # Upload to Habitat
                     habitat_uploader.add(_decoded['ukhas_str']+'\n')
+
+                    # Upload the string to Sondehub Amateur
+                    sondehub_uploader.add(_decoded)
 
                     if _logfile:
                         _logfile.write(_decoded['ukhas_str']+'\n')

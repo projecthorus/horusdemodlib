@@ -4,6 +4,7 @@
 
 [user]
 # Your callsign -  used when uploading to the HabHub Tracker.
+# Note that we now also upload to the experimental SondeHub Amateur DB as well by default.
 callsign = YOUR_CALL_HERE
 
 # Your station latitude/longitude, which will show up on tracker.habhub.org.

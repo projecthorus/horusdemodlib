@@ -79,9 +79,11 @@ fi
 # Note - these are somewhat hard-coded for this dual-RX application.
 RTTY_LOWER=$(echo "$RTTY_SIGNAL - $RXBANDWIDTH/2" | bc)
 RTTY_UPPER=$(echo "$RTTY_SIGNAL + $RXBANDWIDTH/2" | bc)
+RTTY_CENTRE=$(echo "$RXFREQ + $RTTY_SIGNAL" | bc)
 
 MFSK_LOWER=$(echo "$MFSK_SIGNAL - $RXBANDWIDTH/2" | bc)
 MFSK_UPPER=$(echo "$MFSK_SIGNAL + $RXBANDWIDTH/2" | bc)
+MFSK_CENTRE=$(echo "$RXFREQ + $MFSK_SIGNAL" | bc)
 
 echo "Using SDR Centre Frequency: $RXFREQ Hz."
 echo "Using RTTY estimation range: $RTTY_LOWER - $RTTY_UPPER Hz"
@@ -111,4 +113,6 @@ if [ "$STATS_OUTPUT" = "1" ]; then
 fi
 
 # Start the receive chain.
-rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ | tee >($DECODER -q --stats=5 -g -m RTTY --fsk_lower=$RTTY_LOWER --fsk_upper=$RTTY_UPPER - - | python -m horusdemodlib.uploader --rtty) >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK_LOWER --fsk_upper=$MFSK_UPPER - - | python -m horusdemodlib.uploader) > /dev/null
+# Note that we now pass in the SDR centre frequency ($RXFREQ) and 'target' signal frequency ($RTTY_CENTRE / $MFSK_CENTRE)
+# to enable providing additional metadata to Habitat / Sondehub.
+rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ | tee >($DECODER -q --stats=5 -g -m RTTY --fsk_lower=$RTTY_LOWER --fsk_upper=$RTTY_UPPER - - | python -m horusdemodlib.uploader --rtty --freq_hz $RXFREQ --freq_target_hz $RTTY_CENTRE ) >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK_LOWER --fsk_upper=$MFSK_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK_CENTRE ) > /dev/null
