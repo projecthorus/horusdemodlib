@@ -105,6 +105,8 @@
 95, Peanut127
 96, Flybag-4FSK
 97, SQ1FYB-4FSK
+98, W3YP
+99, KN6SPE
 # IDs for 32-byte payloads
 256, 4FSKTEST-V2
 257, OH3VHH-4FSK-V2
