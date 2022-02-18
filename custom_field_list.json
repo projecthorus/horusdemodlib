@@ -37,5 +37,14 @@
         ["Travel", "divide_by_100"],
         ["Heading", "divide_by_100"]
     ]
+},
+"HORUS-V2": {
+    "struct": "<hhBHxx",
+    "fields": [
+        ["ascent_rate", "divide_by_100"],
+        ["ext_temperature", "divide_by_10"],
+        ["ext_humidity", "none"],
+        ["ext_pressure", "divide_by_10"]
+    ]
 }
 }
