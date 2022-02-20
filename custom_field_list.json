@@ -19,13 +19,13 @@
     ]
 },
 "4FSKTEST-V2": {
-    "struct": "<BfBBH",
+    "comment": "Default custom fields for RS41ng",
+    "struct": "<hhBHxx",
     "fields": [
-        ["test_field 1", "none"],
-        ["test_field 2", "none"],
-        ["test_field 3", "battery_5v_byte"],
-        ["test_field 4", "divide_by_10"],
-        ["test_field 5", "divide_by_100"]
+        ["ascent_rate", "divide_by_100"],
+        ["ext_temperature", "divide_by_10"],
+        ["ext_humidity", "none"],
+        ["ext_pressure", "divide_by_10"]
     ]
 },
 "MAGNU-V2": {
@@ -39,6 +39,15 @@
     ]
 },
 "HORUS-V2": {
+    "struct": "<hhBHxx",
+    "fields": [
+        ["ascent_rate", "divide_by_100"],
+        ["ext_temperature", "divide_by_10"],
+        ["ext_humidity", "none"],
+        ["ext_pressure", "divide_by_10"]
+    ]
+},
+"VK5BRL-V2": {
     "struct": "<hhBHxx",
     "fields": [
         ["ascent_rate", "divide_by_100"],

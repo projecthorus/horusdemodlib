@@ -138,15 +138,25 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         if _field_name == 'custom':
             # Attempt to interpret custom fields.
             # Note: This requires that the payload ID has been decoded prior to this field being parsed.
+
             if _output['payload_id'] in horusdemodlib.payloads.HORUS_CUSTOM_FIELDS:
-                (_custom_data, _custom_str) = decode_custom_fields(_field_data, _output['payload_id'])
+                # If this payload has a specific custom field description, use that.
+                _custom_field_name = _output['payload_id']
+            else:
+                # Otherwise use the default from 4FSKTEST-V2, which matches
+                # the default fields from RS41ng
+                _custom_field_name = '4FSKTEST-V2'
+            
+            (_custom_data, _custom_str) = decode_custom_fields(_field_data, _custom_field_name)
 
-                # Add custom fields to string
-                _ukhas_fields.append(_custom_str)
+            # Add custom fields to string
+            _ukhas_fields.append(_custom_str)
 
-                # Add custom fields to output dict.
-                for _field in _custom_data:
-                    _output[_field] = _custom_data[_field]
+            # Add custom fields to output dict.
+            for _field in _custom_data:
+                _output[_field] = _custom_data[_field]
+
+
 
         # Ignore checksum field. (and maybe other fields?)
         elif _field_name not in ['checksum']:
@@ -314,7 +324,9 @@ if __name__ == "__main__":
             ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
             ['horus_binary_v2_16byte', b'\x01\x12\x02\x00\x02\xbc\xeb!AR\x10\x00\xff\x00\xe1\x7e', ''],
             #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
-            ['horus_binary_v2_32byte', b'\x00\x01\x02\x00\x0C\x22\x38\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\xB4\xC6', '']
+            ['horus_binary_v2_32byte', b'\x00\x01\x02\x00\x0C\x22\x38\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\xB4\xC6', ''],
+                        #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
+            ['horus_binary_v2_32byte_noident', b'\xff\xff\x02\x00\x0C\x22\x38\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x17\x1c', '']
         ]
 
         for _test in tests:

@@ -50,6 +50,27 @@ def check_packet_crc(data:bytes, checksum:str='crc16'):
         raise ValueError(f"Checksum - Unknown Checksym type {checksum}.")
 
 
+def add_packet_crc(data:bytes, checksum:str='crc16'):
+    """ 
+    Add a CRC onto the end of provided bytes
+
+    Support CRC types: CRC16-CCITT
+
+    """
+
+    if (checksum == 'crc16') or (checksum == 'CRC16') or (checksum == 'crc16-ccitt') or (checksum == 'CRC16-CCITT'):
+        # Calculate a CRC over the data
+        _crc16 = crcmod.predefined.mkCrcFun('crc-ccitt-false')
+        _calculated_crc = _crc16(data)
+
+        _packet_crc = struct.pack('<H', _calculated_crc)
+
+        return data + _packet_crc
+
+
+    else:
+        raise ValueError(f"Checksum - Unknown Checksym type {checksum}.")
+
 
 if __name__ == "__main__":
 
