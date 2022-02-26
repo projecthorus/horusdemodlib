@@ -117,7 +117,7 @@ class HabitatUploader(object):
             # Run the request.
             try:
                 _req = requests.put(
-                    _url, data=json.dumps(_data), timeout=self.upload_timeout
+                    _url, data=json.dumps(_data), timeout=(self.upload_timeout, 6.1)
                 )
             except Exception as e:
                 logging.error("Habitat - Upload Failed: %s" % str(e))

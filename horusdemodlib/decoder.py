@@ -156,6 +156,8 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             for _field in _custom_data:
                 _output[_field] = _custom_data[_field]
 
+            _output['custom_field_names'] = list(_custom_data.keys())
+
 
 
         # Ignore checksum field. (and maybe other fields?)

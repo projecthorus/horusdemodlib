@@ -198,6 +198,13 @@ class SondehubAmateurUploader(object):
         if "raw" in telemetry:
             _output["raw"] = telemetry["raw"]
 
+        # Add in any field names from the custom field section
+        if "custom_field_names" in telemetry:
+            for _custom_field_name in telemetry["custom_field_names"]:
+                if _custom_field_name in telemetry:
+                    _output[_custom_field_name] = telemetry[_custom_field_name]
+
+
         logging.debug(f"Sondehub Amateur Uploader - Generated Packet: {str(_output)}")
 
         return _output
