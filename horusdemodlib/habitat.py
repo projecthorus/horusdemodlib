@@ -39,6 +39,7 @@ class HabitatUploader(object):
         listener_lon=0.0,
         listener_radio="",
         listener_antenna="",
+        listener_upload_rate=3, # Hours
         queue_size=64,
         upload_timeout=10,
         upload_retries=5,
@@ -60,7 +61,22 @@ class HabitatUploader(object):
         self.listener_lon = listener_lon
         self.listener_radio = listener_radio
         self.listener_antenna = listener_antenna
+        self.listener_upload_rate = listener_upload_rate
         self.position_uploaded = False
+        self.last_listener_upload_time = 0
+
+        # Try and convert the supplied listener lat/lon to a float
+        # if this fails, just set the lat/lon to 0/0
+        try:
+            _lat = float(self.listener_lat)
+            _lon = float(self.listener_lon)
+
+            self.listener_lat = _lat
+            self.listener_lon = _lon
+        except:
+            logging.error("Could not parse listener lat/lon, setting both to 0.0")
+            self.listener_lat = 0.0
+            self.listener_lon = 0.0
 
         self.last_freq_hz = None
 
@@ -175,29 +191,24 @@ class HabitatUploader(object):
                 # Wait for a short time before checking the queue again.
                 time.sleep(0.5)
 
-            if not self.position_uploaded:
-                # Validate the lat/lon entries.
-                try:
-                    _lat = float(self.listener_lat)
-                    _lon = float(self.listener_lon)
+            # Listener position upload
+            if (
+                time.time() - self.last_listener_upload_time
+            ) > self.listener_upload_rate * 3600:
+                # Time to upload a listener postion
+                if (self.listener_lat != 0.0) or (self.listener_lon != 0.0):
+                    _success = self.uploadListenerPosition(
+                        self.user_callsign,
+                        self.listener_lat,
+                        self.listener_lon,
+                        self.listener_radio,
+                        self.listener_antenna,
+                    )
+                    if _success:
+                        logging.info(f"Habitat - Listener information uploaded. Re-uploading in {self.listener_upload_rate} hours.")
 
-                    if (_lat != 0.0) or (_lon != 0.0):
-                        _success = self.uploadListenerPosition(
-                            self.user_callsign,
-                            _lat,
-                            _lon,
-                            self.listener_radio,
-                            self.listener_antenna,
-                        )
-                    else:
-                        logging.warning("Listener position set to 0.0/0.0 - not uploading.")
-                
-                except Exception as e:
-                    logging.error("Error uploading listener position: %s" % str(e))
-
-                # Set this flag regardless if the upload worked.
-                # The user can trigger a re-upload.
-                self.position_uploaded = True
+                # Update the last upload time.
+                self.last_listener_upload_time = time.time()
 
 
         logging.info("Stopped Habitat Uploader Thread.")
@@ -320,7 +331,6 @@ class HabitatUploader(object):
         # post position to habitat
         resp = self.postListenerData(doc)
         if resp is True:
-            logging.info("Habitat - Listener information uploaded.")
             return True
         else:
             logging.error("Habitat - Unable to upload listener information.")
