@@ -99,9 +99,17 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         'packet_format': packet_format,
         'crc_ok': False,
         'payload_id': 0,
-        'raw': codecs.encode(data, 'hex').decode().upper()
+        'raw': codecs.encode(data, 'hex').decode().upper(),
         }
     
+    # Report the modulation type
+    if 'v1' in packet_format['name']:
+        _output['modulation'] = 'Horus Binary v1'
+    elif 'v2' in packet_format['name']:
+        _output['modulation'] = 'Horus Binary v2'
+    else:
+        _output['modulation'] = 'Horus Binary'
+
     # Check the length provided in the packet format matches up with the length defined by the struct.
     _struct_length = struct.calcsize(packet_format['struct'])
     if _struct_length != packet_format['length']:
@@ -261,6 +269,7 @@ def parse_ukhas_string(sentence:str) -> dict:
     # Produce a dict output which is compatible with the output of the binary decoder.
     _telem = {
         'raw': _raw,
+        'modulation': 'RTTY',
         'callsign': _callsign,
         'sequence_number': _sequence_number,
         'time': _time,

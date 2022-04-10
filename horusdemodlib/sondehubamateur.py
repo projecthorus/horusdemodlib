@@ -165,7 +165,11 @@ class SondehubAmateurUploader(object):
             self.log_debug("Offending datetime_dt: %s" % str(telemetry["time"]))
             return None
 
-        # Callsign
+        # Callsign - Break if this is an unknown payload ID.
+        if telemetry["callsign"] == "UNKNOWN_PAYLOAD_ID":
+            self.log_error("Not uploading telemetry from unknown payload ID. Is your payload ID list old?")
+            return None
+        
         _output['payload_callsign'] = telemetry["callsign"]
 
         # Frame Number
@@ -197,6 +201,9 @@ class SondehubAmateurUploader(object):
 
         if "raw" in telemetry:
             _output["raw"] = telemetry["raw"]
+
+        if "modulation" in telemetry:
+            _output["modulation"] = telemetry["modulation"]
 
         # Add in any field names from the custom field section
         if "custom_field_names" in telemetry:
