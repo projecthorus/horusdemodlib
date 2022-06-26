@@ -158,7 +158,7 @@ def main():
 
             if (data == ''):
                 # Empty line means stdin has been closed.
-                logging.info("Caught EOF, exiting.")
+                logging.critical("Caught EOF (rtl_fm / horus_demod processes have exited, maybe because there's no RTLSDR?), exiting.")
                 break
 
             # Otherwise, strip any newlines, and continue.
@@ -250,6 +250,7 @@ def main():
         logging.info("Caught CTRL-C, exiting.")
 
     habitat_uploader.close()
+    sondehub_uploader.close()
 
 if __name__ == "__main__":
     main()

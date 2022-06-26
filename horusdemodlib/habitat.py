@@ -232,7 +232,7 @@ class HabitatUploader(object):
         try:
             self.habitat_upload_queue.put_nowait(sentence)
         except Exception as e:
-            logging.error("Error adding sentence to queue: %s" % str(e))
+            logging.error("Habitat - Error adding sentence to queue, queue full.")
 
     def close(self):
         """ Shutdown uploader thread. """

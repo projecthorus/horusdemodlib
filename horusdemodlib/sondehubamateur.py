@@ -180,6 +180,10 @@ class SondehubAmateurUploader(object):
         _output["lon"] = telemetry["longitude"]
         _output["alt"] = telemetry["altitude"]
 
+        if (_output["lat"] == 0.0) and (_output["lon"] == 0.0):
+            self.log_error("Lat/Lon both 0.0 - not uploading telemetry.")
+            return None
+
         # # Optional Fields
         if "temperature" in telemetry:
             if telemetry["temperature"] > -273.15:
@@ -187,6 +191,10 @@ class SondehubAmateurUploader(object):
 
         if "satellites" in telemetry:
             _output["sats"] = telemetry["satellites"]
+
+            if _output["sats"] == 0:
+                self.log_error("Satellites field provided, and is 0. Not uploading due to potentially inaccurate position.")
+                return None
 
         if "battery_voltage" in telemetry:
             if telemetry["battery_voltage"] >= 0.0:
@@ -372,7 +380,8 @@ class SondehubAmateurUploader(object):
                     headers=headers,
                 )
             except Exception as e:
-                self.log_error("Upload Failed: %s" % str(e))
+                self.log_error("Station position upload failed: %s" % str(e))
+                self.last_user_position_upload = time.time()
                 return
 
             if _req.status_code == 200:
