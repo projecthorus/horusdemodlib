@@ -55,5 +55,16 @@
         ["ext_humidity", "none"],
         ["ext_pressure", "divide_by_10"]
     ]
+},
+"ON4IR": {
+    "comment": "ON4IR - UBA/IRM balloon custom fields",
+    "struct": "<HHBHHH",
+    "fields": [
+        ["geiger_cpm", "none"],
+        ["ext_temperature", "divide_by_10"],
+        ["ext_humidity", "none"],
+        ["ext_pressure", "divide_by_10"],
+        ["pulse_counts","none"]
+    ]
 }
 }
