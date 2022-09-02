@@ -66,5 +66,13 @@
         ["ext_pressure", "divide_by_10"],
         ["pulse_counts","none"]
     ]
+},
+"HORUSRADMON": {
+    "comment": "Horus Radiation Monitor Payload",
+    "struct": "<hxxxxxH",
+    "fields": [
+        ["ascent_rate", "divide_by_100"],
+        ["pulse_count","none"]
+    ]
 }
 }
