@@ -72,7 +72,7 @@
     "struct": "<hxxxxxH",
     "fields": [
         ["ascent_rate", "divide_by_100"],
-        ["pulse_count","none"]
+        ["pulse_counts","none"]
     ]
 }
 }
