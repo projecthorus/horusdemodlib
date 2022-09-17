@@ -53,6 +53,11 @@ def send_payload_summary(telemetry, port=55672, comment="HorusDemodLib"):
         if 'speed' in telemetry:
             packet['speed'] = telemetry['speed']
 
+        # Add in any field names from the custom field section
+        if "custom_field_names" in telemetry:
+            for _custom_field_name in telemetry["custom_field_names"]:
+                if _custom_field_name in telemetry:
+                    packet[_custom_field_name] = telemetry[_custom_field_name]
 
         # Set up our UDP socket
         _s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

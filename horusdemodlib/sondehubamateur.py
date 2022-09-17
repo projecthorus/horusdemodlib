@@ -213,6 +213,12 @@ class SondehubAmateurUploader(object):
         if "modulation" in telemetry:
             _output["modulation"] = telemetry["modulation"]
 
+        if "modulation_detail" in telemetry:
+            _output["modulation_detail"] = telemetry["modulation_detail"]
+
+        if "baud_rate" in telemetry:
+            _output["baud_rate"] = telemetry["baud_rate"]
+
         # Add in any field names from the custom field section
         if "custom_field_names" in telemetry:
             for _custom_field_name in telemetry["custom_field_names"]:

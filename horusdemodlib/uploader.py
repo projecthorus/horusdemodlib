@@ -72,6 +72,7 @@ def main():
 #   parser.add_argument("--summary", type=int, default=-1, help="Override user.cfg UDP Summary output port. (NOT IMPLEMENTED)")
     parser.add_argument("--freq_hz", type=float, default=None, help="Receiver IQ centre frequency in Hz, used in determine the absolute frequency of a telemetry burst.")
     parser.add_argument("--freq_target_hz", type=float, default=None, help="Receiver 'target' frequency in Hz, used to add metadata to station position info.")
+    parser.add_argument("--baud_rate", type=int, default=None, help="Modulation baud rate (Hz), used to add additional metadata info.")
     parser.add_argument("-v", "--verbose", action="store_true", default=False, help="Verbose output (set logging level to DEBUG)")
     args = parser.parse_args()
 
@@ -184,6 +185,10 @@ def main():
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
                         habitat_uploader.last_freq_hz = _decoded['f_centre']
 
+                    # Add in baud rate, if provided.
+                    if args.baud_rate:
+                        _decoded['baud_rate'] = int(args.baud_rate)
+
                     # Send via UDP
                     send_payload_summary(_decoded, port=user_config['summary_port'])
 
@@ -229,11 +234,15 @@ def main():
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
                         habitat_uploader.last_freq_hz = _decoded['f_centre']
 
+                    # Add in baud rate, if provided.
+                    if args.baud_rate:
+                        _decoded['baud_rate'] = int(args.baud_rate)
+
                     # Send via UDP
                     send_payload_summary(_decoded, port=user_config['summary_port'])
 
-                    # Upload to Habitat
-                    habitat_uploader.add(_decoded['ukhas_str']+'\n')
+                    # Do not upload Horus Binary packets to the Habitat endpoint.
+                    # habitat_uploader.add(_decoded['ukhas_str']+'\n')
 
                     # Upload the string to Sondehub Amateur
                     sondehub_uploader.add(_decoded)
