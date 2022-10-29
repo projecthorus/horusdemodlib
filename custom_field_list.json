@@ -68,7 +68,15 @@
     ]
 },
 "HORUSRADMON": {
-    "comment": "Horus Radiation Monitor Payload",
+    "comment": "Horus Radiation Monitor Payload, Photodiode",
+    "struct": "<hxxxxxH",
+    "fields": [
+        ["ascent_rate", "divide_by_100"],
+        ["pulse_counts","none"]
+    ]
+},
+"HORUSGEIGER": {
+    "comment": "Horus Radiation Monitor Payload, Geiger Counter",
     "struct": "<hxxxxxH",
     "fields": [
         ["ascent_rate", "divide_by_100"],
