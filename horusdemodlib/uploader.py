@@ -121,14 +121,15 @@ def main():
     else:
         _listener_freq_str = ""
 
-    habitat_uploader = HabitatUploader(
-        user_callsign = user_config['user_call'],
-        listener_lat = user_config['station_lat'],
-        listener_lon = user_config['station_lon'],
-        listener_radio = user_config['radio_comment'] + _listener_freq_str,
-        listener_antenna = user_config['antenna_comment'],
-        inhibit=args.noupload
-    )
+    # Habitat uploader disabled as of 2022-12-18
+    # habitat_uploader = HabitatUploader(
+    #     user_callsign = user_config['user_call'],
+    #     listener_lat = user_config['station_lat'],
+    #     listener_lon = user_config['station_lon'],
+    #     listener_radio = user_config['radio_comment'] + _listener_freq_str,
+    #     listener_antenna = user_config['antenna_comment'],
+    #     inhibit=args.noupload
+    # )
 
     if user_config['station_lat'] == 0.0 and user_config['station_lon'] == 0.0:
         _sondehub_user_pos = None
@@ -183,7 +184,7 @@ def main():
                     # Add in frequency estimate, if we have been supplied a receiver frequency.
                     if args.freq_hz:
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
-                        habitat_uploader.last_freq_hz = _decoded['f_centre']
+                        #habitat_uploader.last_freq_hz = _decoded['f_centre']
 
                     # Add in baud rate, if provided.
                     if args.baud_rate:
@@ -193,8 +194,8 @@ def main():
                     send_payload_summary(_decoded, port=user_config['summary_port'])
 
                     # Upload the string to Habitat
-                    _decoded_str = "$$" + data.split('$')[-1] + '\n'
-                    habitat_uploader.add(_decoded_str)
+                    #_decoded_str = "$$" + data.split('$')[-1] + '\n'
+                    #habitat_uploader.add(_decoded_str)
 
                     # Upload the string to Sondehub Amateur
                     sondehub_uploader.add(_decoded)
@@ -232,7 +233,7 @@ def main():
                     # Add in frequency estimate, if we have been supplied a receiver frequency.
                     if args.freq_hz:
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
-                        habitat_uploader.last_freq_hz = _decoded['f_centre']
+                        #habitat_uploader.last_freq_hz = _decoded['f_centre']
 
                     # Add in baud rate, if provided.
                     if args.baud_rate:
@@ -258,7 +259,7 @@ def main():
     except KeyboardInterrupt:
         logging.info("Caught CTRL-C, exiting.")
 
-    habitat_uploader.close()
+    #habitat_uploader.close()
     sondehub_uploader.close()
 
 if __name__ == "__main__":

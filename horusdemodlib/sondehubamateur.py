@@ -169,7 +169,10 @@ class SondehubAmateurUploader(object):
         if telemetry["callsign"] == "UNKNOWN_PAYLOAD_ID":
             self.log_error("Not uploading telemetry from unknown payload ID. Is your payload ID list old?")
             return None
-        
+
+        if '4FSKTEST' in telemetry['callsign']:
+            self.log_warning(f"Payload ID {telemetry['callsign']} is for testing purposes only, and should not be used on an actual flight. Refer here: https://github.com/projecthorus/horusdemodlib/wiki#how-do-i-transmit-it")
+
         _output['payload_callsign'] = telemetry["callsign"]
 
         # Frame Number
@@ -455,6 +458,13 @@ class SondehubAmateurUploader(object):
             line (str): Message to be logged.
         """
         logging.error("Sondehub Amateur Uploader - %s" % line)
+
+    def log_warning(self, line):
+        """ Helper function to log a warning message with a descriptive heading. 
+        Args:
+            line (str): Message to be logged.
+        """
+        logging.warning("Sondehub Amateur Uploader - %s" % line)
 
 
 if __name__ == "__main__":
