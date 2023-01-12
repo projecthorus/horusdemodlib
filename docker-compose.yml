@@ -1,18 +1,19 @@
-version: '3.7'
+version: '3.8'
 services:
   horusdemod:
     build:
       context: .
+      target: prod
     image: 'projecthorus/horusdemodlib:latest'
-    command: 'docker_rtlsdr.sh'
-      #read_only: true
+    #read_only: true
     device_cgroup_rules:
       - 'c 189:* rwm'
     env_file:
       - ./user.env
+    command: 'bash -c $${DEMODSCRIPT}'
     volumes:
       - type: 'tmpfs'
         target: '/tmp'
-      - './user.cfg:/home/pi/horusdemodlib/user.cfg'
+      - './user.cfg:/user.cfg'
       - '/dev/bus/usb:/dev/bus/usb'
 

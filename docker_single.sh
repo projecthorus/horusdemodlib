@@ -5,30 +5,6 @@
 #   Uses rtl_fm to receive a chunk of spectrum, and passes it into horus_demod.
 #
 
-# Check that the horus_demod decoder has been compiled.
-DECODER=./build/src/horus_demod
-if [ -f "$DECODER" ]; then
-    echo "Found horus_demod."
-else 
-    echo "ERROR - $DECODER does not exist - have you compiled it yet?"
-	exit 1
-fi
-
-# Check that bc is available on the system path.
-if echo "1+1" | bc > /dev/null; then
-    echo "Found bc."
-else 
-    echo "ERROR - Cannot find bc - Did you install it?"
-	exit 1
-fi
-
-# Use a local venv if it exists
-VENV_DIR=venv
-if [ -d "$VENV_DIR" ]; then
-    echo "Entering venv."
-    source $VENV_DIR/bin/activate
-fi
-
 # Calculate the SDR tuning frequency
 SDR_RX_FREQ=$(echo "$RXFREQ - $RXBANDWIDTH/2 - 1000" | bc)
 
@@ -58,4 +34,4 @@ fi
 # Start the receive chain.
 # Note that we now pass in the SDR centre frequency ($SDR_RX_FREQ) and 'target' signal frequency ($RXFREQ)
 # to enable providing additional metadata to Habitat / Sondehub.
-rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $SDR_RX_FREQ | $DECODER -q --stats=5 -g -m binary --fsk_lower=$FSK_LOWER --fsk_upper=$FSK_UPPER - - | python -m horusdemodlib.uploader --freq_hz $SDR_RX_FREQ --freq_target_hz $RXFREQ $@
+rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $SDR_RX_FREQ | $DECODER -q --stats=5 -g -m binary --fsk_lower=$FSK_LOWER --fsk_upper=$FSK_UPPER - - | python3 -m horusdemodlib.uploader --freq_hz $SDR_RX_FREQ --freq_target_hz $RXFREQ $@

@@ -63,3 +63,5 @@ add_definitions(-DHORUS_L2_RX -DINTERLEAVER -DSCRAMBLER -DRUN_TIME_TABLES)
 add_executable(horus_demod horus_demod.c horus_api.c horus_l2.c golay23.c fsk.c kiss_fft.c)
 target_link_libraries(horus_demod m horus ${CMAKE_REQUIRED_LIBRARIES})
 
+install(TARGETS fsk_mod fsk_demod fsk_get_test_bits fsk_put_test_bits drs232 drs232_ldpc horus_gen_test_bits horus_demod DESTINATION bin)
+
