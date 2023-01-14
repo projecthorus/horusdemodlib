@@ -4,8 +4,12 @@ MAINTAINER sa2kng <knegge@gmail.com>
 RUN apt-get -y update && apt -y upgrade && apt-get -y install --no-install-recommends \
     cmake \
     build-essential \
+    ca-certificates \
+    git \
     libusb-1.0-0-dev \
-    libatlas-base-dev &&\
+    libatlas-base-dev \
+    libsoapysdr-dev \
+    soapysdr-module-all &&\
     rm -rf /var/lib/apt/lists/*
 
 # install everything in /target and it will go in to / on destination image. symlink make it easier for builds to find files installed by this.
@@ -17,10 +21,12 @@ RUN cd /horusdemodlib &&\
     cmake -B build -DCMAKE_INSTALL_PREFIX=/target/usr -DCMAKE_BUILD_TYPE=Release &&\
     cmake --build build --target install
 
-COPY docker_single.sh \
-    docker_dual_4fsk.sh \
-    docker_dual_rtty_4fsk.sh \
-    /target/usr/bin/
+RUN git clone --depth 1 https://github.com/rxseger/rx_tools.git &&\
+    cd rx_tools &&\
+    cmake -B build -DCMAKE_INSTALL_PREFIX=/target/usr -DCMAKE_BUILD_TYPE=Release &&\
+    cmake --build build --target install
+
+COPY scripts/* /target/usr/bin/
 
 # to support arm wheels
 RUN echo '[global]\nextra-index-url=https://www.piwheels.org/simple' > /target/etc/pip.conf
@@ -37,7 +43,8 @@ RUN apt-get -y update && apt -y upgrade && apt-get -y install --no-install-recom
     sox \
     bc \
     rtl-sdr \
-    libatlas3-base &&\
+    libatlas3-base \
+    soapysdr-module-all &&\
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install --system --no-cache-dir --prefer-binary horusdemodlib
