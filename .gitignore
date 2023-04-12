@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+
+# Custom config file
+user.env
+user.cfg
+
+# IDE
+.vscode
+.idea
+
+# cmake
+build
+

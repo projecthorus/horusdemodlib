@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  horusdemod:
+    build:
+      context: .
+      target: prod
+    image: 'ghcr.io/projecthorus/horusdemodlib:latest'
+    #read_only: true
+    device_cgroup_rules:
+      - 'c 189:* rwm'
+    env_file:
+      - './user.env'
+    command: 'bash -c $${DEMODSCRIPT}'
+    devices:
+      - '/dev/bus/usb'
+    volumes:
+      - type: 'tmpfs'
+        target: '/tmp'
+      - type: 'bind'
+        source: './user.cfg'
+        target: '/user.cfg'
