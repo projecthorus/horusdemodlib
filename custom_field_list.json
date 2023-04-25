@@ -90,5 +90,16 @@
         ["ascent_rate", "divide_by_100"],
         ["pulse_counts","none"]
     ]
+},
+"OH3HAB-4FSK-V2": {
+    "comment": "OH3HAB custom fields with RadSens and BME280 sensors",
+    "struct": "<HhBHH",
+    "fields": [
+        ["radiation_intensity", "none"],
+        ["ext_temperature", "divide_by_10"],
+        ["ext_humidity", "none"],
+        ["ext_pressure", "divide_by_10"],
+        ["pulse_counts","none"]
+    ]
 }
 }
