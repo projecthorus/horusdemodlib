@@ -253,6 +253,11 @@ def main():
                         _logfile.flush()
 
                     logging.info(f"Decoded Binary Packet (SNR {demod_stats.snr:.1f} dB): {_decoded['ukhas_str']}")
+                    # Remove a few fields from the packet before printing.
+                    _temp_packet = _decoded.copy()
+                    _temp_packet.pop('packet_format')
+                    _temp_packet.pop('ukhas_str')
+                    logging.debug(f"Binary Packet Contents: {_temp_packet}")
                 except Exception as e:
                     logging.error(f"Decode Failed: {str(e)}")
 

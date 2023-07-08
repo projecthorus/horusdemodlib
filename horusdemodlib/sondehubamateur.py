@@ -203,6 +203,15 @@ class SondehubAmateurUploader(object):
             if telemetry["battery_voltage"] >= 0.0:
                 _output["batt"] = telemetry["battery_voltage"]
 
+        if "speed" in telemetry:
+            _output["speed"] = telemetry["speed"]
+
+        if "vel_h" in telemetry:
+            _output["vel_h"] = telemetry["vel_h"]
+
+        if "vel_v" in telemetry:
+            _output["vel_v"] = telemetry["vel_v"]
+
         # Handle the additional SNR and frequency estimation if we have it
         if "snr" in telemetry:
             _output["snr"] = telemetry["snr"]
