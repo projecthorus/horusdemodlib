@@ -178,6 +178,11 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             _ukhas_fields.append(_decoded_str)
 
 
+    # Check the payload ID if > 256 for a Horus v2 packet.
+    if _output['modulation'] == 'Horus Binary v2':
+        if _raw_fields[0] < 256:
+            logging.warning("Found Payload ID < 256 in a Horus Binary v2 packet! This may lead to undefined behaviour. Please use a payload ID > 256!")
+
     # Convert to a UKHAS-compliant string.
     _ukhas_str = ",".join(_ukhas_fields)
     _ukhas_crc = ukhas_crc(_ukhas_str.encode('ascii'))

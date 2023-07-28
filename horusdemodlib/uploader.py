@@ -98,6 +98,9 @@ def main():
     else:
         _logfile = None
 
+    # Some variables to handle re-downloading of payload ID lists.
+    min_download_time = 30*60 # Only try and download new payload ID / custom field lists every 30 min.
+    next_download_time = time.time()
 
     if args.rtty == False:
 
@@ -106,7 +109,7 @@ def main():
             horusdemodlib.payloads.HORUS_PAYLOAD_LIST = read_payload_list(filename=args.payload_list)
             horusdemodlib.payloads.HORUS_CUSTOM_FIELDS = read_custom_field_list(filename=args.custom_fields)
         else:
-            # Downlaod
+            # Download
             horusdemodlib.payloads.HORUS_PAYLOAD_LIST = init_payload_id_list(filename=args.payload_list)
             horusdemodlib.payloads.HORUS_CUSTOM_FIELDS = init_custom_field_list(filename=args.custom_fields)
             
@@ -121,16 +124,6 @@ def main():
     else:
         _listener_freq_str = ""
 
-    # Habitat uploader disabled as of 2022-12-18
-    # habitat_uploader = HabitatUploader(
-    #     user_callsign = user_config['user_call'],
-    #     listener_lat = user_config['station_lat'],
-    #     listener_lon = user_config['station_lon'],
-    #     listener_radio = user_config['radio_comment'] + _listener_freq_str,
-    #     listener_antenna = user_config['antenna_comment'],
-    #     inhibit=args.noupload
-    # )
-
     if user_config['station_lat'] == 0.0 and user_config['station_lon'] == 0.0:
         _sondehub_user_pos = None
     else:
@@ -140,7 +133,7 @@ def main():
         upload_rate = 2,
         user_callsign = user_config['user_call'],
         user_position = _sondehub_user_pos,
-        user_radio = user_config['radio_comment'],
+        user_radio = user_config['radio_comment'] + _listener_freq_str,
         user_antenna = user_config['antenna_comment'],
         software_name = "horusdemodlib",
         software_version = horusdemodlib.__version__,
@@ -225,6 +218,23 @@ def main():
                 try:
                     _decoded = decode_packet(_binary_string)
                     # If we get here, we have a valid packet!
+
+                    if (_decoded['callsign'] == "UNKNOWN_PAYLOAD_ID") and not args.nodownload:
+                        # We haven't seen this payload ID. Our payload ID list might be out of date.
+                        if time.time() > next_download_time:
+                            logging.info("Observed unknown Payload ID, attempting to re-download lists.")
+                            
+                            # Download lists.
+                            horusdemodlib.payloads.HORUS_PAYLOAD_LIST = init_payload_id_list(filename=args.payload_list)
+                            horusdemodlib.payloads.HORUS_CUSTOM_FIELDS = init_custom_field_list(filename=args.custom_fields)
+                            
+                            # Update next_download_time so we don't re-attempt to download with every new packet.
+                            next_download_time = time.time() + min_download_time
+
+                            # Re-attempt to decode the packet.
+                            _decoded = decode_packet(_binary_string)
+                            if _decoded['callsign'] != "UNKNOWN_PAYLOAD_ID":
+                                logging.info(f"Payload found in new payload ID list - {_decoded['callsign']}")
                     
                     # Add in SNR data.
                     _snr = demod_stats.snr

@@ -155,6 +155,18 @@ class SondehubAmateurUploader(object):
         # Datetime
         try:
             _datetime = fix_datetime(telemetry['time'])
+
+            # Compare system time and payload time, to look for issues where system time is way out.
+            _timedelta = abs((_datetime - datetime.datetime.utcnow()).total_seconds())
+
+            if _timedelta > 3*60:
+                # Greater than 3 minutes time difference. Discard packet in this case.
+                self.log_error("Payload and Receiver times are offset by more than 3 minutes. Either payload does not have GNSS lock, or your system time is not set correctly. Not uploading.")
+                return None
+
+            if _timedelta > 60:
+                self.log_warning("Payload and Receiver times are offset by more than 1 minute. Either payload does not have GNSS lock, or your system time is not set correctly.")
+
             _output["datetime"] = _datetime.strftime(
                 "%Y-%m-%dT%H:%M:%S.%fZ"
             )
@@ -164,6 +176,8 @@ class SondehubAmateurUploader(object):
             )
             self.log_debug("Offending datetime_dt: %s" % str(telemetry["time"]))
             return None
+
+
 
         # Callsign - Break if this is an unknown payload ID.
         if telemetry["callsign"] == "UNKNOWN_PAYLOAD_ID":
@@ -183,10 +197,6 @@ class SondehubAmateurUploader(object):
         _output["lon"] = telemetry["longitude"]
         _output["alt"] = telemetry["altitude"]
 
-        if (_output["lat"] == 0.0) and (_output["lon"] == 0.0):
-            self.log_error("Lat/Lon both 0.0 - not uploading telemetry.")
-            return None
-
         # # Optional Fields
         if "temperature" in telemetry:
             if telemetry["temperature"] > -273.15:
@@ -194,10 +204,6 @@ class SondehubAmateurUploader(object):
 
         if "satellites" in telemetry:
             _output["sats"] = telemetry["satellites"]
-
-            if _output["sats"] == 0:
-                self.log_error("Satellites field provided, and is 0. Not uploading due to potentially inaccurate position.")
-                return None
 
         if "battery_voltage" in telemetry:
             if telemetry["battery_voltage"] >= 0.0:
@@ -338,7 +344,7 @@ class SondehubAmateurUploader(object):
                 _upload_success = True
                 break
 
-            elif _req.status_code == 500:
+            elif _req.status_code in [500,501,502,503,504]:
                 # Server Error, Retry.
                 _retries += 1
                 continue

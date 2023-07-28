@@ -31,6 +31,11 @@ MFSK_SIGNAL=15000
 # but the higher the chance that the modem will lock on to a strong spurious signal.
 RXBANDWIDTH=8000
 
+# RTLSDR Device Selection
+# If you want to use a specific RTLSDR, you can change this setting to match the 
+# device identifier of your SDR (use rtl_test to get a list)
+SDR_DEVICE=0
+
 # Receiver Gain. Set this to 0 to use automatic gain control, otherwise if running a
 # preamplifier, you may want to experiment with different gain settings to optimize
 # your receiver setup.
@@ -115,4 +120,4 @@ fi
 # Start the receive chain.
 # Note that we now pass in the SDR centre frequency ($RXFREQ) and 'target' signal frequency ($RTTY_CENTRE / $MFSK_CENTRE)
 # to enable providing additional metadata to Habitat / Sondehub.
-rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ | tee >($DECODER -q --stats=5 -g -m RTTY --fsk_lower=$RTTY_LOWER --fsk_upper=$RTTY_UPPER - - | python -m horusdemodlib.uploader --rtty --freq_hz $RXFREQ --freq_target_hz $RTTY_CENTRE ) >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK_LOWER --fsk_upper=$MFSK_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK_CENTRE ) > /dev/null
+rtl_fm -M raw -F9 -d $SDR_DEVICE -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ | tee >($DECODER -q --stats=5 -g -m RTTY --fsk_lower=$RTTY_LOWER --fsk_upper=$RTTY_UPPER - - | python -m horusdemodlib.uploader --rtty --freq_hz $RXFREQ --freq_target_hz $RTTY_CENTRE ) >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK_LOWER --fsk_upper=$MFSK_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK_CENTRE ) > /dev/null

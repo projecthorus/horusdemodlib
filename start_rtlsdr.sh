@@ -15,6 +15,12 @@ cd /home/pi/horusdemodlib/
 # Note: The SDR will be tuned to RXBANDWIDTH/2 below this frequency.
 RXFREQ=434200000
 
+
+# RTLSDR Device Selection
+# If you want to use a specific RTLSDR, you can change this setting to match the 
+# device identifier of your SDR (use rtl_test to get a list)
+SDR_DEVICE=0
+
 # Receiver Gain. Set this to 0 to use automatic gain control, otherwise if running a
 # preamplifier, you may want to experiment with different gain settings to optimize
 # your receiver setup.
@@ -91,4 +97,4 @@ fi
 # Start the receive chain.
 # Note that we now pass in the SDR centre frequency ($SDR_RX_FREQ) and 'target' signal frequency ($RXFREQ)
 # to enable providing additional metadata to Habitat / Sondehub.
-rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $SDR_RX_FREQ | $DECODER -q --stats=5 -g -m binary --fsk_lower=$FSK_LOWER --fsk_upper=$FSK_UPPER - - | python -m horusdemodlib.uploader --freq_hz $SDR_RX_FREQ --freq_target_hz $RXFREQ $@
+rtl_fm -M raw -F9 -d $SDR_DEVICE -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $SDR_RX_FREQ | $DECODER -q --stats=5 -g -m binary --fsk_lower=$FSK_LOWER --fsk_upper=$FSK_UPPER - - | python -m horusdemodlib.uploader --freq_hz $SDR_RX_FREQ --freq_target_hz $RXFREQ $@

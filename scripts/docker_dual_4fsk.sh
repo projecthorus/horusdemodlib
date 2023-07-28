@@ -47,4 +47,4 @@ fi
 # Start the receive chain.
 # Note that we now pass in the SDR centre frequency ($RXFREQ) and 'target' signal frequency ($MFSK1_CENTRE)
 # to enable providing additional metadata to Habitat / Sondehub.
-rtl_fm -M raw -F9 -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK1_LOWER --fsk_upper=$MFSK1_UPPER - - | python3 -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK1_CENTRE ) >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK2_LOWER --fsk_upper=$MFSK2_UPPER - - | python3 -m horusdemodlib.uploader --freq_hz $RXFREQ ) > /dev/null
+rtl_fm -M raw -F9 -d $SDR_DEVICE -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK1_LOWER --fsk_upper=$MFSK1_UPPER - - | python3 -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK1_CENTRE ) >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK2_LOWER --fsk_upper=$MFSK2_UPPER - - | python3 -m horusdemodlib.uploader --freq_hz $RXFREQ ) > /dev/null
