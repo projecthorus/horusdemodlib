@@ -65,7 +65,7 @@ A Python wrapper is also available (via the horusdemodlib Python library which i
 ## HorusDemodLib Python Library
 The horusdemodlib Python library contains decoders for the different Project Horus telemetry formats, including:
 * Horus Binary v1 (Legacy 22-byte Golay-encoded format)
-* Horus Binary v2 (LDPC-Encoded 16 and 32-byte formats)
+* Horus Binary v2 (Golay-encoded 32-byte format)
 
 It also contains a wrapper around the C library (mentioned above), which contains the Horus modem demodulators.
 
