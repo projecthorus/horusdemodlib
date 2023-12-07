@@ -101,5 +101,16 @@
         ["ext_pressure", "divide_by_10"],
         ["pulse_counts","none"]
     ]
+},
+"AJ4XE": {
+    "comment": "custom fields for AJ4XE tracker",
+    "struct": "<HHBHH",
+    "fields": [
+        ["HDOP", "divide_by_100"],
+        ["VDOP", "divide_by_100"],
+        ["TTF", "none"],
+        ["PDOP", "divide_by_100"],
+        ["AVG_SNR", "divide_by_100"]
+    ]
 }
 }
