@@ -112,5 +112,16 @@
         ["PDOP", "divide_by_100"],
         ["AVG_SNR", "divide_by_100"]
     ]
+},
+"KD2EAT-DFM": {
+    "comment": "custom fields for KD2EAT DFM17 testing",
+    "struct": "<hhBHBx",
+    "fields": [
+        ["ascent_rate", "divide_by_100"],
+        ["ext_temperature", "divide_by_10"],
+        ["ext_humidity", "none"],
+        ["ext_pressure", "divide_by_10"],
+        ["mcu_calibration", "none"]
+    ]
 }
 }
