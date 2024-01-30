@@ -126,7 +126,7 @@
 },
 "DF7PN": {
     "comment": "private values see https://github.com/whallmann/RS41HUP_V2",
-    "struct": "<HHxxxx",
+    "struct": "<HHxxxxx",
     "fields": [
         ["flight_number", "none"],
         ["sonde_type", "none"]
