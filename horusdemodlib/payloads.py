@@ -327,15 +327,20 @@ def update_payload_lists(payload_list, custom_field_list):
 
 
 if __name__ == "__main__":
+    import argparse
 
-    # Setup Logging
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG
-    )
+    # Read command-line arguments
+    parser = argparse.ArgumentParser(description="Test script for payload ID lists", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--download", action="store_false", default=True, help="Download lists from github, then check")
+    parser.add_argument("--print", action="store_true", default=False, help="Print content of payload ID lists")
+    args = parser.parse_args()
 
+    # Set up logging
+    logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG)
 
-    init_payload_id_list()
-    print(HORUS_PAYLOAD_LIST)
+    init_payload_id_list(nodownload=args.download)
+    init_custom_field_list(nodownload=args.download)
 
-    init_custom_field_list()
-    print(HORUS_CUSTOM_FIELDS)
+    if args.print:
+        print(HORUS_PAYLOAD_LIST)
+        print(HORUS_CUSTOM_FIELDS)
