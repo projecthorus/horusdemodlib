@@ -344,6 +344,30 @@ class SondehubAmateurUploader(object):
                 _upload_success = True
                 break
 
+            elif _req.status_code == 202:
+                # A 202 return code means there was some kind of data issue.
+                # We expect a response of the form {"message": "error message", "errors":[], "warnings":[]}
+                try:
+                    _resp_json = _req.json()
+                    
+                    for _error in _resp_json['errors']:
+                        self.log_error("Payload data error: " + _error["error_message"])
+                        if 'payload' in _error:
+                            self.log_debug("Payload data associated with error: " + str(_error['payload']))
+                    
+                    for _warning in _resp_json['warnings']:
+                        self.log_warning("Payload data warning: " + _warning["warning_message"])
+                        if 'payload' in _warning:
+                            self.log_debug("Payload data associated with warning: " + str(_warning['payload']))
+                    
+                except Exception as e:
+                    self.log_error("Error when parsing 202 response: %s" % str(e))
+                    self.log_debug("Content of 202 response: %s" % _req.text)
+
+                _upload_success = True
+                break
+
+
             elif _req.status_code in [500,501,502,503,504]:
                 # Server Error, Retry.
                 _retries += 1
