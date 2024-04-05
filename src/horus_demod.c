@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
     float    loop_time;
     int      enable_stats = 0;
     int      quadrature = 0;
-    int fsk_lower = -1;
+    int fsk_lower = -99999;
     int fsk_upper = -1;
     int Rs = -1;
     int tone_spacing = -1;
@@ -224,9 +224,11 @@ int main(int argc, char *argv[]) {
         stats_ctr = 0;
     }
 
-    if((fsk_lower> 0) && (fsk_upper > fsk_lower)){
+    if((fsk_upper > fsk_lower) && (fsk_lower > -99999)){
         horus_set_freq_est_limits(hstates, fsk_lower, fsk_upper);
         fprintf(stderr,"Setting estimator limits to %d to %d Hz.\n",fsk_lower, fsk_upper);
+    } else {
+        printf(stderr,"Not setting estimator limits, upper must be higher than lower.");
     }
 
     
