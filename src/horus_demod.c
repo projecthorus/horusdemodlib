@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
         horus_set_freq_est_limits(hstates, fsk_lower, fsk_upper);
         fprintf(stderr,"Setting estimator limits to %d to %d Hz.\n",fsk_lower, fsk_upper);
     } else {
-        printf(stderr,"Not setting estimator limits, upper must be higher than lower.");
+        fprintf(stderr,"Not setting estimator limits, upper must be higher than lower.");
     }
 
     
