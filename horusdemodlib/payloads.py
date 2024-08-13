@@ -53,7 +53,7 @@ def read_payload_list(filename="payload_id_list.txt"):
     """ Read a payload ID list from a file, and return the parsed data as a dictionary """
 
     # Dummy payload list.
-    payload_list = HORUS_PAYLOAD_LIST
+    payload_list = HORUS_PAYLOAD_LIST.copy()
 
     try:
         with open(filename,'r') as file:
@@ -71,9 +71,15 @@ def read_payload_list(filename="payload_id_list.txt"):
                         try:
                             _id = int(_params[0])
                             _callsign = _params[1].strip()
+
+                            # Check to see if a payload ID is already in use and print a warning
+                            if _id in payload_list:
+                                if _id not in HORUS_PAYLOAD_LIST:
+                                    logging.warning(f"Payload ID {_id} already in use by {payload_list[_id]}")
+
                             payload_list[_id] = _callsign
-                        except:
-                            logging.error("Error parsing line: %s" % line)
+                        except Exception as e:
+                            logging.error(f"Error parsing line: {line}: {str(e)}")
     except Exception as e:
         logging.error("Error reading Payload ID list, does it exist? - %s" % str(e))
 
@@ -122,6 +128,12 @@ def download_latest_payload_id_list(url=PAYLOAD_ID_LIST_URL, filename=None, time
                     try:
                         _id = int(_params[0])
                         _callsign = _params[1].strip()
+
+                        # Check to see if a payload ID is already in use and print a warning
+                        if _id in _payload_list:
+                            if _id not in HORUS_PAYLOAD_LIST:
+                                logging.warning(f"Payload ID {_id} already in use by {_payload_list[_id]}")
+
                         _payload_list[_id] = _callsign
                     except:
                         logging.error("Error parsing line: %s" % line)
@@ -328,18 +340,35 @@ def update_payload_lists(payload_list, custom_field_list):
 
 if __name__ == "__main__":
     import argparse
+    from unittest.mock import Mock
 
     # Read command-line arguments
     parser = argparse.ArgumentParser(description="Test script for payload ID lists", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--download", action="store_false", default=True, help="Download lists from github, then check")
+    parser.add_argument("--nodownload", action="store_true", default=False, help="Do not download lists from github")
     parser.add_argument("--print", action="store_true", default=False, help="Print content of payload ID lists")
+    parser.add_argument("--test", action="store_true", default=False, help="Run tests on lists")
     args = parser.parse_args()
 
     # Set up logging
     logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG)
 
-    init_payload_id_list(nodownload=args.download)
-    init_custom_field_list(nodownload=args.download)
+    if args.test:
+        logging.error = Mock()
+        logging.warning = Mock()
+
+    init_payload_id_list(nodownload=args.nodownload)
+    init_custom_field_list(nodownload=args.nodownload)
+
+    if args.test:
+        try:
+            logging.error.assert_not_called()
+        except AssertionError:
+            raise AssertionError(f"Error parsing payloads: {logging.error.call_args_list}") from None
+        
+        try:
+            logging.warning.assert_not_called()
+        except AssertionError:
+            raise AssertionError(f"Warnings when parsing payloads: {logging.warning.call_args_list}") from None
 
     if args.print:
         print(HORUS_PAYLOAD_LIST)
