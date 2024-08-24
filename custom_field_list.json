@@ -168,5 +168,17 @@
         ["ext_pressure", "divide_by_10"],
         ["pulse_counts","none"]
     ]
-}
+},
+"SP9UOB-PICO1": {
+    "comment": "SP9UOB pico series custom fields",
+    "struct": "<HHbbHb",
+    "fields": [
+        ["vcc", "divide_by_100"],
+        ["solar", "divide_by_100"],
+        ["prefix1", "none"],
+        ["prefix2", "none"],
+        ["flags", "none"],
+        ["ttf", "none"]
+    ]
+    }
 }
