@@ -180,5 +180,17 @@
         ["flags", "none"],
         ["ttf", "none"]
     ]
-    }
+},
+"NEVVMAN-1": {
+    "comment": "Nevvman's custom fw fields",
+    "struct": "<BBBhHH",
+    "fields": [
+        ["state", "none"],
+        ["add1", "none"],
+        ["add2", "divide_by_10"],
+        ["add3", "divide_by_10"],
+        ["add4", "divide_by_10"],
+        ["add5", "none"]
+    ]
+}
 }
