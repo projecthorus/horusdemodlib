@@ -192,5 +192,18 @@
         ["add4", "divide_by_10"],
         ["add5", "none"]
     ]
+},
+"IRBE": {
+    "comment": "Default custom fields for IRBE",
+    "struct": "<HBBbbbH",
+    "fields": [
+        ["commands_received", "none"],
+        ["commands_succeeded", "none"],
+        ["commands_failed", "none"],
+        ["com_temp", "none"],
+        ["mcu_temp", "none"],
+        ["ext_temp", "none"],
+        ["device_status", "none"]
+    ]
 }
 }
