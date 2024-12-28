@@ -1,0 +1,15 @@
+[Unit]
+Description=horus_rx
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+ExecStart=/home/pi/horusdemodlib/start_rtlsdr.sh
+Restart=always
+RestartSec=120
+WorkingDirectory=/home/pi/horusdemodlib/
+User=pi
+SyslogIdentifier=horus_rx
+
+[Install]
+WantedBy=multi-user.target
