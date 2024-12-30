@@ -7,11 +7,13 @@ from ctypes import *
 import codecs
 import datetime
 import logging
+import struct
 import sys
 from enum import Enum
 import os
 import logging
 from .decoder import decode_packet, hex_to_bytes
+from .checksums import add_packet_crc
 
 
 class Encoder():
@@ -151,10 +153,74 @@ class Encoder():
         return bytes(_decoded)
     
 
+    def bytes_to_4fsk_symbols(self, 
+            packet,
+            preamble = 8
+        ):
+        """
+        Convert a sequence of bytes to a sequence of 4FSK symbols (0,1,2,3) for modulation.
+        Also adds a preamble sequence, by default 8 bytes long.
+        """
+
+        # Prepend preamble
+        preamble_bytes = b'\x1B' * preamble
+        packet = preamble_bytes + packet
+
+
+        symbols = []
+
+        for x in range(len(packet)):
+            current_byte = packet[x]
+            for k in range(4):
+                symbols.append((current_byte & 0xC0) >> 6)
+                current_byte = current_byte << 2
+
+        return symbols
+    
+    def bytes_to_onebitperbyte(self,
+        packet,
+        preamble = 8
+    ):
+        """
+        Convert a sequence of bytes to a one-bit-per-yte sequence, for modulation
+        using fsk_mod.
+        Also adds a preamble sequence, by default 8 bytes long.
+
+        This data, if written out to a file, can be encoded using the fsk_mod utility, e.g.
+        ./fsk_mod 4 48000 100 1000 270 onebitperbyte.bin test4fsk.raw
+        produces a 48000 Hz Sample rate, Signed 16-bit output.
+        """
+
+        # Prepend preamble
+        preamble_bytes = b'\x1B' * preamble
+        packet = preamble_bytes + packet
+
+        output = b''
+        # Probably a faster way of doing this
+        for x in range(len(packet)):
+            current_byte = packet[x]
+            for x in range(8):
+                if (current_byte & 0x80) == 0x80:
+                    output += b'\x01'
+                else:
+                    output += b'\x00'
+                current_byte = current_byte << 1
+
+        return output
+
+
+
+
     def create_horus_v2_packet(self,
             payload_id = 256,
             sequence_number = 0,
+            # Packet time, provided as a datetime object
             time_dt = datetime.datetime.utcnow(),
+            # Optional - provide time as hours/minutes/seconds
+            hours = None,
+            minutes = None,
+            seconds = None,
+            # Payload position
             latitude = 0.0,
             longitude = 0.0,
             altitude = 0.0,
@@ -168,9 +234,13 @@ class Encoder():
             ext_humidity = 0.0,
             ext_pressure = 0.0,
             # Alternate custom data - must be bytes, and length=9
-            custom_data = None
+            custom_data = None,
+            # Debugging options
+            return_uncoded = False # Do not apply FEC/scrambling/whitening to packet
         ):
-        pass
+        """
+        Create and encode a Horus V2 Data Packet.
+        """
 
         # Sanity check input data.
         if payload_id < 256 or payload_id > 65535:
@@ -179,71 +249,145 @@ class Encoder():
         # Clip sequence number
         sequence_number = int(sequence_number) % 65536
 
-        # Try and extract HHMMSS from time
-        try:
-            hours = int(time_dt.hour)
-            minutes = int(time_dt.minute)
-            seconds = int(time_dt.second)
-        except:
-            raise ValueError("Could not parse input datetime object.")
+        if (hours is not None) and (minutes is not None) and (seconds is not None):
+            # We have been provided time as separate H/M/S data
+            # Do some clipping on this data
+            hours = int(hours)
+            if hours < 0:
+                hours = 0
+            elif hours > 23:
+                hours = 23
+
+            minutes = int(minutes)
+            if minutes < 0:
+                minutes = 0
+            elif minutes < 59:
+                minutes = 59
+
+            seconds = int(seconds)
+            if seconds < 0:
+                seconds = 0
+            elif seconds > 59:
+                seconds = 59
+        else:
+            # No separate time data provided
+            # Try and extract HHMMSS from datetime object
+            try:
+                hours = int(time_dt.hour)
+                minutes = int(time_dt.minute)
+                seconds = int(time_dt.second)
+            except:
+                raise ValueError("Could not parse input datetime object.")
+        
+
         
         # Assume lat/lon are fine. They are just sent as floats anyway.
+        latitude = float(latitude)
+        longitude = float(longitude)
 
-        # Clip Altitude
+        # Altitude - clip to 0-65535
         altitude = int(altitude)
         if altitude < 0:
             altitude = 0
-        if altitude > 65535:
+        elif altitude > 65535:
             altitude = 65535
         
-        # Clip Speed (kph)
+        # Ground Speed - clip to 0-255 (kph)
         speed = int(speed)
         if speed < 0:
             speed = 0
-        if speed > 255:
+        elif speed > 255:
             speed = 255
 
-        # Clip sats
+        # Satellites - clip to 0-255
         satellites = int(satellites)
         if satellites < 0:
             satellites = 0
-        if satellites > 255:
+        elif satellites > 255:
             satellites = 255
         
-        # Temperature
+        # Temperature - clip to -128 to 127
+        temperature = int(temperature)
+        if temperature < -128:
+            temperature = -128
+        elif temperature > 127:
+            temperature = 127
 
         # Battery voltage clip and conversion
+        battery_voltage = float(battery_voltage)
+        if battery_voltage > 5.0:
+            battery_voltage = 5.0
+        elif battery_voltage < 0.0:
+            battery_voltage = 0.0
+        battery_voltage = int(255 * battery_voltage/5.0)
 
+        ## Default Custom Field data
 
-
-        # Custom data
-
-        # Ascent rate
+        # Ascent rate is in the range -327.68 to 327.67 m/s
+        ascent_rate_100 = int(ascent_rate*100)
+        if ascent_rate_100 < -32768:
+            ascent_rate_100 = 32768
+        elif ascent_rate_100 > 32767:
+            ascent_rate_100 = 32767
 
         # PTU data
+        # External Temperature, in the range -3276.8 to 3276.7
+        ext_temperature_10 = int(ext_temperature*10)
+        if ext_temperature_10 < -32768:
+            ext_temperature_10 = -32768
+        elif ext_temperature_10 > 32767:
+            ext_temperature_10 = 32767
 
+        # Humidity - Integer in range 0-255
+        ext_humidity = int(ext_humidity)
+        if ext_humidity > 255:
+            ext_humidity = 255
+        elif ext_humidity < 0:
+            ext_humidity = 0
 
-        # 'struct': '<HH3sffHBBbB9sH',
-        # 'checksum': 'crc16',
-        # 'fields': [
-        #     ['payload_id', 'payload_id'],
-        #     ['sequence_number', 'none'],
-        #     ['time', 'time_hms'],
-        #     ['latitude', 'degree_float'],
-        #     ['longitude', 'degree_float'],
-        #     ['altitude', 'none'],
-        #     ['speed', 'none'],
-        #     ['satellites', 'none'],
-        #     ['temperature', 'none'],
-        #     ['battery_voltage', 'battery_5v_byte'],
-        #     ['custom', 'custom'],
-        #     ['checksum', 'none']
-        # ]
+        # Pressure, in the range 0-6553.5 hPa
+        ext_pressure_10 = int(ext_pressure*10)
+        if ext_pressure_10 < 0:
+            ext_pressure_10 = 0
+        elif ext_pressure_10 > 65535:
+            ext_pressure_10 = 65535
         
+        # Encode the default custom field segment
+        custom_bytes = struct.pack("<hhBHxx", ascent_rate_100, ext_temperature_10, ext_humidity, ext_pressure_10)
+
+        # Custom data Override, if provided
+        if custom_data is not None:
+            if type(custom_data) == bytes and len(custom_data) == 9:
+                custom_bytes = custom_data
+
+        # Generate the packet, without CRC
+
+        packet_bytes = add_packet_crc(struct.pack(
+            '<HHBBBffHBBbB9s',
+            payload_id,
+            sequence_number,
+            hours,
+            minutes,
+            seconds,
+            latitude,
+            longitude,
+            altitude,
+            speed,
+            satellites,
+            temperature,
+            battery_voltage,
+            custom_bytes
+        ))
+
+        if return_uncoded:
+            return packet_bytes
+        else:
+            (_coded, _) = self.horus_l2_encode_packet(packet_bytes)
+            return _coded
 
 
 if __name__ == "__main__":
-    import sys
+    import sys, pprint
 
     e = Encoder()
 
@@ -267,3 +411,20 @@ if __name__ == "__main__":
     _decoded = e.horus_l2_decode_packet(horus_v1_encoded_bytes, 22)
     print(f"  Horus v1 Output: {codecs.encode(_decoded, 'hex').decode().upper()}")
 
+
+    print("Horus V2 Packet Generator Tests:")
+    # Null packet, using all default fields
+    horusv2_null = e.create_horus_v2_packet(return_uncoded=True)
+    print(f"Horus V2 Null Packet, Uncoded: {codecs.encode(horusv2_null, 'hex').decode().upper()}")
+    horusv2_null_decoded = decode_packet(horusv2_null)
+    print(f"Horus V2 Null Packet, Decoded:")
+    pprint.pprint(horusv2_null_decoded)
+
+    horusv2_null = e.create_horus_v2_packet(return_uncoded=False)
+    print(f"Horus V2 Null Packet, Coded: {codecs.encode(horusv2_null, 'hex').decode().upper()}")
+    horusv2_null_decoded = decode_packet(e.horus_l2_decode_packet(horusv2_null, 32))
+    print(f"Horus V2 Null Packet, Decoded:")
+    pprint.pprint(horusv2_null_decoded)
+
+    print(f"Horus v2 Null Packet Encoded 4FSK Symbols: {e.bytes_to_4fsk_symbols(horusv2_null)}")
+    print(f"Horus v2 Null Packet Encoded OneBitPerByte: {e.bytes_to_onebitperbyte(horusv2_null)}")
