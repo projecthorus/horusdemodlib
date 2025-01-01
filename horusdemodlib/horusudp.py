@@ -44,6 +44,9 @@ def send_payload_summary(telemetry, port=55672, comment="HorusDemodLib"):
         if 'snr' in telemetry:
             packet['snr'] = telemetry['snr']
         
+        if "f_centre" in telemetry:
+            packet["frequency"] = telemetry["f_centre"] / 1e6 # Hz -> MHz
+
         if 'satellites' in telemetry:
             packet['sats'] = telemetry['satellites']
         
