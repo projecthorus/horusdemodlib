@@ -205,5 +205,16 @@
         ["ext_temp", "none"],
         ["device_status", "none"]
     ]
+},
+"SP1ASH": {
+    "comment": "SP1ASH custom fields with BMP280 and AHT20 sensor values",
+    "struct": "<hbhHH",
+    "fields": [
+        ["aht_temperature", "none"],
+        ["aht_humidity", "none"],
+        ["bmp_temperature", "none"],
+        ["bmp_pressure", "none"],
+        ["bmp_altitude", "none"]
+    ]
 }
 }
