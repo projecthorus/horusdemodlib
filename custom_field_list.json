@@ -210,10 +210,10 @@
     "comment": "SP1ASH custom fields with BMP280 and AHT20 sensor values",
     "struct": "<hbhHH",
     "fields": [
-        ["aht_temperature", "none"],
+        ["aht_temperature", "divide_by_10"],
         ["aht_humidity", "none"],
-        ["bmp_temperature", "none"],
-        ["bmp_pressure", "none"],
+        ["bmp_temperature", "divide_by_10"],
+        ["bmp_pressure", "divide_by_10"],
         ["bmp_altitude", "none"]
     ]
 }
