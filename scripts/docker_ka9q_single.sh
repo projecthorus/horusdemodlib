@@ -27,5 +27,8 @@ trap cleanup EXIT
 # Start the receive chain.
 # Note that we now pass in the SDR centre frequency ($RXFREQ) and 'target' signal frequency ($RXFREQ)
 # to enable providing additional metadata to Habitat / Sondehub.
-timeout 5 tune --samprate 48000 --mode iq --low $FSK_LOWER --high $FSK_UPPER --frequency $RXFREQ --ssrc $SSRC --radio $RADIO
+echo "Configuring receiver on ka9q-radio"
+tune --samprate 48000 --mode iq --low $FSK_LOWER --high $FSK_UPPER --frequency $RXFREQ --ssrc $SSRC --radio $RADIO
+
+echo "Starting receiver chain"
 pcmrecord --ssrc $SSRC --catmode --raw $SDR_DEVICE | $DECODER -q --stats=5 -g -m binary --fsk_lower=$FSK_LOWER --fsk_upper=$FSK_UPPER - - | python3 -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $RXFREQ $@
