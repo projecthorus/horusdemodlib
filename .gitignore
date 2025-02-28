@@ -42,3 +42,8 @@ user.cfg
 # cmake
 build
 
+
+venv/
+__pycache__/*
+*.pyc
+*.log
