@@ -111,19 +111,9 @@ struct horus *horus_open (int mode) {
     if (mode == HORUS_MODE_RTTY_8N2){
         // RTTY Mode defaults - 100 baud, no assumptions about tone spacing.
         return horus_open_advanced(HORUS_MODE_RTTY_8N2, HORUS_RTTY_DEFAULT_BAUD, -1);
-    } 
-    if (mode == HORUS_MODE_BINARY_V1){
-        // Legacy Horus Binary Mode defaults - 100 baud, Disable mask estimation.
-        return horus_open_advanced(HORUS_MODE_BINARY_V1, HORUS_BINARY_V1_DEFAULT_BAUD, -1);
     }
-    // if (mode == HORUS_MODE_BINARY_V2_128BIT){
-    //     // V2 Horus Binary Mode defaults - 100 baud, Disable mask estimation.
-    //     return horus_open_advanced(HORUS_MODE_BINARY_V2_128BIT, HORUS_BINARY_V2_128BIT_DEFAULT_BAUD, -1);
-    // }
-    // if (mode == HORUS_MODE_BINARY_V2_256BIT){
-    //     // V2 Horus Binary Mode defaults - 100 baud, Disable mask estimation.
-    //     return horus_open_advanced(HORUS_MODE_BINARY_V2_256BIT, HORUS_BINARY_V2_256BIT_DEFAULT_BAUD, -1);
-    // }
+    
+    return horus_open_advanced(HORUS_MODE_BINARY_V1, HORUS_BINARY_V1_DEFAULT_BAUD, -1);
 }
 
 
