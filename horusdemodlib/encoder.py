@@ -215,7 +215,7 @@ class Encoder():
             payload_id = 256,
             sequence_number = 0,
             # Packet time, provided as a datetime object
-            time_dt = datetime.datetime.utcnow(),
+            time_dt = datetime.datetime.now(datetime.timezone.utc),
             # Optional - provide time as hours/minutes/seconds
             hours = None,
             minutes = None,
