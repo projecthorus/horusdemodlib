@@ -116,15 +116,18 @@ struct horus *horus_open (int mode) {
     return horus_open_advanced(HORUS_MODE_BINARY_V1, HORUS_BINARY_V1_DEFAULT_BAUD, -1);
 }
 
-
 struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
+    return horus_open_advanced_sample_rate(mode, Rs, tx_tone_spacing, 48000);
+}
+
+struct horus *horus_open_advanced_sample_rate (int mode, int Rs, int tx_tone_spacing, int Fs) {
     int i, mask;
     assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) );// || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
 
     struct horus *hstates = (struct horus *)malloc(sizeof(struct horus));
     assert(hstates != NULL);
 
-    hstates->Fs = 48000; hstates->Rs = Rs; hstates->verbose = 0; hstates->mode = mode;
+    hstates->Fs = Fs; hstates->Rs = Rs; hstates->verbose = 0; hstates->mode = mode;
 
     if (mode == HORUS_MODE_RTTY_7N1) {
         // Parameter setup for RTTY 7N2 Reception
