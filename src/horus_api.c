@@ -117,7 +117,7 @@ struct horus *horus_open (int mode) {
 }
 
 struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
-    return horus_open_advanced_sample_rate(mode, Rs, tx_tone_spacing, 48000, 8);
+    return horus_open_advanced_sample_rate(mode, Rs, tx_tone_spacing, 48000, FSK_DEFAULT_P);
 }
 
 struct horus *horus_open_advanced_sample_rate (int mode, int Rs, int tx_tone_spacing, int Fs, int P) {
