@@ -116,15 +116,18 @@ struct horus *horus_open (int mode) {
     return horus_open_advanced(HORUS_MODE_BINARY_V1, HORUS_BINARY_V1_DEFAULT_BAUD, -1);
 }
 
-
 struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
+    return horus_open_advanced_sample_rate(mode, Rs, tx_tone_spacing, 48000, FSK_DEFAULT_P);
+}
+
+struct horus *horus_open_advanced_sample_rate (int mode, int Rs, int tx_tone_spacing, int Fs, int P) {
     int i, mask;
     assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) );// || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
 
     struct horus *hstates = (struct horus *)malloc(sizeof(struct horus));
     assert(hstates != NULL);
 
-    hstates->Fs = 48000; hstates->Rs = Rs; hstates->verbose = 0; hstates->mode = mode;
+    hstates->Fs = Fs; hstates->Rs = Rs; hstates->verbose = 0; hstates->mode = mode;
 
     if (mode == HORUS_MODE_RTTY_7N1) {
         // Parameter setup for RTTY 7N2 Reception
@@ -303,7 +306,7 @@ struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
 
     // Create the FSK modedm struct. Note that the low-tone-frequency parameter is unused.
     #define UNUSED 1000
-    hstates->fsk = fsk_create(hstates->Fs, hstates->Rs, hstates->mFSK, UNUSED, tx_tone_spacing);
+    hstates->fsk = fsk_create_hbr(hstates->Fs, hstates->Rs, hstates->mFSK, P, FSK_DEFAULT_NSYM, UNUSED, tx_tone_spacing);
 
     // Set/disable the mask estimator depending on if tx_tone_spacing was provided (refer above)
     fsk_set_freq_est_alg(hstates->fsk, mask);

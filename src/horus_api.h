@@ -111,6 +111,19 @@ struct horus *horus_open  (int mode);
 struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing);
 
 /*
+ * Create an Horus Demod config/state struct with more customizations.
+ * 
+ * int mode - Horus Mode Type (refer list above)
+ * int Rs - Symbol Rate (Hz). Set to -1 to use the default value for the mode (refer above)
+ * int tx_tone_spacing - FSK Tone Spacing, to configure mask estimator. Set to -1 to disable mask estimator.
+ * int Fs - Sample rate
+ * int P - Oversamplig rate. (Fs/Rs)%P should equal 0 other the modem will be sad.
+ */
+
+ struct horus *horus_open_advanced_sample_rate (int mode, int Rs, int tx_tone_spacing, int Fs, int P);
+
+
+/*
  * Close a Horus demodulator struct and free memory.
  */
 void          horus_close (struct horus *hstates);
