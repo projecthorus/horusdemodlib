@@ -5,6 +5,18 @@
 #   Uses ka9q-radio (pcmrecord) to receive a chunk of spectrum, and passes it into horus_demod.
 #
 
+set -e
+set -u
+set -o pipefail
+set -x
+
+trap "exit" SIGINT SIGTERM
+
+exit_rx() {
+    echo "Something died. Exiting..."
+    pkill -f bash
+}
+
 # Calculate the frequency estimator limits
 FSK_LOWER=$(echo "$RXBANDWIDTH / -2" | bc)
 FSK_UPPER=$(echo "$RXBANDWIDTH / 2" | bc)
@@ -32,3 +44,8 @@ tune --samprate 48000 --mode iq --low $FSK_LOWER --high $FSK_UPPER --frequency $
 
 echo "Starting receiver chain"
 pcmrecord --ssrc $SSRC --catmode --raw $SDR_DEVICE | $DECODER -q --stats=5 -g -m binary --fsk_lower=$FSK_LOWER --fsk_upper=$FSK_UPPER - - | python3 -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $RXFREQ $@
+
+echo "Started everything, waiting for any failed processes"
+
+wait -n
+exit_rx
