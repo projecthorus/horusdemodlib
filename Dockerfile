@@ -10,7 +10,7 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
     libairspy-dev libairspyhf-dev libavahi-client-dev libbsd-dev \
     libfftw3-dev libhackrf-dev libiniparser-dev libncurses5-dev \
     libopus-dev librtlsdr-dev libusb-1.0-0-dev libusb-dev \
-    portaudio19-dev libasound2-dev libogg-dev uuid-dev rsync procps unzip && \
+    portaudio19-dev libasound2-dev libogg-dev uuid-dev rsync unzip && \
     rm -rf /var/lib/apt/lists/*
 
 # install everything in /target and it will go in to / on destination image. symlink make it easier for builds to find files installed by this.
@@ -55,6 +55,7 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
     python3-pip \
     sox \
     bc \
+    procps \
     rtl-sdr \
     libatlas3-base \
     avahi-utils \
