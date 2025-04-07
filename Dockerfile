@@ -1,13 +1,16 @@
 FROM debian:bookworm-slim AS builder
 LABEL org.opencontainers.image.authors="sa2kng <knegge@gmail.com>"
 
+# ka9q-radio commit:
+ARG KA9Q_REF=cc22b5f5e3c26c37df441ebff29eea7d59031afd
+
 RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-recommends \
     cmake build-essential ca-certificates git libusb-1.0-0-dev \
     libatlas-base-dev libsoapysdr-dev soapysdr-module-all \
     libairspy-dev libairspyhf-dev libavahi-client-dev libbsd-dev \
     libfftw3-dev libhackrf-dev libiniparser-dev libncurses5-dev \
     libopus-dev librtlsdr-dev libusb-1.0-0-dev libusb-dev \
-    portaudio19-dev libasound2-dev libogg-dev uuid-dev rsync && \
+    portaudio19-dev libasound2-dev libogg-dev uuid-dev rsync unzip && \
     rm -rf /var/lib/apt/lists/*
 
 # install everything in /target and it will go in to / on destination image. symlink make it easier for builds to find files installed by this.
@@ -25,9 +28,9 @@ RUN git clone --depth 1 https://github.com/rxseger/rx_tools.git &&\
     cmake --build build --target install
 
 # Compile and install pcmcat and tune from KA9Q-Radio
-RUN git clone https://github.com/ka9q/ka9q-radio.git /root/ka9q-radio && \
-  cd /root/ka9q-radio && \
-  git checkout 4025a34db6e88dce87b8f67c7eb9cc339b920261 && \
+ADD https://github.com/ka9q/ka9q-radio/archive/$KA9Q_REF.zip /tmp/ka9q-radio.zip
+RUN unzip /tmp/ka9q-radio.zip -d /tmp && \
+  cd /tmp/ka9q-radio-$KA9Q_REF && \
   make \
     -f Makefile.linux \
     pcmrecord tune && \
@@ -52,6 +55,7 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
     python3-pip \
     sox \
     bc \
+    procps \
     rtl-sdr \
     libatlas3-base \
     avahi-utils \
