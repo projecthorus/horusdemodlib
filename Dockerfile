@@ -33,6 +33,7 @@ RUN unzip /tmp/ka9q-radio.zip -d /tmp && \
   cd /tmp/ka9q-radio-$KA9Q_REF && \
   make \
     -f Makefile.linux \
+    ARCHOPTS= \
     pcmrecord tune && \
   mkdir -p /target/usr/bin/ && \
   cp pcmrecord /target/usr/bin/ && \
