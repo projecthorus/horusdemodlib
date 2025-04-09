@@ -240,8 +240,8 @@
             ["time_to_fix", "none"],
             ["uv_max", "none"],
             ["uv_avg", "none"]
-        ]
-        },
+    ]
+},
 "SP6QKM-3": {
         "comment": "SKPQKM telemetry",
         "struct": "<BBBBBHH",
@@ -253,9 +253,9 @@
             ["time_to_fix", "none"],
             ["uv_max", "none"],
             ["uv_avg", "none"]
-        ]
-        },
-	"SP6QKM-4": {
+    ]
+},
+"SP6QKM-4": {
         "comment": "SKPQKM telemetry",
         "struct": "<BBBBBHH",
         "fields": [
@@ -266,9 +266,9 @@
             ["time_to_fix", "none"],
             ["uv_max", "none"],
             ["uv_avg", "none"]
-        ]
-        },
-	"SP6QKM-5": {
+    ]
+},
+"SP6QKM-5": {
         "comment": "SKPQKM telemetry",
         "struct": "<BBBBBHH",
         "fields": [
