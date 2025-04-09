@@ -240,9 +240,35 @@
             ["time_to_fix", "none"],
             ["uv_max", "none"],
             ["uv_avg", "none"]
-        ]
-        },
+    ]
+},
 "SP6QKM-3": {
+        "comment": "SKPQKM telemetry",
+        "struct": "<BBBBBHH",
+        "fields": [
+            ["fix_voltage", "battery_5v_byte"],
+            ["io_voltage", "battery_5v_byte"],
+            ["reset_voltage", "battery_5v_byte"],
+            ["pv_voltage", "divide_by_100"],
+            ["time_to_fix", "none"],
+            ["uv_max", "none"],
+            ["uv_avg", "none"]
+    ]
+},
+"SP6QKM-4": {
+        "comment": "SKPQKM telemetry",
+        "struct": "<BBBBBHH",
+        "fields": [
+            ["fix_voltage", "battery_5v_byte"],
+            ["io_voltage", "battery_5v_byte"],
+            ["reset_voltage", "battery_5v_byte"],
+            ["pv_voltage", "divide_by_100"],
+            ["time_to_fix", "none"],
+            ["uv_max", "none"],
+            ["uv_avg", "none"]
+    ]
+},
+"SP6QKM-5": {
         "comment": "SKPQKM telemetry",
         "struct": "<BBBBBHH",
         "fields": [
