@@ -281,7 +281,7 @@
             ["uv_avg", "none"]
         ]
 },
-"KD9PRC-4FSK-3": {
+"KD9PRC-3": {
     "comment": "Custom field list for rpratt's dfm17 test branch",
     "struct": "<hhBHBB",
     "fields": [
