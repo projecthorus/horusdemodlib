@@ -280,5 +280,17 @@
             ["uv_max", "none"],
             ["uv_avg", "none"]
         ]
-        }
+},
+"KD9PRC-3": {
+    "comment": "Custom field list for rpratt's dfm17 test branch",
+    "struct": "<hhBHBB",
+    "fields": [
+        ["ascent_rate", "divide_by_100"],
+        ["ext_temperature", "divide_by_10"],
+        ["ext_humidity", "none"],
+        ["ext_pressure", "divide_by_10"],
+        ["rp_xtal_code", "none"],
+        ["rp_lu", "none"]
+    ]
+}
 }
