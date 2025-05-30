@@ -1,2 +1,17 @@
 samples
 
+# Custom config file
+user.env
+user.cfg
+
+# IDE
+.vscode
+.idea
+
+# cmake
+build
+
+venv/
+__pycache__/*
+*.pyc
+*.log

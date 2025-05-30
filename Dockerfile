@@ -10,17 +10,20 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
     libairspy-dev libairspyhf-dev libavahi-client-dev libbsd-dev \
     libfftw3-dev libhackrf-dev libiniparser-dev libncurses5-dev \
     libopus-dev librtlsdr-dev libusb-1.0-0-dev libusb-dev \
-    portaudio19-dev libasound2-dev libogg-dev uuid-dev rsync unzip && \
+    portaudio19-dev libasound2-dev libogg-dev uuid-dev rsync unzip \
+    python3-crcmod python3-dateutil python3-numpy python3-requests python3-pip python3-poetry &&\
     rm -rf /var/lib/apt/lists/*
 
 # install everything in /target and it will go in to / on destination image. symlink make it easier for builds to find files installed by this.
-RUN mkdir -p /target/usr && rm -rf /usr/local && ln -sf /target/usr /usr/local && mkdir /target/etc
+RUN mkdir -p /target/usr && rm -rf /usr/local && ln -sf /target/usr /usr/local && mkdir /target/etc && mkdir /target/wheels
 
 COPY . /horusdemodlib
 
 RUN cd /horusdemodlib &&\
     cmake -B build -DCMAKE_INSTALL_PREFIX=/target/usr -DCMAKE_BUILD_TYPE=Release &&\
-    cmake --build build --target install
+    cmake --build build --target install &&\
+    poetry build -f wheel &&\
+    cp dist/* /target/wheels
 
 RUN git clone --depth 1 https://github.com/rxseger/rx_tools.git &&\
     cd rx_tools &&\
@@ -65,9 +68,8 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
     soapysdr-module-all &&\
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install --break-system-packages --no-cache-dir --prefer-binary horusdemodlib
-
 RUN sed -i -e 's/files dns/files mdns4_minimal [NOTFOUND=return] dns/g' /etc/nsswitch.conf
 
 COPY --from=builder /target /
+RUN pip install --break-system-packages --no-cache-dir horusdemodlib --find-links=/wheels --no-index
 CMD ["bash"]
