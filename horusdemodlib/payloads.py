@@ -210,6 +210,18 @@ def read_custom_field_list(filename="custom_field_list.json"):
                             "fields": _data["fields"]
                         }
                         logging.debug(f"Loaded custom field data for {_payload}.")
+
+                        # other_calls flag for applying custom fields to multiple payloads
+                        if "other_calls" in _data:
+                            for _other_payload in _data["other_calls"]:
+                                if _other_payload in _custom_field_list:
+                                    logging.warning(f"Custom field data for {_other_payload} is already loaded, overwriting.")
+                                _custom_field_list[_other_payload] = {
+                                    "struct": _data["struct"],
+                                    "fields": _data["fields"]
+                                }
+                            logging.debug(f"Loaded custom field data for other calls: {_data["other_calls"]}.")
+
                     else:
                         logging.error(f"Struct field for {_payload} has incorrect length ({_structsize}).")
                         
