@@ -70,7 +70,7 @@ def parse_payload_list(text_data):
                 _params = line.split(',')
                 if len(_params) != 2:
                     # Invalid line.
-                    logging.error(f"Could not parse line, incorrect number of fields: {line}")
+                    logging.error(f"Payload List Parser - Could not parse line, incorrect number of fields: {line}")
                 else:
                     try:
                         _id = int(_params[0])
@@ -79,14 +79,14 @@ def parse_payload_list(text_data):
                         # Check to see if a payload ID is already in use and print a warning
                         if _id in _payload_list:
                             if _id not in HORUS_PAYLOAD_LIST:
-                                logging.warning(f"Payload ID {_id} already in use by {_payload_list[_id]}")
+                                logging.warning(f"Payload List Parser - Payload ID {_id} already in use by {_payload_list[_id]}")
 
                         _payload_list[_id] = _callsign
                     except:
-                        logging.error(f"Error parsing line, skipping: {line}")
+                        logging.error(f"Payload List Parser - Error parsing line, skipping: {line}")
 
     except Exception as e:
-        logging.error(f"Error reading Payload ID list, using defaults: {str(e)}")
+        logging.error(f"Payload List Parser - Error reading Payload ID list, using defaults: {str(e)}")
         return _payload_list
     
     return _payload_list
@@ -181,7 +181,7 @@ def parse_custom_field_list(text_data):
         _field_data = json.loads(text_data)
 
         if type(_field_data) != dict:
-            logging.error("Custom field list data does not contain a JSON object, using defaults.")
+            logging.error("Custom Field List Parser - Custom field list data does not contain a JSON object, using defaults.")
             return _custom_field_list
         
         # Iterate through fields in the file we just read in
@@ -198,32 +198,32 @@ def parse_custom_field_list(text_data):
                             "struct": _data["struct"],
                             "fields": _data["fields"]
                         }
-                        logging.debug(f"Loaded custom field data for {_payload}.")
+                        logging.debug(f"Custom Field List Parser - Loaded custom field data for {_payload}.")
 
                         # Look for other_payloads field, which means this custom field spec applies to
                         # other payload IDs too.
                         if "other_payloads" in _data:
                             for _other_payload in _data["other_payloads"]:
                                 if _other_payload in _custom_field_list:
-                                    logging.warning(f"Custom field data for {_other_payload} is already loaded, overwriting.")
+                                    logging.warning(f"Custom Field List Parser - Custom field data for {_other_payload} is already loaded, overwriting.")
                                 
                                 _custom_field_list[_other_payload] = {
                                     "struct": _data["struct"],
                                     "fields": _data["fields"]
                                 }
 
-                            logging.debug(f"Applied {_payload} custom field data to additional payloads: {_data['other_payloads']}.")
+                            logging.debug(f"Custom Field List Parser - Applied {_payload} custom field data to additional payloads: {_data['other_payloads']}.")
             
                     else:
-                        logging.error(f"Struct field for {_payload} has incorrect length ({_structsize}).")
+                        logging.error(f"Custom Field List Parser - Struct field for {_payload} has incorrect length ({_structsize}).")
                         
                 except Exception as e:
-                    logging.error(f"Could not parse custom field data for {_payload}: {str(e)}")
+                    logging.error(f"Custom Field List Parser - Could not parse custom field data for {_payload}: {str(e)}")
         
         return _custom_field_list
 
     except Exception as e:
-        logging.error(f"Error parsing custom field list data, using defaults: {str(e)}")
+        logging.error(f"Custom Field List Parser - Error parsing custom field list data, using defaults: {str(e)}")
         return _custom_field_list
 
 
