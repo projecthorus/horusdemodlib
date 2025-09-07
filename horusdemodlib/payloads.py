@@ -249,32 +249,6 @@ def read_custom_field_list(filename="custom_field_list.json"):
     return parse_custom_field_list(_raw_data)
 
 
-# Function does not appear to be used anywhere, can probably remove this.
-def grab_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, local_file="custom_field_list.json"):
-    """ Attempt to download the latest custom field list from Github """
-
-    # Download the list.
-    try:
-        logging.info("Attempting to download latest custom field list from GitHub...")
-        _r = requests.get(url, timeout=10)
-    except Exception as e:
-        logging.error("Unable to get latest custom field list: %s" % str(e))
-        return False
-
-    # Check it is what we think it is..
-    # (Currently checking for the presence of one of the test payloads)
-    if "HORUSTEST" not in _r.text:
-        logging.error("Downloaded custom field list is invalid.")
-        return False
-
-    # So now we most likely have a valid custom field list, so write it out.
-    with open(local_file, 'w') as f:
-        f.write(_r.text)
-
-    logging.info("Updated custom field list successfully!")
-    return True
-
-
 def download_latest_custom_field_list(url=HORUS_CUSTOM_FIELD_URL, filename=None, timeout=10):
     """ 
     Attempt to download the latest custom field list from Github, 

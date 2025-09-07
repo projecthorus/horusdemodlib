@@ -314,7 +314,8 @@
         ["ext_humidity", "none"],
         ["ext_pressure", "divide_by_10"],
 	["payload_voltage", "divide_by_100"]
-    ]
+    ],
+    "other_payloads": ["SQ2IPS"]
 },
 "K5PRK": {
     "comment": "K5PRK Radiation Monitor Payload, Geiger Counter",
