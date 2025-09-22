@@ -134,17 +134,17 @@
 },
 "SP9SKP": {
     "comment": "SKP telemetry",
-    "struct": "<BBBBBHH",
+    "struct": "<hBHBBBx",
     "fields": [
-        ["fix_voltage", "battery_5v_byte"],
-        ["io_voltage", "battery_5v_byte"],
-        ["reset_voltage", "battery_5v_byte"],
-        ["pv_voltage", "divide_by_100"],
-        ["time_to_fix", "none"],
-        ["uv_max", "none"],
-        ["uv_avg", "none"]
-    ]
-    },
+            ["ext_temperature", "divide_by_10"],
+            ["ext_humidity", "none"],
+            ["ext_pressure", "divide_by_10"],
+            ["pv_voltage", "battery_5v_byte"],
+            ["time_to_fix", "none"],
+            ["C1", "none"]
+    ],
+    "other_payloads": ["SP9SKP-1", "SP9SKP-2", "SP9SKP-3", "SP9SKP-4"]
+},
 "SKPQKM": {
         "comment": "SKPQKM telemetry",
         "struct": "<BBBBBHH",
