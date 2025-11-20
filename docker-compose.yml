@@ -3,6 +3,7 @@ services:
   horusdemod:
     build:
       context: .
+      #dockerfile: Dockerfile.rtlsdrV4 
       target: prod
     image: 'ghcr.io/projecthorus/horusdemodlib:latest'
     #read_only: true
