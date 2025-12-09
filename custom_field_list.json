@@ -114,14 +114,15 @@
     ]
 },
 "KD2EAT-DFM": {
-    "comment": "custom fields for KD2EAT DFM17 testing",
-    "struct": "<hhBHBx",
+    "comment": "Default custom fields for RS41ng-Mod",
+    "struct": "<hhBHBB",
     "fields": [
         ["ascent_rate", "divide_by_100"],
         ["ext_temperature", "divide_by_10"],
         ["ext_humidity", "none"],
         ["ext_pressure", "divide_by_10"],
-        ["mcu_calibration", "none"]
+        ["rp_xtal_code", "none"],
+        ["rp_lu", "none"]
     ]
 },
 "DF7PN": {
