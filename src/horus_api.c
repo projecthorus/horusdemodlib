@@ -509,7 +509,7 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc, int 
 int extract_horus_binary_v1(struct horus *hstates, char hex_out[], int uw_loc) {
     const int nfield = 8;                      /* 8 bit binary                   */
     int st = uw_loc;                           /* first bit of first char        */
-    int en = uw_loc + hstates->max_packet_len; /* last bit of max length packet  */
+    int en = uw_loc + HORUS_BINARY_V1_NUM_CODED_BITS; /* last bit of max length packet  */
 
     if (en > hstates->rx_bits_len){
         if (hstates->verbose) {
@@ -520,7 +520,7 @@ int extract_horus_binary_v1(struct horus *hstates, char hex_out[], int uw_loc) {
 
 
     int      j, b, nout;
-    uint8_t  rxpacket[hstates->max_packet_len];
+    uint8_t  rxpacket[HORUS_BINARY_V1_NUM_CODED_BITS];
     uint8_t  rxbyte, *pout;
  
     /* convert bits to a packet of bytes */
@@ -590,10 +590,10 @@ int extract_horus_binary_v1(struct horus *hstates, char hex_out[], int uw_loc) {
 int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_loc) {
     const int nfield = 8;                      /* 8 bit binary                   */
     int st = uw_loc;                           /* first bit of first char        */
-    int en = uw_loc + hstates->max_packet_len; /* last bit of max length packet  */
+    int en = uw_loc + HORUS_BINARY_V2_256BIT_NUM_CODED_BITS; /* last bit of max length packet  */
 
     int      j, b, nout;
-    uint8_t  rxpacket[hstates->max_packet_len];
+    uint8_t  rxpacket[HORUS_BINARY_V2_256BIT_NUM_CODED_BITS];
     uint8_t  rxbyte, *pout;
  
 
@@ -805,6 +805,7 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
         }
 
         if (packet_detected){
+            hstates->uw_loc[uw_idx] = -1; // remove this UW from further searches.
             return packet_detected;
         }
 
