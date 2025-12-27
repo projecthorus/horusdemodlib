@@ -59,6 +59,7 @@ struct horus {
     int         total_payload_bits;                   /* num bits rx-ed in last RTTY packet  */
     int         uw_loc[MAX_UW_TO_TRACK];              /* current location of uw */
     int         uw_count;
+    int         version;                              /* The version of the last decoded frame (if horus) */
 };
 
 int horus_v3_check_sizes[] = {32,64,128};
@@ -295,18 +296,18 @@ uint32_t horus_nin(struct horus *hstates) {
 
 void horus_find_uw(struct horus *hstates) {
     int i, j, corr;
-    int n = hstates->fsk->Nbits + hstates->uw_len;
+    int n = hstates->fsk->Nbits+hstates->uw_len;
     int rx_bits_mapped[n+hstates->uw_len];
     
     /* map rx_bits to +/-1 for UW search */
 
-    for(i=0; i<n+hstates->uw_len; i++) {
+    for(i=0; i<n; i++) {
         rx_bits_mapped[i] = 2*hstates->rx_bits[hstates->rx_bits_len-n+i] - 1;
     }
     
     /* look for UW  */
 
-    for(i=0; i<n; i++) {
+    for(i=0; i<n-hstates->uw_len; i++) {
 
         /* calculate correlation between bit stream and UW */
         
@@ -318,7 +319,14 @@ void horus_find_uw(struct horus *hstates) {
         /* peak pick maximum */
         
         if (corr >= hstates->uw_thresh && hstates->uw_count < MAX_UW_TO_TRACK) {
-            hstates->uw_loc[hstates->uw_count] = hstates->rx_bits_len-n+i;
+            int pos = hstates->rx_bits_len-n+i;
+            for (int h=0; h< hstates->uw_count;h++){
+                if (hstates->uw_loc[h] == pos){
+                    fprintf(stderr, "uw: already in %d\n",  hstates->uw_loc[h]);
+                    continue;
+                }
+            }
+            hstates->uw_loc[hstates->uw_count] = pos;
             
             if (hstates->verbose) {
                 fprintf(stderr, "uw: %d:%d\n", hstates->uw_count, hstates->uw_loc[hstates->uw_count]);
@@ -525,6 +533,7 @@ int extract_horus_binary_v1(struct horus *hstates, char hex_out[], int uw_loc) {
     if ( hstates->crc_ok) {
         hstates->total_payload_bits = HORUS_BINARY_V1_NUM_UNCODED_PAYLOAD_BYTES;
     }
+    hstates->version = 1;
     return hstates->crc_ok;
 }
 
@@ -588,7 +597,13 @@ int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_lo
         crc_rx = horus_l2_gen_crc16(payload_bytes+2, size-2);
         crc_tx = (uint16_t)payload_bytes[0] +
             ((uint16_t)payload_bytes[1]<<8);
-        hstates->crc_ok = (crc_tx == crc_rx);
+        if ((hstates->crc_ok = (crc_tx == crc_rx))){
+            hstates->version = 3;
+            fprintf(stderr, "v3 packet\n");
+        }
+        
+    } else {
+        hstates->version = 2;
     }
     
     if (hstates->verbose) {
@@ -661,15 +676,20 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
         }
     }
 
+
+
+
     fsk_demod_core(hstates->fsk, &hstates->rx_bits[rx_bits_len-Nbits], &hstates->soft_bits[rx_bits_len-Nbits], demod_in_comp);
     free(demod_in_comp);
-    
     if (hstates->uw_count ) {
         int old_uw_count = hstates->uw_count;
         hstates->uw_count = 0;
         for (int uw_idx=0; uw_idx < old_uw_count; uw_idx++){
             if (hstates->uw_loc[uw_idx]-Nbits >= 0 && hstates->uw_count < MAX_UW_TO_TRACK) 
             {
+                 if (hstates->verbose) {
+                    fprintf(stderr, "%d %d -> %d\n", uw_idx, hstates->uw_loc[uw_idx], hstates->uw_loc[uw_idx] - Nbits );
+                }
                 hstates->uw_loc[hstates->uw_count] = hstates->uw_loc[uw_idx] - Nbits;
                 hstates->uw_count++;
             }
@@ -677,7 +697,7 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
         if (hstates->verbose) {
             fprintf(stderr, "updated uw states\n");
         }
-    }
+    }    
 
     horus_find_uw(hstates);
 
@@ -746,7 +766,6 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
                         break;
                     }
                 }
-                
             }
             //#define DUMP_BINARY_PACKET
             #ifdef DUMP_BINARY_PACKET
@@ -760,7 +779,11 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
         }
 
         if (packet_detected){
+            if (hstates->verbose) {
+                fprintf(stderr, "Removed uw index %d@%d - late\n", uw_idx, hstates->uw_loc[uw_idx]);
+            }
             hstates->uw_loc[uw_idx] = -1; // remove this UW from further searches.
+
             return packet_detected;
         }
 
