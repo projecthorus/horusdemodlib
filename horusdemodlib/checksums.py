@@ -19,7 +19,7 @@ def ukhas_crc(data:bytes) -> str:
     return hex(crc16(data))[2:].upper().zfill(4)
 
 
-def check_packet_crc(data:bytes, checksum:str='crc16'):
+def check_packet_crc(data:bytes, checksum:str='crc16', tail=True):
     """ 
     Attempt to validate a packets checksum, which is assumed to be present
     in the last few bytes of the packet.
@@ -34,11 +34,11 @@ def check_packet_crc(data:bytes, checksum:str='crc16'):
             raise ValueError(f"Checksum - Not enough data for CRC16!")
 
         # Decode the last 2 bytes as a uint16
-        _packet_checksum = struct.unpack('<H', data[-2:])[0]
+        _packet_checksum = struct.unpack('<H', data[-2:])[0] if tail else struct.unpack('<H', data[:2])[0]
 
         # Calculate a CRC over the rest of the data
         _crc16 = crcmod.predefined.mkCrcFun('crc-ccitt-false')
-        _calculated_crc = _crc16(data[:-2])
+        _calculated_crc = _crc16(data[:-2] if tail else data[2:])
 
         if _calculated_crc == _packet_checksum:
             return True

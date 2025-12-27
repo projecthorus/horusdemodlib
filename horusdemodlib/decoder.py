@@ -9,7 +9,10 @@ from .delegates import *
 from .checksums import *
 from .payloads import init_custom_field_list, init_payload_id_list
 import horusdemodlib.payloads
+import asn1tools
+import os
 
+HORUS_ASN = asn1tools.compile_files(os.path.join(os.path.dirname(__file__), 'HorusBinaryV3.asn1'), codec="uper")
 
 #
 #   Horus Binary V1 and V2 Packet Formats
@@ -91,7 +94,11 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         if len(data) in HORUS_LENGTH_TO_FORMAT:
             packet_format = HORUS_PACKET_FORMATS[HORUS_LENGTH_TO_FORMAT[len(data)]]
         else:
-            raise ValueError(f"Unknown Packet Length ({len(data)}).")
+            # check if horus v3
+            if _crc_ok := check_packet_crc(data, checksum='crc16',tail=False):
+                packet_format = {"name": "horus_binary_v3"}
+            else:
+                raise ValueError(f"Unknown Packet Length ({len(data)}).")
 
 
     # Output dictionary
@@ -107,75 +114,88 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         _output['modulation'] = 'Horus Binary v1'
     elif 'v2' in packet_format['name']:
         _output['modulation'] = 'Horus Binary v2'
+    elif 'v3' in packet_format['name']:
+        _output['modulation'] = 'Horus Binary v3'
     else:
         _output['modulation'] = 'Horus Binary'
 
-    # Check the length provided in the packet format matches up with the length defined by the struct.
-    _struct_length = struct.calcsize(packet_format['struct'])
-    if _struct_length != packet_format['length']:
-        raise ValueError(f"Decoder - Provided length {packet_format['length']} and struct length ({_struct_length}) do not match!")
-    
-    # Check the length of the input data bytes matches that of the struct.
-    if len(data) != _struct_length:
-        raise ValueError(f"Decoder - Input data has length {len(data)}, should be length {_struct_length}.")
+    if  packet_format['name'] != "horus_binary_v3":
+        # Check the length provided in the packet format matches up with the length defined by the struct.
+        _struct_length = struct.calcsize(packet_format['struct'])
+        if _struct_length != packet_format['length']:
+            raise ValueError(f"Decoder - Provided length {packet_format['length']} and struct length ({_struct_length}) do not match!")
+        
+        # Check the length of the input data bytes matches that of the struct.
+        if len(data) != _struct_length:
+            raise ValueError(f"Decoder - Input data has length {len(data)}, should be length {_struct_length}.")
 
     # Check the Checksum
-    _crc_ok = check_packet_crc(data, checksum=packet_format['checksum'])
+    if  packet_format['name'] != "horus_binary_v3":
+        _crc_ok = check_packet_crc(data, checksum=packet_format['checksum'])
 
     if (not _crc_ok) and (not ignore_crc):
         raise ValueError("Decoder - CRC Failure.")
     else:
         _output['crc_ok'] = True
 
-    # Now try and decode the data.
-    _raw_fields = struct.unpack(packet_format['struct'], data)
-
-    # Check the number of decoded fields is equal to the number of field definitions in the packet format.
-    if len(_raw_fields) != len(packet_format['fields']):
-        raise ValueError(f"Decoder - Packet format defines {len(packet_format['fields'])} fields, got {len(_raw_fields)} from struct.")
-
-    # Now we can start extracting and formatting fields.
-    
     _ukhas_fields = []
-    for _i in range(len(_raw_fields)):
-        _field_name = packet_format['fields'][_i][0]
-        _field_type = packet_format['fields'][_i][1]
-        _field_data = _raw_fields[_i]
+    
+    if  packet_format['name'] == "horus_binary_v3":
+        _raw_fields = HORUS_ASN.decode("Telemetry", data[2:])
+
+        packet_format["payload_id"] = _raw_fields["payloadCallsign"]
+        # TODO need to format some of the fields
+        _output.update(_raw_fields)
+    else:
+        # Now try and decode the data.
+        _raw_fields = struct.unpack(packet_format['struct'], data)
+
+        # Check the number of decoded fields is equal to the number of field definitions in the packet format.
+        if len(_raw_fields) != len(packet_format['fields']):
+            raise ValueError(f"Decoder - Packet format defines {len(packet_format['fields'])} fields, got {len(_raw_fields)} from struct.")
+
+        # Now we can start extracting and formatting fields.
+        
+        
+        for _i in range(len(_raw_fields)):
+            _field_name = packet_format['fields'][_i][0]
+            _field_type = packet_format['fields'][_i][1]
+            _field_data = _raw_fields[_i]
 
 
-        if _field_name == 'custom':
-            # Attempt to interpret custom fields.
-            # Note: This requires that the payload ID has been decoded prior to this field being parsed.
+            if _field_name == 'custom':
+                # Attempt to interpret custom fields.
+                # Note: This requires that the payload ID has been decoded prior to this field being parsed.
 
-            if _output['payload_id'] in horusdemodlib.payloads.HORUS_CUSTOM_FIELDS:
-                # If this payload has a specific custom field description, use that.
-                _custom_field_name = _output['payload_id']
-            else:
-                # Otherwise use the default from 4FSKTEST-V2, which matches
-                # the default fields from RS41ng
-                _custom_field_name = '4FSKTEST-V2'
-            
-            (_custom_data, _custom_str) = decode_custom_fields(_field_data, _custom_field_name)
+                if _output['payload_id'] in horusdemodlib.payloads.HORUS_CUSTOM_FIELDS:
+                    # If this payload has a specific custom field description, use that.
+                    _custom_field_name = _output['payload_id']
+                else:
+                    # Otherwise use the default from 4FSKTEST-V2, which matches
+                    # the default fields from RS41ng
+                    _custom_field_name = '4FSKTEST-V2'
+                
+                (_custom_data, _custom_str) = decode_custom_fields(_field_data, _custom_field_name)
 
-            # Add custom fields to string
-            _ukhas_fields.append(_custom_str)
+                # Add custom fields to string
+                _ukhas_fields.append(_custom_str)
 
-            # Add custom fields to output dict.
-            for _field in _custom_data:
-                _output[_field] = _custom_data[_field]
+                # Add custom fields to output dict.
+                for _field in _custom_data:
+                    _output[_field] = _custom_data[_field]
 
-            _output['custom_field_names'] = list(_custom_data.keys())
+                _output['custom_field_names'] = list(_custom_data.keys())
 
 
 
-        # Ignore checksum field. (and maybe other fields?)
-        elif _field_name not in ['checksum']:
-            # Decode field to string.
-            (_decoded, _decoded_str) = decode_field(_field_type, _field_data)
+            # Ignore checksum field. (and maybe other fields?)
+            elif _field_name not in ['checksum']:
+                # Decode field to string.
+                (_decoded, _decoded_str) = decode_field(_field_type, _field_data)
 
-            _output[_field_name] = _decoded
+                _output[_field_name] = _decoded
 
-            _ukhas_fields.append(_decoded_str)
+                _ukhas_fields.append(_decoded_str)
 
 
     # Check the payload ID if > 256 for a Horus v2 packet.

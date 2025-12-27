@@ -35,32 +35,7 @@
 #include "fsk.h"
 #include "horus_l2.h"
 
-#define MAX_UW_LENGTH                  100
-#define HORUS_API_VERSION                2    /* unique number that is bumped if API changes */
-
-#define MAX_UW_TO_TRACK 32
-
-
-struct horus {
-    int         mode;
-    int         verbose;
-    struct FSK *fsk;                                  /* states for FSK modem                */
-    int         Fs;                                   /* sample rate in Hz                   */
-    int         mFSK;                                 /* number of FSK tones                 */
-    int         Rs;                                   /* symbol rate in Hz                   */
-    int         uw[MAX_UW_LENGTH];                    /* unique word bits mapped to +/-1     */
-    int         uw_thresh;                            /* threshold for UW detection          */
-    int         uw_len;                               /* length of unique word               */
-    int         max_packet_len;                       /* max length of a telemetry packet    */
-    uint8_t    *rx_bits;                              /* buffer of received bits             */
-    float      *soft_bits;                            /* buffer of soft decision outputs     */
-    int         rx_bits_len;                          /* length of rx_bits buffer            */
-    int         crc_ok;                               /* most recent packet checksum results */
-    int         total_payload_bits;                   /* num bits rx-ed in last RTTY packet  */
-    int         uw_loc[MAX_UW_TO_TRACK];              /* current location of uw */
-    int         uw_count;
-    int         version;                              /* The version of the last decoded frame (if horus) */
-};
+struct horus ;
 
 int horus_v3_check_sizes[] = {32,64,128};
 /*
@@ -599,7 +574,9 @@ int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_lo
             ((uint16_t)payload_bytes[1]<<8);
         if ((hstates->crc_ok = (crc_tx == crc_rx))){
             hstates->version = 3;
-            fprintf(stderr, "v3 packet\n");
+            if (hstates->verbose) {
+                fprintf(stderr, "v3 packet\n");
+            }
         }
         
     } else {
@@ -886,6 +863,11 @@ void horus_set_verbose(struct horus *hstates, int verbose) {
 int horus_crc_ok(struct horus *hstates) {
     assert(hstates != NULL);
     return hstates->crc_ok;
+}
+
+int horus_packet_version(struct horus *hstates) {
+    assert(hstates != NULL);
+    return hstates->version;
 }
 
 int horus_get_total_payload_bits(struct horus *hstates) {

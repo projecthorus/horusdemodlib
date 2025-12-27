@@ -90,7 +90,33 @@
 #define HORUS_RTTY_8N2_NUM_BITS                 (HORUS_RTTY_MAX_CHARS*11)
 #define HORUS_RTTY_DEFAULT_BAUD                 100
 
-struct horus;
+
+
+#define MAX_UW_LENGTH                  100
+#define HORUS_API_VERSION                3    /* unique number that is bumped if API changes */
+
+#define MAX_UW_TO_TRACK 32
+
+struct horus {
+    int         mode;
+    int         verbose;
+    struct FSK *fsk;                                  /* states for FSK modem                */
+    int         Fs;                                   /* sample rate in Hz                   */
+    int         mFSK;                                 /* number of FSK tones                 */
+    int         Rs;                                   /* symbol rate in Hz                   */
+    int         uw[MAX_UW_LENGTH];                    /* unique word bits mapped to +/-1     */
+    int         uw_thresh;                            /* threshold for UW detection          */
+    int         uw_len;                               /* length of unique word               */
+    int         max_packet_len;                       /* max length of a telemetry packet    */
+    uint8_t    *rx_bits;                              /* buffer of received bits             */
+    float      *soft_bits;                            /* buffer of soft decision outputs     */
+    int         rx_bits_len;                          /* length of rx_bits buffer            */
+    int         crc_ok;                               /* most recent packet checksum results */
+    int         total_payload_bits;                   /* num bits rx-ed in last RTTY packet  */
+    int         uw_loc[MAX_UW_TO_TRACK];              /* current location of uw */
+    int         uw_count;
+    int         version;                              /* The version of the last decoded frame (if horus) */
+};
 struct MODEM_STATS;
 
 /*
