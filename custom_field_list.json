@@ -308,13 +308,14 @@
 },
 "SP2ZIE": {
     "comment": "Custom fields for M20",
-    "struct": "<hhBHH",
+    "struct": "<hhBHBB",
     "fields": [
         ["ascent_rate", "divide_by_100"],
         ["ext_temperature", "divide_by_10"],
         ["ext_humidity", "none"],
         ["ext_pressure", "divide_by_10"],
-	["payload_voltage", "divide_by_100"]
+		["gps_restarts", "none"],
+		["pv_voltage", "battery_5v_byte"]
     ],
     "other_payloads": ["SQ2IPS"]
 },
