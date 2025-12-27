@@ -22,7 +22,7 @@
 #include "H_128_384_23.h"
 #include "H_256_768_22.h"
 
-// TODO: Move these packet format definitions to somehwere common.
+// TODO: Move these packet format definitions to somewhere common.
 
 /* Horus Mode 0 (Legacy 22-byte) Binary Packet */
 struct TBinaryPacket0
@@ -166,7 +166,7 @@ int main(int argc,char *argv[]) {
           }
           framecnt -= 1;
           counter += 1;
-      }
+      } 
     // Leaving this in place unless we ever decide to do an LDPC mode.
     // } else if(horus_mode == 2){
     //   // 16-Byte LDPC Encoded mode.
@@ -196,6 +196,70 @@ int main(int argc,char *argv[]) {
     //       }
     //       framecnt -= 1;
     //   }
+    } else if (horus_mode == 2) {
+      unsigned char payload[32] ={ // generated from https://xssfox.github.io/horusbinaryv3/ for the time being
+        0x00, 0x00, // crc
+        0x30, 0x05, 0x85, 0x61,   0x51, 0x81, 0xd0, 0x4d, 
+        0x21, 0x19, 0x54, 0x4a,   0x4d, 0x74, 0xef, 0x09,
+        0x86, 0x5d, 0xc0, 0x32,   0x24, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,   0x00, 0x00
+      };
+      int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(sizeof(payload));
+      unsigned char tx[num_tx_data_bytes];
+      uint16_t * checksum = (uint16_t *)payload;
+      *checksum = horus_l2_gen_crc16(payload+2, sizeof(payload)-2);
+      uint16_t counter = 0;
+
+      /* all zeros is nastiest sequence for demod before scrambling */
+      while(framecnt > 0){
+        horus_l2_encode_tx_packet(tx, payload, sizeof(payload));
+
+        int b;
+        uint8_t tx_bit;
+          for(i=0; i<num_tx_data_bytes; i++) {
+              for(b=0; b<8; b++) {
+                  tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+                  fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+                  fflush(stdout);
+              }
+          }
+          framecnt -= 1;
+          counter += 1;
+      }
+    } else if (horus_mode == 3) { // horus binary v3 64 byte packet
+      unsigned char payload[] ={ // generated from https://xssfox.github.io/horusbinaryv3/ for the time being
+        0x00, 0x00, // crc
+        0x7b, 0xa5, 0x85, 0x61,  0x51, 0x81, 0xd0, 0x4d,
+        0x21, 0x19, 0x54, 0x4a,  0x4d, 0x74, 0xef, 0x09, 
+        0x86, 0x5d, 0xc0, 0x31,  0x38, 0x59, 0xcc, 0x02, 
+        0x02, 0x02, 0x04, 0x02,  0x06, 0x64, 0x4a, 0x10, 
+        0xdf, 0x23, 0x1c, 0xc7,  0x15, 0x04, 0x7e, 0x30,
+        0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00,  0x00, 0x00
+      };
+      int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(sizeof(payload));
+      unsigned char tx[num_tx_data_bytes];
+      uint16_t * checksum = (uint16_t *)payload;
+      *checksum = horus_l2_gen_crc16(payload+2, sizeof(payload)-2);
+      uint16_t counter = 0;
+
+      /* all zeros is nastiest sequence for demod before scrambling */
+      while(framecnt > 0){
+        horus_l2_encode_tx_packet(tx, payload, sizeof(payload));
+
+        int b;
+        uint8_t tx_bit;
+          for(i=0; i<num_tx_data_bytes; i++) {
+              for(b=0; b<8; b++) {
+                  tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+                  fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+                  fflush(stdout);
+              }
+          }
+          framecnt -= 1;
+          counter += 1;
+      }
     } else {
       fprintf(stderr, "Unknown Mode!");
     }
