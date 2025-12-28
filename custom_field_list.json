@@ -317,7 +317,7 @@
 		["gps_restarts", "none"],
 		["pv_voltage", "battery_5v_byte"]
     ],
-    "other_payloads": ["SQ2IPS"]
+    "other_payloads": ["SQ2IPS", "SP6MPL-M20"]
 },
 "K5PRK": {
     "comment": "K5PRK Radiation Monitor Payload, Geiger Counter",
