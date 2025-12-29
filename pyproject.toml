@@ -12,7 +12,7 @@ crcmod = "^1.7"
 numpy = "^1.17"
 python-dateutil = "^2.8"
 audioop-lts = { version = "*", python = "^3.13" }
-asn1tools = "^0.167.0"
+asn1tools = "^0.165.0"
 
 [tool.poetry.group.dev.dependencies]
 
