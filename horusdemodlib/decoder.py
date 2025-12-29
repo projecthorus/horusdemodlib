@@ -255,7 +255,7 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
 
         payload_timestamp = datetime.timedelta(seconds=_raw_fields.pop("timeOfDaySeconds"))
         _output["time"] = (
-                                datetime.datetime.now(tz=datetime.UTC).replace(hour=0,minute=0,second=0) + 
+                                datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0) + 
                                 payload_timestamp
                           ).strftime("%H:%M:%S")
             
