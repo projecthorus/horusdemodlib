@@ -83,6 +83,15 @@ HORUS_LENGTH_TO_FORMAT = {
     32: 'horus_binary_v2_32byte'
 }
 
+HORUS_V3_NAME_CACHE = {
+    # callsign : {
+        # 0 : "name",
+        # 1 : "name",
+        # 2 : "name",
+        # 3 : "name",
+    #}
+}
+
 def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False) -> dict:
     """ 
     Attempt to decode a set of bytes based on a provided packet format.
@@ -143,8 +152,113 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
     if  packet_format['name'] == "horus_binary_v3":
         _raw_fields = HORUS_ASN.decode("Telemetry", data[2:])
 
-        packet_format["payload_id"] = _raw_fields["payloadCallsign"]
-        # TODO need to format some of the fields
+        _output["custom_field_names"] = []
+
+        _output["payload_id"] = _raw_fields.pop("payloadCallsign")
+        _output["sequence_number"] =  _raw_fields.pop("sequenceNumber")
+        _output["latitude"] = _raw_fields.pop("latitude") / 100000
+        _output["longitude"] = _raw_fields.pop("longitude") / 100000
+
+        
+        if _raw_fields["altitudeMeters"] != -1000:
+            _output["altitude"] = _raw_fields.pop("altitudeMeters") / 1000
+
+        if 'gnssSatellitesVisible' in _raw_fields:
+            _output["satellites"] = _raw_fields.pop("gnssSatellitesVisible")
+        
+        if 'velocityHorizontalKilometersPerHour' in _raw_fields:
+            _output["vel_h"] = _raw_fields.pop("velocityHorizontalKilometersPerHour") /(1*60*60/1000) # km/h -> m/s
+
+        if 'ascentRateCentimetersPerSecond' in _raw_fields:
+            _output["ascent_rate"] = _raw_fields.pop("ascentRateCentimetersPerSecond") / 100 # cm/s -> m/s
+            _output["custom_field_names"].append("ascent_rate")
+                
+        if 'pressurehPa' in _raw_fields:
+            _output["ext_pressure"] = _raw_fields.pop("pressurehPa")
+            _output["custom_field_names"].append("ext_pressure")
+              
+        if 'humidityPercentage' in _raw_fields:
+            _output["ext_humidity"] = _raw_fields.pop("humidityPercentage")
+            _output["custom_field_names"].append("ext_humidity")
+
+        if 'temperatureCelsius' in _raw_fields:
+            if 'internal' in _raw_fields['temperatureCelsius']:
+                _output["temperature"] = _raw_fields['temperatureCelsius']['internal'] / 10
+            if 'external' in _raw_fields['temperatureCelsius']:
+                _output["ext_temperature"] = _raw_fields['temperatureCelsius'].pop('external') / 10
+                _output["custom_field_names"].append("ext_temperature")
+            if 'custom1' in _raw_fields['temperatureCelsius']:
+                _output["ext_temperature_custom_1"] = _raw_fields['temperatureCelsius'].pop('custom1') / 10
+                _output["custom_field_names"].append("ext_temperature_custom_1")
+            if 'custom2' in _raw_fields['temperatureCelsius']:
+                _output["ext_temperature_custom_2"] = _raw_fields['temperatureCelsius'].pop('custom2') / 10
+                _output["custom_field_names"].append("ext_temperature_custom_2")    
+            _raw_fields.pop('temperatureCelsius')    
+
+        if 'milliVolts' in _raw_fields:
+            if 'battery' in _raw_fields['milliVolts']:
+                _output["battery_voltage"] = _raw_fields['milliVolts'].pop('battery') / 1000 # millivolts to volts
+            for k,v in  _raw_fields['milliVolts'].items():
+                key = f"{k}_voltage"
+                _output[key] = v / 1000 # millivolts to volts
+                _output["custom_field_names"].append(key)
+            _raw_fields.pop('milliVolts')
+        
+        if 'gnssPowerSaveState' in _raw_fields:
+            _output['gnss_power_save_state'] = _raw_fields.pop('gnssPowerSaveState')
+            _output["custom_field_names"].append('gnss_power_save_state')
+            
+
+        if 'counts' in _raw_fields:
+            for k,v in  enumerate(_raw_fields['counts']):
+                    key = f"count_{k}"
+                    _output[key] = v
+                    _output["custom_field_names"].append(key)
+            _raw_fields.pop('counts')
+        
+        if 'customData' in _raw_fields:
+            _output['custom_data'] = _raw_fields.pop('customData')
+            _output["custom_field_names"].append('custom_data')
+        
+        # We might only get names for sensors occasionally, so if we see the name, lets cache it
+        if 'extraSensors' in _raw_fields:
+            for sensor_id, sensor in enumerate(_raw_fields['extraSensors']):
+                sensor_name = "unknown"
+                if 'name' in sensor:
+                    sensor_name = sensor['name']
+                    # create dict for callsign if doesn't already exist
+                    if _output["payload_id"] not in HORUS_V3_NAME_CACHE:
+                        HORUS_V3_NAME_CACHE[_output["payload_id"]] = {}
+                    #cache the sensor name
+                    HORUS_V3_NAME_CACHE[_output["payload_id"]][sensor_id] = sensor_name
+                else:
+                    if _output["payload_id"] in HORUS_V3_NAME_CACHE and sensor_id in HORUS_V3_NAME_CACHE[_output["payload_id"]]:
+                        sensor_name = HORUS_V3_NAME_CACHE[_output["payload_id"]][sensor_id]
+                
+                # handle the sensor values
+                if 'values' in sensor:
+                    if sensor['values'][0] in ['horusInt', 'horusReal']:
+                        for sensor_value_id, sensor_value in enumerate(sensor['values'][1]): # ignore the type, it's implied
+                            sensor_field_name_key = f'{sensor_name}_{sensor_id}_{sensor_value_id}'
+                            _output[sensor_field_name_key] = sensor_value
+                            _output["custom_field_names"].append(sensor_field_name_key)
+                    elif sensor['values'][0] in 'horusStr':
+                        sensor_field_name_key = f'{sensor_name}_{sensor_id}'
+                        _output[sensor_field_name_key] = sensor['values'][1]
+                        _output["custom_field_names"].append(sensor_field_name_key)
+                    elif sensor['values'][0] in 'horusBool':
+                        for sensor_value_id, sensor_value in sensor['values'][1].items(): # ignore the type, it's implied
+                            sensor_field_name_key = f'{sensor_name}_{sensor_id}_{sensor_value_id}'
+                            _output[sensor_field_name_key] = sensor_value
+                            _output["custom_field_names"].append(sensor_field_name_key)
+
+
+        payload_timestamp = datetime.timedelta(seconds=_raw_fields.pop("timeOfDaySeconds"))
+        _output["time"] = (
+                                datetime.datetime.now(tz=datetime.UTC).replace(hour=0,minute=0,second=0) + 
+                                payload_timestamp
+                          ).strftime("%H:%M:%S")
+            
         _output.update(_raw_fields)
     else:
         # Now try and decode the data.
