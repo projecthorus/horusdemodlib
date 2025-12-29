@@ -11,6 +11,7 @@ from .payloads import init_custom_field_list, init_payload_id_list
 import horusdemodlib.payloads
 import asn1tools
 import os
+import unittest
 
 HORUS_ASN = asn1tools.compile_files(os.path.join(os.path.dirname(__file__), 'HorusBinaryV3.asn1'), codec="uper")
 
@@ -425,6 +426,70 @@ def parse_ukhas_string(sentence:str) -> dict:
     return _telem
 
 
+
+class HorusDecoderTests(unittest.TestCase):
+    def test_binary_decoder(self):
+        # Binary packet decoder tests
+        tests = [
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', ''],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v2_16byte', b'\x01\x12\x02\x00\x02\xbc\xeb!AR\x10\x00\xff\x00\xe1\x7e', ''],
+            #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
+            ['horus_binary_v2_32byte', b'\x00\x01\x02\x00\x0C\x22\x38\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\xB4\xC6', ''],
+                        #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
+            ['horus_binary_v2_32byte_noident', b'\xff\xff\x02\x00\x0C\x22\x38\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x17\x1c', '']
+        ]
+
+        for _test in tests:
+            _format = _test[0]
+            _input = _test[1]
+            _output = _test[2]
+
+            with self.subTest(format=_format,input=_input,output=_output):
+                if _output == 'error':
+                    with self.assertRaises(ValueError) as context:
+                        _decoded = decode_packet(_input)
+                else:
+                    _decoded = decode_packet(_input)
+                logging.debug(f"Input ({_format}): {str(_input)} - Output: {_decoded['ukhas_str']}")
+                logging.debug(_decoded)
+
+    def test_binary_tests_break_fields(self):
+        # Binary packet tests that break various fields
+        tests = [
+            #                      ID  Seq---|  HH  MM  SS  Lat----------| Lon-----------| Alt---|
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', ''],
+            ['horus_binary_v1', b'\x01\x12\x00\x18\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x3c\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x3c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x35\x43\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x80\x34\xc3\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
+        ]
+
+        for _test in tests:
+            _format = _test[0]
+            _input = _test[1]
+            _output = _test[2]
+
+            with self.subTest(format=_format,input=_input,output=_output):
+                if _output == 'error':
+                    with self.assertRaises(ValueError) as context:
+                        _decoded = decode_packet(_input)
+                else:
+                    _decoded = decode_packet(_input)
+                logging.debug(f"Input ({_format}): {str(_input)} - Output: {_decoded['ukhas_str']}")
+                logging.debug(_decoded)
+
+    def test_rtty(self):
+        # # RTTY Decoder Tests
+        tests = [
+            '$$HORUS,6,06:43:16,0.000000,0.000000,0,0,0,1801,20*1DA2',
+            '$$$DirkDuyvel,416,143957,53.15629,7.29188,10925,14,2.88,11,2640,1,80*3C6C'
+        ]
+
+        for _test in tests:
+            _decoded = parse_ukhas_string(_test)
+
 if __name__ == "__main__":
     import argparse
     import sys
@@ -467,71 +532,5 @@ if __name__ == "__main__":
 
 
     if args.test:
-
-        # Binary packet decoder tests
-        tests = [
-            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', ''],
-            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
-            ['horus_binary_v2_16byte', b'\x01\x12\x02\x00\x02\xbc\xeb!AR\x10\x00\xff\x00\xe1\x7e', ''],
-            #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
-            ['horus_binary_v2_32byte', b'\x00\x01\x02\x00\x0C\x22\x38\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\xB4\xC6', ''],
-                        #                             id      seq_no  HH   MM  SS  lat             lon            alt     spd sat tmp bat custom data -----------------------| crc16
-            ['horus_binary_v2_32byte_noident', b'\xff\xff\x02\x00\x0C\x22\x38\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x17\x1c', '']
-        ]
-
-        for _test in tests:
-            _format = _test[0]
-            _input = _test[1]
-            _output = _test[2]
-
-            try:
-                _decoded = decode_packet(_input)
-                print(f"Input ({_format}): {str(_input)} - Output: {_decoded['ukhas_str']}")
-                print(_decoded)
-                # Insert assert checks here.
-
-            except ValueError as e:
-                print(f"Input ({_format}): {str(_input)} - Caught Error: {str(e)}")
-                assert(_output == 'error')
-
-        # Binary packet tests that break various fields
-        tests = [
-            #                      ID  Seq---|  HH  MM  SS  Lat----------| Lon-----------| Alt---|
-            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', ''],
-            ['horus_binary_v1', b'\x01\x12\x00\x18\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
-            ['horus_binary_v1', b'\x01\x12\x00\x00\x3c\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
-            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x3c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
-            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x00\x35\x43\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
-            ['horus_binary_v1', b'\x01\x12\x00\x00\x00\x23\x00\x80\x34\xc3\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', 'error'],
-        ]
-
-        for _test in tests:
-            _format = _test[0]
-            _input = _test[1]
-            _output = _test[2]
-
-            try:
-                _decoded = decode_packet(_input, ignore_crc=True)
-                print(f"Input ({_format}): {str(_input)} - Output: {_decoded['ukhas_str']}")
-                print(_decoded)
-                # Insert assert checks here.
-
-            except ValueError as e:
-                print(f"Input ({_format}): {str(_input)} - Caught Error: {str(e)}")
-                assert(_output == 'error')
-        
-        # RTTY Decoder Tests
-        tests = [
-            '$$HORUS,6,06:43:16,0.000000,0.000000,0,0,0,1801,20*1DA2',
-            '$$$DirkDuyvel,416,143957,53.15629,7.29188,10925,14,2.88,11,2640,1,80*3C6C'
-        ]
-
-        for _test in tests:
-            try:
-                _decoded = parse_ukhas_string(_test)
-                print(_decoded)
-            except ValueError as e:
-                print(f"Caught Error: {str(e)}")
-
-        print("All tests passed!")
-
+        sys.argv.remove("--test") # remove --test otherwise unittest.main tries to parse that as its own argument
+        unittest.main()
