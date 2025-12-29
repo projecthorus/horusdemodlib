@@ -10,7 +10,7 @@
 import datetime
 import logging
 from .delegates import fix_datetime
-
+import unittest
 
 def telem_to_sondehub(telemetry, metadata=None, check_time=True):
     """
@@ -133,14 +133,16 @@ def telem_to_sondehub(telemetry, metadata=None, check_time=True):
 
     return _output
 
+class HorusUtilTests(unittest.TestCase):
+    def test_telem_to_sondehub(self):
+        test_inputs = [
+                {'packet_format': {'name': 'Horus Binary v2 32 Byte Format', 'length': 32, 'struct': '<HH3sffHBBbB9sH', 'checksum': 'crc16', 'fields': [['payload_id', 'payload_id'], ['sequence_number', 'none'], ['time', 'time_hms'], ['latitude', 'degree_float'], ['longitude', 'degree_float'], ['altitude', 'none'], ['speed', 'none'], ['satellites', 'none'], ['temperature', 'none'], ['battery_voltage', 'battery_5v_byte'], ['custom', 'custom'], ['checksum', 'none']]}, 'crc_ok': True, 'payload_id': 'UNKNOWN_PAYLOAD_ID', 'raw': 'B77A0400170C110000000000000000000000001AA40000DD0000BD2700009C1B', 'modulation': 'Horus Binary v2', 'sequence_number': 4, 'time': '23:12:17', 'latitude': 0.0, 'longitude': 0.0, 'altitude': 0, 'speed': 0, 'satellites': 0, 'temperature': 26, 'battery_voltage': 3.215686274509804, 'ascent_rate': 0.0, 'ext_temperature': 22.1, 'ext_humidity': 0, 'ext_pressure': 1017.3, 'custom_field_names': ['ascent_rate', 'ext_temperature', 'ext_humidity', 'ext_pressure'], 'ukhas_str': '$$UNKNOWN_PAYLOAD_ID,4,23:12:17,0.00000,0.00000,0,0,0,26,3.22,0.00,22.1,0,1017.3*5540', 'callsign': 'HORUS-V2'},
+            ]
 
+        for _test in test_inputs:
+            logging.debug(f"Input: {_test}")
+            logging.debug(f"Output: {telem_to_sondehub(_test, check_time=False)}")
 if __name__ == "__main__":
     # Some simple checks of the telem_to_sondehub function.
-
-    test_inputs = [
-        {'packet_format': {'name': 'Horus Binary v2 32 Byte Format', 'length': 32, 'struct': '<HH3sffHBBbB9sH', 'checksum': 'crc16', 'fields': [['payload_id', 'payload_id'], ['sequence_number', 'none'], ['time', 'time_hms'], ['latitude', 'degree_float'], ['longitude', 'degree_float'], ['altitude', 'none'], ['speed', 'none'], ['satellites', 'none'], ['temperature', 'none'], ['battery_voltage', 'battery_5v_byte'], ['custom', 'custom'], ['checksum', 'none']]}, 'crc_ok': True, 'payload_id': 'UNKNOWN_PAYLOAD_ID', 'raw': 'B77A0400170C110000000000000000000000001AA40000DD0000BD2700009C1B', 'modulation': 'Horus Binary v2', 'sequence_number': 4, 'time': '23:12:17', 'latitude': 0.0, 'longitude': 0.0, 'altitude': 0, 'speed': 0, 'satellites': 0, 'temperature': 26, 'battery_voltage': 3.215686274509804, 'ascent_rate': 0.0, 'ext_temperature': 22.1, 'ext_humidity': 0, 'ext_pressure': 1017.3, 'custom_field_names': ['ascent_rate', 'ext_temperature', 'ext_humidity', 'ext_pressure'], 'ukhas_str': '$$UNKNOWN_PAYLOAD_ID,4,23:12:17,0.00000,0.00000,0,0,0,26,3.22,0.00,22.1,0,1017.3*5540', 'callsign': 'HORUS-V2'},
-    ]
-
-    for _test in test_inputs:
-        print(f"Input: {_test}")
-        print(f"Output: {telem_to_sondehub(_test, check_time=False)}")
+    unittest.main()
+ 

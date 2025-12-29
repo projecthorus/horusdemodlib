@@ -14,7 +14,6 @@ import codecs
 import traceback
 from configparser import RawConfigParser
 
-from .habitat import *
 from .sondehubamateur import *
 from .decoder import decode_packet, parse_ukhas_string
 from .payloads import *

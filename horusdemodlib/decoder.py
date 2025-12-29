@@ -532,5 +532,6 @@ if __name__ == "__main__":
 
 
     if args.test:
+        logging.basicConfig(level=logging.DEBUG)
         sys.argv.remove("--test") # remove --test otherwise unittest.main tries to parse that as its own argument
         unittest.main()

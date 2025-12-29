@@ -7,7 +7,8 @@ import time
 import datetime
 from dateutil.parser import parse
 import horusdemodlib.payloads
-
+import unittest
+import logging
 
 # Payload ID
 
@@ -274,39 +275,40 @@ def fix_datetime(datetime_str, local_dt_str=None):
         return _imet_dt
 
 
+class HorusDelegateTests(unittest.TestCase):
+    def test_delegates(self):
+        tests = [
+            ['time_hms', b'\x01\x02\x03', "01:02:03"],
+            ['time_hms', b'\x17\x3b\x3b', "23:59:59"],
+            ['time_biseconds', 0, "00:00:00"],
+            ['time_biseconds', 1, "00:00:02"],
+            ['time_biseconds', 43199, "23:59:58"],
+            ['time_biseconds', 43200, "00:00:00"],
+            ['degree_float', 0.0, "0.00000"],
+            ['degree_float', 0.001, "0.00100"],
+            ['degree_float', -34.01, "-34.01000"],
+            ['degree_float', -138.000001, "-138.00000"],
+            ['degree_fixed3', b'\x00\x00\x00', "0.00000"],
+            ['battery_5v_byte', 0, "0.00"],
+            ['battery_5v_byte', 128, "2.51"],
+            ['battery_5v_byte', 255, "5.00"],
+            ['payload_id', 0, '4FSKTEST'],
+            ['divide_by_10', 123, "12.3"],
+            ['divide_by_10', -456, "-45.6"],
+            ['divide_by_100', 123, "1.23"],
+            ['divide_by_100', -456, "-4.56"],
+
+        ]
+
+        for _test in tests:
+            _field_type = _test[0]
+            _input = _test[1]
+            _output = _test[2]
+            with self.subTest(field_type=_field_type,input=_input,output=_output):
+                _decoded_dict, _decoded = decode_field(_field_type, _input)
+                logging.debug(f"{_field_type} {str(_input)} -> {_decoded}")
+                self.assertEqual(_decoded, _output)
 
 if __name__ == "__main__":
-
-    tests = [
-        ['time_hms', b'\x01\x02\x03', "01:02:03"],
-        ['time_hms', b'\x17\x3b\x3b', "23:59:59"],
-        ['time_biseconds', 0, "00:00:00"],
-        ['time_biseconds', 1, "00:00:02"],
-        ['time_biseconds', 43199, "23:59:58"],
-        ['time_biseconds', 43200, "00:00:00"],
-        ['degree_float', 0.0, "0.00000"],
-        ['degree_float', 0.001, "0.00100"],
-        ['degree_float', -34.01, "-34.01000"],
-        ['degree_float', -138.000001, "-138.00000"],
-        ['degree_fixed3', b'\x00\x00\x00', "0.00000"],
-        ['battery_5v_byte', 0, "0.00"],
-        ['battery_5v_byte', 128, "2.51"],
-        ['battery_5v_byte', 255, "5.00"],
-        ['payload_id', 0, '4FSKTEST'],
-        ['divide_by_10', 123, "12.3"],
-        ['divide_by_10', -456, "-45.6"],
-        ['divide_by_100', 123, "1.23"],
-        ['divide_by_100', -456, "-4.56"],
-
-    ]
-
-    for _test in tests:
-        _field_type = _test[0]
-        _input = _test[1]
-        _output = _test[2]
-
-        _decoded_dict, _decoded = decode_field(_field_type, _input)
-        print(f"{_field_type} {str(_input)} -> {_decoded}")
-        assert(_decoded == _output)
-    
-    print("All tests passed!")
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main()

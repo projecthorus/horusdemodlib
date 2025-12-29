@@ -5,7 +5,6 @@
 import crcmod
 import logging
 import struct
-import sys
 import unittest
 
 
@@ -96,5 +95,5 @@ class HorusChecksumTests(unittest.TestCase):
                 logging.debug(f"Packet: {_input}. CRC OK: {_decoded}")
 
 if __name__ == "__main__":
-    sys.argv.remove("--test") # remove --test otherwise unittest.main tries to parse that as its own argument
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()
