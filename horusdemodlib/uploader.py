@@ -5,8 +5,8 @@
 # Python 3 check
 import sys
 
-if sys.version_info < (3, 6):
-    print("ERROR - This script requires Python 3.6 or newer!")
+if sys.version_info < (3, 9):
+    print("ERROR - This script requires Python 3.9 or newer!")
     sys.exit(1)
 
 import argparse
@@ -186,7 +186,7 @@ def main():
                     send_payload_summary(_decoded, port=user_config['summary_port'])
 
                     # Upload the string to Habitat
-                    #_decoded_str = "$$" + data.split('$')[-1] + '\n'
+                    _decoded_str = "$$" + data.split('$')[-1] + '\n'
                     #habitat_uploader.add(_decoded_str)
 
                     # Upload the string to Sondehub Amateur
