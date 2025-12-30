@@ -29,6 +29,7 @@ install(TARGETS horus EXPORT horus-config
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/horus
 )
 
+
 install(EXPORT horus-config
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/horus
 )
@@ -57,7 +58,7 @@ target_link_libraries(drs232_ldpc m horus ${CMAKE_REQUIRED_LIBRARIES})
 
 add_definitions(-DINTERLEAVER -DSCRAMBLER -DRUN_TIME_TABLES)
 add_executable(horus_gen_test_bits horus_gen_test_bits.c horus_l2.c)
-target_link_libraries(horus_gen_test_bits m horus)
+target_link_libraries(horus_gen_test_bits m horus horusbinaryv3)
 
 add_definitions(-DHORUS_L2_RX -DINTERLEAVER -DSCRAMBLER -DRUN_TIME_TABLES)
 add_executable(horus_demod horus_demod.c horus_api.c horus_l2.c golay23.c fsk.c kiss_fft.c)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(horus C)
 
 include(GNUInstallDirs)
@@ -44,6 +44,8 @@ set(CMAKE_C_FLAGS "-Wall -Wextra -Wno-unused-function -Wno-strict-overflow -O3 -
 # Arch specific stuff here
 message(STATUS "Host system arch is: ${CMAKE_SYSTEM_PROCESSOR}")
 
+#horusbinaryv3
+add_subdirectory(horusbinaryv3/clib)
 
 add_subdirectory(src)
 

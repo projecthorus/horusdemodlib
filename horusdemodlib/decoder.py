@@ -99,16 +99,16 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
 
     """
 
+    if packet_format is None and (_crc_ok := check_packet_crc(data, checksum='crc16',tail=False)):
+        packet_format = {"name": "horus_binary_v3"}
+    
     if packet_format is None:
         # Attempt to lookup the format based on the length of the data if it has not been provided.
         if len(data) in HORUS_LENGTH_TO_FORMAT:
             packet_format = HORUS_PACKET_FORMATS[HORUS_LENGTH_TO_FORMAT[len(data)]]
         else:
-            # check if horus v3
-            if _crc_ok := check_packet_crc(data, checksum='crc16',tail=False):
-                packet_format = {"name": "horus_binary_v3"}
-            else:
-                raise ValueError(f"Unknown Packet Length ({len(data)}).")
+            raise ValueError(f"Unknown Packet Length ({len(data)}).")
+
 
 
     # Output dictionary
