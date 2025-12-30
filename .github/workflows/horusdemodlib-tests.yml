@@ -43,7 +43,7 @@ jobs:
       - name: Run ctests
         working-directory: build
         run: |
-          ctest . --output-junit test-results/ctests.xml
+          ctest . --output-junit ../test-results/ctests.xml
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: (!cancelled())
