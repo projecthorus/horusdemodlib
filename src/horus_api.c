@@ -332,7 +332,17 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc, int 
     const int nfield = ascii_bits;                      /* 7 or 8 bit ASCII                    */
     const int npad   = stop_bits + 1;                   /* N stop bits + start bit between characters */
     int st = uw_loc;                                    /* first bit of first char        */
-    int en = hstates->max_packet_len - nfield;          /* last bit of max length packet  */
+    int en = uw_loc + hstates->max_packet_len - nfield;          /* last bit of max length packet  */
+
+    if (en > hstates->rx_bits_len){
+        if (hstates->verbose) {
+            fprintf(stderr,"not enough data yet");
+        }
+        return 0;
+    }
+    if (hstates->verbose) {
+        fprintf(stderr, "st: %d, en: %d\n", st, en);
+    }
 
     int      i, j, k, endpacket, nout, crc_ok, rtty_start;
     uint8_t  char_dec;
@@ -690,13 +700,10 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
             packet_detected = extract_horus_rtty(hstates, ascii_out, 7, 1, hstates->uw_loc[uw_idx]);
 
             if (packet_detected){
-                // If we have found a packet, advance the bits enough that we don't detect the
-                // same packet again, if it has more than 2x $$s.
-                // NEED TO CHECK THIS DOESN'T CAUSE SEGFAULTS!
-                for(i=0,j=100; i<100; i++,j++) {
-                    hstates->rx_bits[i] = hstates->rx_bits[j];
-                    hstates->soft_bits[i] = hstates->soft_bits[j];
+                if (hstates->verbose) {
+                    fprintf(stderr, "RTTY Detected \n");
                 }
+                break;
             }
         }
 
@@ -704,26 +711,20 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
             packet_detected = extract_horus_rtty(hstates, ascii_out, 7, 2,hstates->uw_loc[uw_idx]);
 
             if (packet_detected){
-                // If we have found a packet, advance the bits enough that we don't detect the
-                // same packet again, if it has more than 2x $$s.
-                // NEED TO CHECK THIS DOESN'T CAUSE SEGFAULTS!
-                for(i=0,j=100; i<100; i++,j++) {
-                    hstates->rx_bits[i] = hstates->rx_bits[j];
-                    hstates->soft_bits[i] = hstates->soft_bits[j];
+                if (hstates->verbose) {
+                    fprintf(stderr, "RTTY Detected \n");
                 }
+                 break;
             }
         }
         if (hstates->mode == HORUS_MODE_RTTY_8N2) {
             packet_detected = extract_horus_rtty(hstates, ascii_out, 8, 2, hstates->uw_loc[uw_idx]);
 
             if (packet_detected){
-                // If we have found a packet, advance the bits enough that we don't detect the
-                // same packet again, if it has more than 2x $$s.
-                // NEED TO CHECK THIS DOESN'T CAUSE SEGFAULTS!
-                for(i=0,j=100; i<100; i++,j++) {
-                    hstates->rx_bits[i] = hstates->rx_bits[j];
-                    hstates->soft_bits[i] = hstates->soft_bits[j];
+                if (hstates->verbose) {
+                    fprintf(stderr, "RTTY Detected \n");
                 }
+                 break;
             }
         }
         if (hstates->mode == HORUS_MODE_BINARY_V1) {
