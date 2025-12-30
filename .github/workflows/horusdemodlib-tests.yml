@@ -33,6 +33,13 @@ jobs:
       - name: Test with pytest  
         run: |  
           LD_LIBRARY_PATH=/usr/local/lib/  python -m pytest  -W 'ignore::DeprecationWarning:asn1tools.parser' horusdemodlib/*.py --junit-xml=test-results/python.xml
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
+        with:
+          check_name: horusdemodlib Python
+          files: |
+            test-results/python.xml
       - name: Run ctests
         working-directory: build
         run: |
@@ -41,7 +48,6 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: (!cancelled())
         with:
+          check_name: horusdemodlib C library
           files: |
-            test-results/**/*.xml
-            test-results/**/*.trx
-            test-results/**/*.json
+            test-results/ctests.xml

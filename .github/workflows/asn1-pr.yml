@@ -33,5 +33,6 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: (!cancelled())
         with:
+          check_name: Horus Binary v3 ASN.1
           files: |
             horusbinaryv3/**/*.xml
