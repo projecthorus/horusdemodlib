@@ -24,7 +24,8 @@ jobs:
           mkdir test-results
           mkdir build && cd build && cmake .. && make && sudo make install
       - name: Install dependencies
-        run: |  
+        run: |
+          sudo apt install -y sox # for ctests
           python -m pip install --upgrade pip  
           python -m pip install setuptools pytest # this is a dev dependency however we aren't using poetry so the deve dependency doesn't get installed
           python -m pip install . 
