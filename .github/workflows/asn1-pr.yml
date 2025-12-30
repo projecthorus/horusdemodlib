@@ -35,5 +35,3 @@ jobs:
         with:
           files: |
             horusbinaryv3/**/*.xml
-            horusbinaryv3/**/*.trx
-            horusbinaryv3/**/*.json
