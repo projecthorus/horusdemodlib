@@ -42,6 +42,12 @@ user.cfg
 # cmake
 build
 
+# asn1
+asn1/public
+asn1/pages
+asn1/.coverage
+asn1/__pycache__
+
 
 venv/
 __pycache__/*

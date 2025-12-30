@@ -71,5 +71,5 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
 RUN sed -i -e 's/files dns/files mdns4_minimal [NOTFOUND=return] dns/g' /etc/nsswitch.conf
 
 COPY --from=builder /target /
-RUN pip install --break-system-packages --no-cache-dir horusdemodlib --find-links=/wheels --no-index
+RUN pip install --break-system-packages --no-cache-dir horusdemodlib --find-links=/wheels
 CMD ["bash"]

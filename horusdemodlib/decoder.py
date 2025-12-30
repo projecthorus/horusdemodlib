@@ -13,7 +13,7 @@ import asn1tools
 import os
 import unittest
 
-HORUS_ASN = asn1tools.compile_files(os.path.join(os.path.dirname(__file__), 'HorusBinaryV3.asn1'), codec="uper")
+HORUS_ASN = asn1tools.compile_files(os.path.join(os.path.dirname(__file__), '../horusbinaryv3/HorusBinaryV3.asn1'), codec="uper")
 
 #
 #   Horus Binary V1 and V2 Packet Formats

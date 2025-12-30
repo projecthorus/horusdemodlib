@@ -4,6 +4,9 @@ version = "0.4.0"
 description = "Project Horus HAB Telemetry Demodulators"
 authors = ["Mark Jessop"]
 license = "LGPL-2.1-or-later"
+include = [
+    { path = "horusbinaryv3/HorusBinaryV3.asn1", format = ["sdist", "wheel"] }
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -12,7 +15,7 @@ crcmod = "^1.7"
 numpy = "^1.17"
 python-dateutil = "^2.8"
 audioop-lts = { version = "*", python = "^3.13" }
-asn1tools = "^0.165.0"
+asn1tools = "^0.167.0"
 
 [tool.poetry.group.dev.dependencies]
 setuptools = "^80.9.0"
