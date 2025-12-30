@@ -31,3 +31,6 @@ jobs:
       - name: Test with pytest  
         run: |  
           LD_LIBRARY_PATH=/usr/local/lib/ python -m unittest discover -p "*.py" -v
+      - name: Run ctests
+        run: |
+          ctest .

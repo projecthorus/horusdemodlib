@@ -100,7 +100,7 @@ struct horus *horus_open_advanced (int mode, int Rs, int tx_tone_spacing) {
 }
 
 struct horus *horus_open_advanced_sample_rate (int mode, int Rs, int tx_tone_spacing, int Fs, int P) {
-    int i, mask;
+    unsigned long i, mask;
     assert((mode == HORUS_MODE_RTTY_7N1) || (mode == HORUS_MODE_RTTY_7N2) || (mode == HORUS_MODE_RTTY_8N2) || (mode == HORUS_MODE_BINARY_V1) );// || (mode == HORUS_MODE_BINARY_V2_256BIT) || (mode == HORUS_MODE_BINARY_V2_128BIT));
 
     struct horus *hstates = (struct horus *)malloc(sizeof(struct horus));
@@ -238,14 +238,14 @@ struct horus *horus_open_advanced_sample_rate (int mode, int Rs, int tx_tone_spa
     hstates->rx_bits_len += hstates->fsk->Nbits;
     hstates->rx_bits = (uint8_t*)malloc(hstates->rx_bits_len);
     assert(hstates->rx_bits != NULL);
-    for(i=0; i<hstates->rx_bits_len; i++) {
+    for(int i=0; i<hstates->rx_bits_len; i++) {
         hstates->rx_bits[i] = 0;
     }
 
     // and the same for soft-bits
     hstates->soft_bits = (float*)malloc(sizeof(float) * hstates->rx_bits_len);
     assert(hstates->soft_bits != NULL);
-    for(i=0; i<hstates->rx_bits_len; i++) {
+    for(int i=0; i<hstates->rx_bits_len; i++) {
         hstates->soft_bits[i] = 0.0;
     }
 
@@ -271,7 +271,7 @@ uint32_t horus_nin(struct horus *hstates) {
 
 void horus_find_uw(struct horus *hstates) {
     int i, j, corr;
-    int n = hstates->fsk->Nbits+hstates->uw_len;
+    int n = hstates->fsk->Nbits+(hstates->uw_len);
     int rx_bits_mapped[n+hstates->uw_len];
     
     /* map rx_bits to +/-1 for UW search */
@@ -297,7 +297,9 @@ void horus_find_uw(struct horus *hstates) {
             int pos = hstates->rx_bits_len-n+i;
             for (int h=0; h< hstates->uw_count;h++){
                 if (hstates->uw_loc[h] == pos){
-                    fprintf(stderr, "uw: already in %d\n",  hstates->uw_loc[h]);
+                    if (hstates->verbose) {
+                        fprintf(stderr, "uw: already in %d\n",  hstates->uw_loc[h]);
+                    }
                     continue;
                 }
             }
@@ -332,7 +334,7 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc, int 
     const int nfield = ascii_bits;                      /* 7 or 8 bit ASCII                    */
     const int npad   = stop_bits + 1;                   /* N stop bits + start bit between characters */
     int st = uw_loc;                                    /* first bit of first char        */
-    int en = uw_loc + hstates->max_packet_len - nfield;          /* last bit of max length packet  */
+    int en = st + hstates->max_packet_len - nfield;          /* last bit of max length packet  */
 
     if (en > hstates->rx_bits_len){
         if (hstates->verbose) {
@@ -341,7 +343,7 @@ int extract_horus_rtty(struct horus *hstates, char ascii_out[], int uw_loc, int 
         return 0;
     }
     if (hstates->verbose) {
-        fprintf(stderr, "st: %d, en: %d\n", st, en);
+        fprintf(stderr, "st: %d, en: %d %d %d\n", st, en, ascii_bits, stop_bits);
     }
 
     int      i, j, k, endpacket, nout, crc_ok, rtty_start;
@@ -697,9 +699,15 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
         /* OK we have found a unique word, and therefore the start of
         a packet, so lets try to extract valid packets */
         if (hstates->mode == HORUS_MODE_RTTY_7N1) {
-            packet_detected = extract_horus_rtty(hstates, ascii_out, 7, 1, hstates->uw_loc[uw_idx]);
+            packet_detected = extract_horus_rtty(hstates, ascii_out, hstates->uw_loc[uw_idx], 7, 1 );
 
             if (packet_detected){
+                // If we have found a packet clear any possible UW detections nearby
+                for (int uw_idx_clear=0; uw_idx_clear < hstates->uw_count; uw_idx_clear++){ 
+                    if (hstates->uw_loc[uw_idx_clear]  - hstates->uw_loc[uw_idx] < 100) {
+                        hstates->uw_loc[uw_idx_clear] = -1;
+                    }
+                }
                 if (hstates->verbose) {
                     fprintf(stderr, "RTTY Detected \n");
                 }
@@ -708,9 +716,15 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
         }
 
         if (hstates->mode == HORUS_MODE_RTTY_7N2) {
-            packet_detected = extract_horus_rtty(hstates, ascii_out, 7, 2,hstates->uw_loc[uw_idx]);
+            packet_detected = extract_horus_rtty(hstates, ascii_out, hstates->uw_loc[uw_idx], 7, 2);
 
             if (packet_detected){
+                // If we have found a packet clear any possible UW detections nearby
+                for (int uw_idx_clear=0; uw_idx_clear < hstates->uw_count; uw_idx_clear++){ 
+                    if (hstates->uw_loc[uw_idx_clear]  - hstates->uw_loc[uw_idx] < 100) {
+                        hstates->uw_loc[uw_idx_clear] = -1;
+                    }
+                }
                 if (hstates->verbose) {
                     fprintf(stderr, "RTTY Detected \n");
                 }
@@ -718,9 +732,15 @@ int horus_rx(struct horus *hstates, char ascii_out[], short demod_in[], int quad
             }
         }
         if (hstates->mode == HORUS_MODE_RTTY_8N2) {
-            packet_detected = extract_horus_rtty(hstates, ascii_out, 8, 2, hstates->uw_loc[uw_idx]);
+            packet_detected = extract_horus_rtty(hstates, ascii_out,hstates->uw_loc[uw_idx], 8, 2);
 
             if (packet_detected){
+                // If we have found a packet clear any possible UW detections nearby
+                for (int uw_idx_clear=0; uw_idx_clear < hstates->uw_count; uw_idx_clear++){ 
+                    if (hstates->uw_loc[uw_idx_clear]  - hstates->uw_loc[uw_idx] < 100) {
+                        hstates->uw_loc[uw_idx_clear] = -1;
+                    }
+                }
                 if (hstates->verbose) {
                     fprintf(stderr, "RTTY Detected \n");
                 }
