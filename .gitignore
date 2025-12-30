@@ -53,3 +53,6 @@ venv/
 __pycache__/*
 *.pyc
 *.log
+
+# macos lol
+.DS_Store
