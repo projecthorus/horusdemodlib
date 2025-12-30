@@ -21,17 +21,26 @@ jobs:
           python-version: ${{ matrix.python-version }}  
       - name: Install c lib
         run: |
+          mkdir test-results
           mkdir build && cd build && cmake .. && make && sudo make install
       - name: Install dependencies
         run: |  
           python -m pip install --upgrade pip  
-          python -m pip install setuptools # this is a dev dependency however we aren't using poetry so the deve dependency doesn't get installed
+          python -m pip install setuptools pytest # this is a dev dependency however we aren't using poetry so the deve dependency doesn't get installed
           python -m pip install . 
         continue-on-error: false  
       - name: Test with pytest  
         run: |  
-          LD_LIBRARY_PATH=/usr/local/lib/ python -m unittest discover -p "*.py" -v
+          LD_LIBRARY_PATH=/usr/local/lib/  python -m pytest  -W 'ignore::DeprecationWarning:asn1tools.parser' horusdemodlib/*.py --junit-xml=test-results/python.xml
       - name: Run ctests
         working-directory: build
         run: |
-          ctest .
+          ctest . --output-junit test-results/ctests.xml
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
+        with:
+          files: |
+            test-results/**/*.xml
+            test-results/**/*.trx
+            test-results/**/*.json
