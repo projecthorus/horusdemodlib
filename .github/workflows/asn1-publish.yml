@@ -1,3 +1,5 @@
+name: Horusbinary v3 ASN.1 Docs
+run-name: Horusbinary v3 ASN.1 Docs
 on:
     push:
         branches:

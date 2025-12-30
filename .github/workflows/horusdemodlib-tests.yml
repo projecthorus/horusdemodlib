@@ -1,5 +1,5 @@
-name: Horusbinary v3 ASN.1 Unit Tests PR
-run-name: Horusbinary v3 ASN.1 Unit Tests PR
+name: horusdemodlib tests
+run-name: horusdemodlib tests
 on: 
     pull_request:
     push:
@@ -19,17 +19,14 @@ jobs:
         uses: actions/setup-python@v4  
         with:  
           python-version: ${{ matrix.python-version }}  
+      - name: Install c lib
+        run: |
+          cd horusdemodlib && mkdir build && cd build && cmake .. && make && sudo make install
       - name: Install dependencies
-        working-directory: horusbinaryv3
         run: |  
           python -m pip install --upgrade pip  
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
-        continue-on-error: true  
+          python -m pip install . 
+        continue-on-error: false  
       - name: Test with pytest  
-        working-directory: horusbinaryv3
         run: |  
-          coverage run -m pytest  -v -s  
-      - name: Generate Coverage Report  
-        working-directory: horusbinaryv3
-        run: |  
-          coverage report -m
+          python -m unittest discover -p "*.py" -v
