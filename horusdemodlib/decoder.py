@@ -151,6 +151,12 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
     _ukhas_fields = []
     
     if  packet_format['name'] == "horus_binary_v3":
+        _output["packet_format"]["fields"] = [ # to maintain compatability
+            ["payload_id", "none"],
+            ["sequence_number", "none"],
+            ["latitude", "none"],
+            ["longitude", "none"],
+        ]
         _raw_fields = HORUS_ASN.decode("Telemetry", data[2:])
 
         _output["custom_field_names"] = []
@@ -163,12 +169,15 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         
         if _raw_fields["altitudeMeters"] != -1000:
             _output["altitude"] = _raw_fields.pop("altitudeMeters") / 1000
+            _output["packet_format"]["fields"].append(["altitude", "none"])
 
         if 'gnssSatellitesVisible' in _raw_fields:
             _output["satellites"] = _raw_fields.pop("gnssSatellitesVisible")
+            _output["packet_format"]["fields"].append(["satellites", "none"])
         
         if 'velocityHorizontalKilometersPerHour' in _raw_fields:
             _output["vel_h"] = _raw_fields.pop("velocityHorizontalKilometersPerHour") /(1*60*60/1000) # km/h -> m/s
+            _output["packet_format"]["fields"].append(["vel_h", "none"])
 
         if 'ascentRateCentimetersPerSecond' in _raw_fields:
             _output["ascent_rate"] = _raw_fields.pop("ascentRateCentimetersPerSecond") / 100 # cm/s -> m/s
@@ -185,6 +194,7 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         if 'temperatureCelsius' in _raw_fields:
             if 'internal' in _raw_fields['temperatureCelsius']:
                 _output["temperature"] = _raw_fields['temperatureCelsius']['internal'] / 10
+                _output["packet_format"]["fields"].append(["temperature", "none"])
             if 'external' in _raw_fields['temperatureCelsius']:
                 _output["ext_temperature"] = _raw_fields['temperatureCelsius'].pop('external') / 10
                 _output["custom_field_names"].append("ext_temperature")
@@ -199,6 +209,7 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         if 'milliVolts' in _raw_fields:
             if 'battery' in _raw_fields['milliVolts']:
                 _output["battery_voltage"] = _raw_fields['milliVolts'].pop('battery') / 1000 # millivolts to volts
+                _output["packet_format"]["fields"].append(["battery_voltage", "none"])
             for k,v in  _raw_fields['milliVolts'].items():
                 key = f"{k}_voltage"
                 _output[key] = v / 1000 # millivolts to volts

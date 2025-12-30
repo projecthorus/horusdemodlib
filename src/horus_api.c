@@ -37,7 +37,7 @@
 
 struct horus ;
 
-int horus_v3_check_sizes[] = {32,64,128};
+int horus_v3_check_sizes[] = {32,64,96,128};
 /*
 RTTY Unique word = $ characters, repeated at least 2 times.
 $ = (0)010 0100
