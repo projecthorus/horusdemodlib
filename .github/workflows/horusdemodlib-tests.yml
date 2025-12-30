@@ -21,7 +21,7 @@ jobs:
           python-version: ${{ matrix.python-version }}  
       - name: Install c lib
         run: |
-          cd horusdemodlib && mkdir build && cd build && cmake ".." && make && sudo make install
+          cd horusdemodlib && mkdir build && cd build && cmake -S .. && make && sudo make install
       - name: Install dependencies
         run: |  
           python -m pip install --upgrade pip  
