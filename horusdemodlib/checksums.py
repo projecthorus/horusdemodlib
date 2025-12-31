@@ -2,11 +2,21 @@
 #   HorusLib - Checksumming functions
 #
 
-import crcmod
+import crc
 import logging
 import struct
 import unittest
+from crc import Calculator,  Configuration
 
+
+def mkCrcFun(type):
+        calculator = Calculator(Configuration(
+            16, 0x1021,0xffff
+        ))
+        if type == 'crc-ccitt-false':
+            def check(data):
+                return calculator.checksum(data)
+        return check
 
 def ukhas_crc(data:bytes) -> str:
     """
@@ -14,7 +24,7 @@ def ukhas_crc(data:bytes) -> str:
     
     (CRC16 CCITT: start 0xFFFF, poly 0x1021)
     """
-    crc16 = crcmod.predefined.mkCrcFun('crc-ccitt-false')
+    crc16 = mkCrcFun('crc-ccitt-false')
 
     return hex(crc16(data))[2:].upper().zfill(4)
 
@@ -37,7 +47,7 @@ def check_packet_crc(data:bytes, checksum:str='crc16', tail=True):
         _packet_checksum = struct.unpack('<H', data[-2:])[0] if tail else struct.unpack('<H', data[:2])[0]
 
         # Calculate a CRC over the rest of the data
-        _crc16 = crcmod.predefined.mkCrcFun('crc-ccitt-false')
+        _crc16 = mkCrcFun('crc-ccitt-false')
         _calculated_crc = _crc16(data[:-2] if tail else data[2:])
 
         if _calculated_crc == _packet_checksum:
@@ -60,7 +70,7 @@ def add_packet_crc(data:bytes, checksum:str='crc16', tail=True):
 
     if (checksum == 'crc16') or (checksum == 'CRC16') or (checksum == 'crc16-ccitt') or (checksum == 'CRC16-CCITT'):
         # Calculate a CRC over the data
-        _crc16 = crcmod.predefined.mkCrcFun('crc-ccitt-false')
+        _crc16 = mkCrcFun('crc-ccitt-false')
         _calculated_crc = _crc16(data)
 
         _packet_crc = struct.pack('<H', _calculated_crc)

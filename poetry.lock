@@ -2,18 +2,18 @@
 
 [[package]]
 name = "asn1tools"
-version = "0.165.0"
+version = "0.167.0"
 description = "ASN.1 parsing, encoding and decoding."
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "asn1tools-0.165.0.tar.gz", hash = "sha256:2fa63d8045d0daa2cd48855aafd39ac19681f93eb2f395319cfe6c745eac5216"},
+    {file = "asn1tools-0.167.0.tar.gz", hash = "sha256:cad53f6f6d788a6eec5e37543401cd8c39f138cc8016b64629ec29fb4735f5b2"},
 ]
 
 [package.dependencies]
 bitstruct = "*"
-pyparsing = ">=3.0.6"
+pyparsing = ">=3.1.2"
 
 [package.extras]
 cache = ["diskcache"]
@@ -286,14 +286,15 @@ files = [
 ]
 
 [[package]]
-name = "crcmod"
-version = "1.7"
-description = "CRC Generator"
+name = "crc"
+version = "7.1.0"
+description = "Pure Python CRC library"
 optional = false
-python-versions = "*"
+python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "crcmod-1.7.tar.gz", hash = "sha256:dc7051a0db5f2bd48665a990d3ec1cc305a466a77358ca4492826f41f283601e"},
+    {file = "crc-7.1.0-py3-none-any.whl", hash = "sha256:b9845c81d0b900d8fda1aae7af977035bee0359c279713814e9fd23a2d59db6a"},
+    {file = "crc-7.1.0.tar.gz", hash = "sha256:99dd540909a37ae4f62c65441df8ecb4e7f9af014fecaf4f331052a41d66c07d"},
 ]
 
 [[package]]
@@ -463,4 +464,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "9ac3ac98da31e6829cb520e50d9dcbbb8715443230f8ed1388b73356c631f61d"
+content-hash = "7acde6794d7fca09c95fc8e8a437de2ebc8746243be42dc0b3229c547036e0e9"
