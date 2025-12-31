@@ -56,6 +56,7 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
     python3-numpy \
     python3-requests \
     python3-pip \
+    python3-bitstruct \
     sox \
     bc \
     procps \
