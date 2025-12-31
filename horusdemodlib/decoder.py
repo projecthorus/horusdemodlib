@@ -12,6 +12,7 @@ import horusdemodlib.payloads
 import asn1tools
 import os
 import unittest
+from unittest.mock import patch
 
 HORUS_ASN = asn1tools.compile_files(os.path.join(os.path.dirname(__file__), '../horusbinaryv3/HorusBinaryV3.asn1'), codec="uper")
 
@@ -74,6 +75,16 @@ HORUS_PACKET_FORMATS = {
             ['custom', 'custom'],
             ['checksum', 'none']
         ]
+    },
+    'horus_binary_v3': {
+        'name': 'Horus Binary v3',
+        'checksum': 'crc16',
+        'fields': [ 
+            ["payload_id", "none"],
+            ["sequence_number", "none"],
+            ["latitude", "none"],
+            ["longitude", "none"],
+        ]
     }
 }
 
@@ -81,7 +92,10 @@ HORUS_PACKET_FORMATS = {
 HORUS_LENGTH_TO_FORMAT = {
     22: 'horus_binary_v1',
     16: 'horus_binary_v2_16byte',
-    32: 'horus_binary_v2_32byte'
+    32: 'horus_binary_v2_32byte',
+    64: 'horus_binary_v3',
+    96: 'horus_binary_v3',
+    128: 'horus_binary_v3'
 }
 
 HORUS_V3_NAME_CACHE = {
@@ -99,25 +113,31 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
 
     """
 
-    if packet_format is None and (_crc_ok := check_packet_crc(data, checksum='crc16',tail=False)):
-        packet_format = {"name": "horus_binary_v3"}
-    
-    if packet_format is None:
-        # Attempt to lookup the format based on the length of the data if it has not been provided.
-        if len(data) in HORUS_LENGTH_TO_FORMAT:
-            packet_format = HORUS_PACKET_FORMATS[HORUS_LENGTH_TO_FORMAT[len(data)]]
-        else:
-            raise ValueError(f"Unknown Packet Length ({len(data)}).")
-
-
-
     # Output dictionary
     _output = {
         'packet_format': packet_format,
         'crc_ok': False,
         'payload_id': 0,
         'raw': codecs.encode(data, 'hex').decode().upper(),
-        }
+    }
+    
+    if packet_format is None:
+        if (_crc_ok := check_packet_crc(data, checksum='crc16',tail=False)):
+            packet_format = HORUS_PACKET_FORMATS['horus_binary_v3']
+        else:
+            # Attempt to lookup the format based on the length of the data if it has not been provided.
+            if len(data) in HORUS_LENGTH_TO_FORMAT:
+                packet_format = HORUS_PACKET_FORMATS[HORUS_LENGTH_TO_FORMAT[len(data)]]
+            else:
+                raise ValueError(f"Unknown Packet Length ({len(data)}).")
+
+    if packet_format['name'] != "Horus Binary v3":
+        # check CRC first as it might be horus binary v3 that hasn't completed yet
+        _crc_ok = check_packet_crc(data, checksum=packet_format['checksum'])
+    if (not _crc_ok) and (not ignore_crc):
+        raise ValueError("Decoder - CRC Failure.")
+    else:
+        _output['crc_ok'] = True
     
     # Report the modulation type
     if 'v1' in packet_format['name']:
@@ -129,7 +149,7 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
     else:
         _output['modulation'] = 'Horus Binary'
 
-    if  packet_format['name'] != "horus_binary_v3":
+    if  packet_format['name'] != "Horus Binary v3":
         # Check the length provided in the packet format matches up with the length defined by the struct.
         _struct_length = struct.calcsize(packet_format['struct'])
         if _struct_length != packet_format['length']:
@@ -139,32 +159,20 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         if len(data) != _struct_length:
             raise ValueError(f"Decoder - Input data has length {len(data)}, should be length {_struct_length}.")
 
-    # Check the Checksum
-    if  packet_format['name'] != "horus_binary_v3":
-        _crc_ok = check_packet_crc(data, checksum=packet_format['checksum'])
-
-    if (not _crc_ok) and (not ignore_crc):
-        raise ValueError("Decoder - CRC Failure.")
-    else:
-        _output['crc_ok'] = True
 
     _ukhas_fields = []
     
-    if  packet_format['name'] == "horus_binary_v3":
-        _output["packet_format"]["fields"] = [ # to maintain compatability
-            ["payload_id", "none"],
-            ["sequence_number", "none"],
-            ["latitude", "none"],
-            ["longitude", "none"],
-        ]
+    if  packet_format['name'] == "Horus Binary v3":
         _raw_fields = HORUS_ASN.decode("Telemetry", data[2:])
-
+        _output['ukhas_str'] = str(_raw_fields) # cheeky hack to get asn1 decoded json output into horus gui
+        packet_format['length'] = len(data)
         _output["custom_field_names"] = []
 
         _output["payload_id"] = _raw_fields.pop("payloadCallsign")
         _output["sequence_number"] =  _raw_fields.pop("sequenceNumber")
         _output["latitude"] = _raw_fields.pop("latitude") / 100000
         _output["longitude"] = _raw_fields.pop("longitude") / 100000
+        _output["packet_format"] = packet_format
 
         
         if _raw_fields["altitudeMeters"] != -1000:
@@ -330,9 +338,10 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             logging.warning("Found Payload ID < 256 in a Horus Binary v2 packet! This may lead to undefined behaviour. Please use a payload ID > 256!")
 
     # Convert to a UKHAS-compliant string.
-    _ukhas_str = ",".join(_ukhas_fields)
-    _ukhas_crc = ukhas_crc(_ukhas_str.encode('ascii'))
-    _output['ukhas_str'] = "$$" + _ukhas_str + "*" + _ukhas_crc
+    if _output['modulation'] != 'Horus Binary v3':
+        _ukhas_str = ",".join(_ukhas_fields)
+        _ukhas_crc = ukhas_crc(_ukhas_str.encode('ascii'))
+        _output['ukhas_str'] = "$$" + _ukhas_str + "*" + _ukhas_crc
 
     # Duplicate some fields for parsing later
     _output['callsign'] = _output['payload_id']
@@ -576,6 +585,49 @@ class HorusDecoderTests(unittest.TestCase):
 
         #timecheck
         self.assertEqual(_decoded['time'],"00:00:05")
+
+    def test_horus_v3_unknown_fields(self):
+        # Test to make sure name caching is working for additional sensors
+        # Maybe a future improvement is to defer uploads to sondehub until we can resolve sensor names
+        global HORUS_V3_NAME_CACHE
+        HORUS_V3_NAME_CACHE={}
+        
+
+        data = { 
+            "payloadCallsign": "abcDEF-0123abc-",
+            "sequenceNumber": 65535,
+            "timeOfDaySeconds": 5,
+            "latitude": 9000000,
+            "longitude": -18000000,
+            "altitudeMeters": 50000,
+
+            "extraSensors": [
+                {
+                    "values": ("horusInt", [1,2]) 
+                }
+            ],
+        }
+        horus_v3_bells_and_whistles = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_bells_and_whistles, tail=False)
+        _decoded = decode_packet(payload_crcd)
+        self.assertTrue(_decoded['unknown_0_0'],1)
+        self.assertTrue(_decoded['unknown_0_0'],2)
+
+        data['extraSensors'][0]['name'] = 'testsensor'
+        horus_v3_bells_and_whistles = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_bells_and_whistles, tail=False)
+        _decoded = decode_packet(payload_crcd)
+
+        self.assertTrue(_decoded['testsensor_0_0'],1)
+        self.assertTrue(_decoded['testsensor_0_0'],2)
+
+        data['extraSensors'][0].pop("name")
+        
+        horus_v3_bells_and_whistles = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_bells_and_whistles, tail=False)
+        _decoded = decode_packet(payload_crcd)
+        self.assertTrue(_decoded['testsensor_0_0'],1)
+        self.assertTrue(_decoded['testsensor_0_0'],2)
 
     def test_binary_tests_break_fields(self):
         # Binary packet tests that break various fields
