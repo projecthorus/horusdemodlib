@@ -1,7 +1,7 @@
 Payload format information for proposed Horus Binary v3 protocol.
 --
 
-Horus Binary v2 currently uses a combination of [custom_field_list.json](https://github.com/projecthorus/horusdemodlib/blob/master/custom_field_list.json) and [payload_id_list.txt](https://github.com/projecthorus/horusdemodlib/blob/master/payload_id_list.txt) to define how packets are decoded. While this keeps the payload size down while still allowing custom it creates a central authority and administrative overhead for managing callsigns and custom field data.
+Horus Binary v2 currently uses a combination of [custom_field_list.json](https://github.com/projecthorus/horusdemodlib/blob/master/custom_field_list.json) and [payload_id_list.txt](https://github.com/projecthorus/horusdemodlib/blob/master/payload_id_list.txt) to define how packets are decoded. While this keeps the payload size down while still allowing custom sensor telemetry it creates a central authority and administrative overhead for managing callsigns and custom field data.
 
 This proposed Horus Binary v3 format intends to address these shortcomings by defining a protocol format that is flexible enough to allow customization while still keeping a small overall size.
 
@@ -13,7 +13,7 @@ To allow this flexibility and to accommodate text descriptions in the callsign a
 ### Requirements
 - 62 bytes of payload data + 2 bytes of CRC
 - Removal of central authority for callsigns / fields
-- Able to be encoded on a micro controller / integrate with existing Horus Binary solutions
+- Able to be encoded on a microcontroller / integrate with existing Horus Binary solutions
 
 ### Why ASN.1?
 Abstract Syntax Notation 1 (ASN.1) is a way to describe data formats. The ASN.1 language lets us define the fields and data types that we expect see in a telemetry packet.
@@ -42,7 +42,7 @@ ASN.1 provides a special field called an "extension mark". The extension mark le
 This provides a human readable version of the definition. For specifics check the .asn1 file provided.
 
 #### Required Fields
-This fields are required to be transmitted/encoded
+These fields are required to be transmitted/encoded
 
 | Field Name | Constraint | Description |
 | -- | -- | -- |
@@ -61,8 +61,8 @@ These fields are optional, and store only a single value.
 | -- | -- | -- |
 | velocityHorizontalKilometersPerHour | 0-512 | Horizontal velocity in m/s|
 | ascentRateCentimetersPerSecond | -32767 - 32767 | Ascent rate in centimeters per second. Centimeters is used here to avoid using a REAL which takes up 2 bytes. |
-| gnssSatellitesVisible | 0 - 31 | Number of satellites the payload can see. This figure should not roll over. |
-| humidityPercentage | 0 - 100 | Humidity in percentage |
+| gnssSatellitesVisible | 0 - 31 | Number of satellites the payload can see. This figure should not roll over and should cap at 31 if over this value. |
+| humidityPercentage | 0 - 100 | Relative humidity in percentage |
 | pressurehPa | 0 - 1200 | Atmospheric pressure in hPa |
 | customData | OCTET STRING (aka bytes) | Used to encode binary data. Won't be presented on SondeHub but will be recorded |
 | - | - | - |
@@ -92,7 +92,7 @@ Up to four additional sensor types can be configured. Each additional sensor typ
 - 1x String `a-z`,`A-Z`,`0-9`,`_ +/=-.`
 - 8x Boolean
 
-Custom sensor types should always be sent in order. If no data is available for a type the sensor type should be sent with no sensor values.
+Custom sensor types should always be sent in the same order. If no data is available for a type the sensor type should be sent with no sensor values.
 
 This allows for combinations such as:
 ##### Example 1
@@ -140,7 +140,7 @@ It's sometimes easier to understand as data being encoded.
             "values": ("horusInt", [1,2,3])
         },
         {
-            "name": "name-only" # just send names if the sequency remains in order
+            "name": "name-only" # just send names if the sequence remains in order
         }
 ]
 ```

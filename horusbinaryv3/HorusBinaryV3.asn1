@@ -33,7 +33,7 @@ AdditionalSensorType ::= SEQUENCE {
   values  CustomFieldValues OPTIONAL
 }
 
--- we limit to 4 additional sensor types to lower out used bits
+-- we limit to 4 additional sensor types to lower our used bits
 AdditionalSensors ::= SEQUENCE(SIZE(1..4)) OF AdditionalSensorType
 
 TemperatureSensors ::= SEQUENCE {
@@ -76,21 +76,21 @@ Telemetry ::= SEQUENCE {
   altitudeMeters      INTEGER (-1000..50000), -- meters - set to -1000 if invalid
 
   -- additional extra sensors
-  extraSensors                            AdditionalSensors OPTIONAL,
+  extraSensors        AdditionalSensors OPTIONAL,
 
   -- additional fields that would be unlikely to need to be sequences
-  velocityHorizontalKilometersPerHour  INTEGER (0..512)    OPTIONAL, -- km/hr
-  gnssSatellitesVisible                INTEGER (0..31)     OPTIONAL, -- note that the
-  ascentRateCentimetersPerSecond       INTEGER (-32767..32767)                    OPTIONAL, -- cm/s
-  pressurehPa                          INTEGER (0..1200)     OPTIONAL, -- hPa
+  velocityHorizontalKilometersPerHour  INTEGER (0..512)         OPTIONAL, -- km/hr
+  gnssSatellitesVisible                INTEGER (0..31)          OPTIONAL,
+  ascentRateCentimetersPerSecond       INTEGER (-32767..32767)  OPTIONAL, -- cm/s
+  pressurehPa                          INTEGER (0..1200)        OPTIONAL, -- hPa
 
 
   -- additional but fairly common fields so we make them explicit
-  temperatureCelsius   TemperatureSensors   OPTIONAL, -- C
-  humidityPercentage   INTEGER (0..100)     OPTIONAL, -- %
-  milliVolts           MilliVoltSensors     OPTIONAL, -- 
+  temperatureCelsius   TemperatureSensors              OPTIONAL, -- C
+  humidityPercentage   INTEGER (0..100)                OPTIONAL, -- %
+  milliVolts           MilliVoltSensors                OPTIONAL, -- 
   counts               SEQUENCE(SIZE(1..8)) OF INTEGER OPTIONAL,
-  gnssPowerSaveState   GnssPowerSaveState OPTIONAL,
+  gnssPowerSaveState   GnssPowerSaveState              OPTIONAL,
 
   -- binary data
   customData           OCTET STRING OPTIONAL,

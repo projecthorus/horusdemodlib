@@ -109,7 +109,7 @@ def _(editor, mo):
     "longitude": -23.344589499,
     "altitudeMeters": 23000}
         return_value=mo.vstack([mo.md("""
-    <p style="color:red;font-size:12pt">Error parsing encoding data. Ensure that you have a valid python dictonary. Will use demo data for the time being.</p>
+    <p style="color:red;font-size:12pt">Error parsing encoding data. Ensure that you have a valid python dictionary. Will use demo data for the time being.</p>
     """),mo.inspect(e)])
     return_value
     return (data,)
