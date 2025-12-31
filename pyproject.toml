@@ -10,9 +10,9 @@ include = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-requests = "^2.24.0"
-numpy = "^1.17"
-python-dateutil = "^2.8"
+requests = "^2.32.5"
+numpy = "2.0.2"
+python-dateutil = "^2.9.0.post0"
 audioop-lts = { version = "*", python = "^3.13" }
 asn1tools = "^0.167.0"
 crc = "^7.1.0"
