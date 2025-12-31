@@ -8,6 +8,7 @@ This repository contains:
 * libhorus - A C library containing a high performance 2/4-FSK-demodulator (originally developed as part of the [Codec2](https://github.com/drowe67/codec2) project by [David Rowe](http://rowetel.com)), along with Golay and LDPC forward-error correction algorithms.
 * horus_demod - A command-line version of the FSK demodulator.
 * horusdemodlib - A Python library which wraps libhorus, and provides additional functions to decode telemetry into formats suitable for uploading to the [Habhub tracker](http://tracker.habhub.org) and other services.
+* horusbinaryv3 - ASN.1 specification, python tools and example C library for working with the binary format for Horus Binary v3
 
 In particular, this library provides a decoder for the 'Horus Binary' telemetry system, which is the primary tracking system used in [Project Horus's](https://www.areg.org.au/archives/category/activities/project-horus) High-Altitude Balloon launches.
 
@@ -21,7 +22,7 @@ The modem in this library can also decode the standard UKHAS RTTY telemetry used
 Written by: 
 * Python Library - Mark Jessop <vk5qi@rfhead.net>
 * FSK Modem - [David Rowe](http://rowetel.com)
-* FSK Modem Python Wrapper - [XSSFox](https://twitter.com/xssfox)
+* FSK Modem Python Wrapper - [xssfox](https://cloudisland.nz/@xssfox)
 * LDPC Codes - [Bill Cowley](http://lowsnr.org/)
 
 ## HorusDemodLib C Library
@@ -66,6 +67,7 @@ A Python wrapper is also available (via the horusdemodlib Python library which i
 The horusdemodlib Python library contains decoders for the different Project Horus telemetry formats, including:
 * Horus Binary v1 (Legacy 22-byte Golay-encoded format)
 * Horus Binary v2 (Golay-encoded 32-byte format)
+* Horus Binary v3 (Golay-encoded 32/64/96/128-byte format)
 
 It also contains a wrapper around the C library (mentioned above), which contains the Horus modem demodulators.
 
