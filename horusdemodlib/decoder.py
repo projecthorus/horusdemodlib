@@ -13,6 +13,7 @@ import asn1tools
 import os
 import unittest
 from unittest.mock import patch
+from copy import deepcopy
 
 HORUS_ASN = asn1tools.compile_files(os.path.join(os.path.dirname(__file__), '../horusbinaryv3/HorusBinaryV3.asn1'), codec="uper")
 
@@ -121,16 +122,17 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         'raw': codecs.encode(data, 'hex').decode().upper(),
     }
     
+
     if packet_format is None:
         if (_crc_ok := check_packet_crc(data, checksum='crc16',tail=False)):
-            packet_format = HORUS_PACKET_FORMATS['horus_binary_v3']
+            packet_format = deepcopy(HORUS_PACKET_FORMATS['horus_binary_v3'])
         else:
             # Attempt to lookup the format based on the length of the data if it has not been provided.
             if len(data) in HORUS_LENGTH_TO_FORMAT:
-                packet_format = HORUS_PACKET_FORMATS[HORUS_LENGTH_TO_FORMAT[len(data)]]
+                packet_format = deepcopy(HORUS_PACKET_FORMATS[HORUS_LENGTH_TO_FORMAT[len(data)]])
             else:
                 raise ValueError(f"Unknown Packet Length ({len(data)}).")
-
+    
     if packet_format['name'] != "Horus Binary v3":
         # check CRC first as it might be horus binary v3 that hasn't completed yet
         _crc_ok = check_packet_crc(data, checksum=packet_format['checksum'])
@@ -148,7 +150,6 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         _output['modulation'] = 'Horus Binary v3'
     else:
         _output['modulation'] = 'Horus Binary'
-
     if  packet_format['name'] != "Horus Binary v3":
         # Check the length provided in the packet format matches up with the length defined by the struct.
         _struct_length = struct.calcsize(packet_format['struct'])
@@ -159,20 +160,20 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         if len(data) != _struct_length:
             raise ValueError(f"Decoder - Input data has length {len(data)}, should be length {_struct_length}.")
 
-
     _ukhas_fields = []
     
     if  packet_format['name'] == "Horus Binary v3":
         _raw_fields = HORUS_ASN.decode("Telemetry", data[2:])
         _output['ukhas_str'] = str(_raw_fields) # cheeky hack to get asn1 decoded json output into horus gui
-        packet_format['length'] = len(data)
+        
         _output["custom_field_names"] = []
 
         _output["payload_id"] = _raw_fields.pop("payloadCallsign")
         _output["sequence_number"] =  _raw_fields.pop("sequenceNumber")
         _output["latitude"] = _raw_fields.pop("latitude") / 100000
         _output["longitude"] = _raw_fields.pop("longitude") / 100000
-        _output["packet_format"] = packet_format
+        _output["packet_format"] = deepcopy(packet_format)
+        _output["packet_format"]['length'] = len(data)
 
         
         if _raw_fields["altitudeMeters"] != -1000:
@@ -239,7 +240,6 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         if 'customData' in _raw_fields:
             _output['custom_data'] = _raw_fields.pop('customData')
             _output["custom_field_names"].append('custom_data')
-        
         # We might only get names for sensors occasionally, so if we see the name, lets cache it
         if 'extraSensors' in _raw_fields:
             for sensor_id, sensor in enumerate(_raw_fields['extraSensors']):
@@ -271,7 +271,7 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
                             sensor_field_name_key = f'{sensor_name}_{sensor_id}_{sensor_value_id}'
                             _output[sensor_field_name_key] = sensor_value
                             _output["custom_field_names"].append(sensor_field_name_key)
-
+        
 
         payload_timestamp = datetime.timedelta(seconds=_raw_fields.pop("timeOfDaySeconds"))
         _output["time"] = (
