@@ -42,7 +42,7 @@ struct TBinaryPacket0
     float	Latitude;
     float	Longitude;
     uint16_t  	Altitude;
-    uint8_t     Speed;       // Speed in Knots (1-255 knots)
+    uint8_t     Speed;       // Speed in km/hr
     uint8_t     Sats;
     int8_t      Temp;        // Twos Complement Temp value.
     uint8_t     BattVoltage; // 0 = 0.5v, 255 = 2.0V, linear steps in-between.
@@ -60,7 +60,7 @@ struct TBinaryPacket1
     float	Latitude;
     float	Longitude;
     uint16_t  	Altitude;
-    uint8_t     Speed;       // Speed in Knots (1-255 knots)
+    uint8_t     Speed;       // Speed in km/hr
     uint8_t     Sats;
     int8_t      Temp;        // Twos Complement Temp value.
     uint8_t     BattVoltage; // 0 = 0.5v, 255 = 2.0V, linear steps in-between.
