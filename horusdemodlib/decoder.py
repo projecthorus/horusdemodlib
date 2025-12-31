@@ -168,7 +168,7 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
 
         
         if _raw_fields["altitudeMeters"] != -1000:
-            _output["altitude"] = _raw_fields.pop("altitudeMeters") / 1000
+            _output["altitude"] = _raw_fields.pop("altitudeMeters") 
             _output["packet_format"]["fields"].append(["altitude", "none"])
 
         if 'gnssSatellitesVisible' in _raw_fields:
@@ -464,6 +464,118 @@ class HorusDecoderTests(unittest.TestCase):
                     _decoded = decode_packet(_input)
                 logging.debug(f"Input ({_format}): {str(_input)} - Output: {_decoded['ukhas_str']}")
                 logging.debug(_decoded)
+    
+    def test_horus_v3_decoder(self):
+        data = { # This is an example packet that will be way too big, but it highlights all the features
+            "payloadCallsign": "abcDEF-0123abc-",
+            "sequenceNumber": 65535,
+            "timeOfDaySeconds": 5,
+            "latitude": 9000000,
+            "longitude": -18000000,
+            "altitudeMeters": 50000,
+            "velocityHorizontalKilometersPerHour": 255,
+            "gnssSatellitesVisible": 31,
+            "ascentRateCentimetersPerSecond": 32767,
+            "pressurehPa": 127,
+            "temperatureCelsius": {
+                "internal": -127,
+                "external": 127,
+                "custom1": -127,
+                "custom2": 127,
+                
+            },
+            "humidityPercentage":100,
+            "milliVolts": {
+                "battery": 0,
+                "solar": 16383,
+                "custom1": 0,
+                "custom2": 16383,
+                },
+            "counts": [1,100,1000,10000,100000,1000000,1000000],
+            "gnssPowerSaveState": "tracking",
+
+            "extraSensors": [
+                {
+                    "name": "hbk8359hbk8359hbk835", 
+                    "values": ("horusInt", [1,2]) 
+                },
+                {
+                    "name": "crm114",
+                    "values": ("horusBool", {
+                        "b0": True,"b1": True,"b2": True,"b3": True,"b4": True,"b5": True,"b6": True,"b7": True
+                    })
+                },
+                { 
+                    "values": ("horusStr", "ABCEDFGEFGH123324asdbkjbsdg")
+                },
+                {
+                    "values": ("horusReal",[0.1234,1232342345234234,0.1234,1232342345234234])
+                }
+            ],
+        }
+        horus_v3_bells_and_whistles = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_bells_and_whistles, tail=False)
+        _decoded = decode_packet(payload_crcd)
+
+        # check that we are mapping all the values across correctly. We aren't trying to check if the asn1 encoder is correct
+        # thats done in other tests. here we just want to make sure the fields are mapped across with the right units
+        self.assertEqual(_decoded['sequence_number'],data['sequenceNumber'])
+        self.assertEqual(_decoded['callsign'],data['payloadCallsign'])
+        self.assertEqual(_decoded['longitude'],data['longitude']/100000)
+        self.assertEqual(_decoded['latitude'],data['latitude']/100000)
+        self.assertEqual(_decoded['altitude'],data['altitudeMeters'])
+
+        # sats
+        self.assertEqual(_decoded['satellites'],data['gnssSatellitesVisible'])
+
+        # rates
+        self.assertEqual(_decoded['vel_h'],data["velocityHorizontalKilometersPerHour"] /(1*60*60/1000))
+        self.assertEqual(_decoded['ascent_rate'],data["ascentRateCentimetersPerSecond"] / 100)
+
+        # pressure
+        self.assertEqual(_decoded['ext_pressure'], data['pressurehPa'])
+        
+        # humidity
+        self.assertEqual(_decoded['ext_humidity'], data['humidityPercentage'])
+        self.assertIn('ext_humidity', _decoded['custom_field_names'])
+
+        #temps
+        self.assertEqual(_decoded['temperature'],data['temperatureCelsius']['internal']/10)
+        self.assertEqual(_decoded['ext_temperature'],data['temperatureCelsius']['external']/10)
+        self.assertEqual(_decoded['ext_temperature_custom_1'],data['temperatureCelsius']['custom1']/10)
+        self.assertEqual(_decoded['ext_temperature_custom_2'],data['temperatureCelsius']['custom2']/10)
+
+        #volts
+        self.assertEqual(_decoded['battery_voltage'],data['milliVolts']['battery']/1000)
+        self.assertEqual(_decoded['solar_voltage'],data['milliVolts']['solar']/1000)
+        self.assertEqual(_decoded['custom1_voltage'],data['milliVolts']['custom1']/1000)
+        self.assertEqual(_decoded['custom2_voltage'],data['milliVolts']['custom2']/1000)
+        self.assertIn('custom2_voltage', _decoded['custom_field_names'])
+
+        #counts
+        self.assertEqual(_decoded['count_0'],data['counts'][0])
+        self.assertEqual(_decoded['count_1'],data['counts'][1])
+        self.assertEqual(_decoded['count_2'],data['counts'][2])
+        self.assertEqual(_decoded['count_3'],data['counts'][3])
+        self.assertEqual(_decoded['count_4'],data['counts'][4])
+        self.assertEqual(_decoded['count_5'],data['counts'][5])
+        self.assertEqual(_decoded['count_6'],data['counts'][6])
+        self.assertIn('count_6', _decoded['custom_field_names'])
+
+        # gnss
+        self.assertEqual(_decoded['gnss_power_save_state'],data['gnssPowerSaveState'])
+
+        # custom sensor with name
+        self.assertEqual(_decoded['hbk8359hbk8359hbk835_0_0'],data['extraSensors'][0]['values'][1][0])
+        self.assertEqual(_decoded['hbk8359hbk8359hbk835_0_1'],data['extraSensors'][0]['values'][1][1])
+        self.assertIn('hbk8359hbk8359hbk835_0_1', _decoded['custom_field_names'])
+
+        # custom sensor without name
+        self.assertEqual(_decoded['unknown_2'],data['extraSensors'][2]['values'][1])
+        self.assertIn('unknown_2', _decoded['custom_field_names'])
+
+        #timecheck
+        self.assertEqual(_decoded['time'],"00:00:05")
 
     def test_binary_tests_break_fields(self):
         # Binary packet tests that break various fields
