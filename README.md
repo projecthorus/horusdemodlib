@@ -52,6 +52,7 @@ $ ctest
 ### Updates
 In most cases, you can update this library by running:
 ```
+$ git stash
 $ git pull
 ```
 and then following the build steps above from the `cd horusdemodlib` line.
