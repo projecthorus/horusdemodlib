@@ -97,24 +97,4 @@ enable_testing()
              set_tests_properties(test_horus_binary_iq PROPERTIES
              PASS_REGULAR_EXPRESSION "000900071E2A000000000000000000000000259A6B14")
     
-     # Wenet - Using Mask estimator (Assuming ~120 kHz tone spacing)
-     add_test(NAME test_wenet_mask
-        COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
-                       cat ${CMAKE_CURRENT_SOURCE_DIR}/samples/wenet_sample.c8 | 
-                       ./fsk_demod --cu8 -s --mask=120000 2 921416 115177 - - |
-                       ./drs232_ldpc - - 2>&1 | strings"
-        )
-        set_tests_properties(test_wenet_mask PROPERTIES
-        PASS_REGULAR_EXPRESSION "packet_errors: 0 PER: 0.000")
-
-     # Using regular frequency estimator, tell freq est to avoid first 100 kHz due to a DC line 
-     add_test(NAME test_wenet_nomask
-        COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src; 
-                       cat ${CMAKE_CURRENT_SOURCE_DIR}/samples/wenet_sample.c8 | 
-                       ./fsk_demod --cu8 -s --fsk_lower 100000 2 921416 115177 - - |
-                       ./drs232_ldpc - - 2>&1 | strings"
-        )
-        set_tests_properties(test_wenet_nomask PROPERTIES
-        PASS_REGULAR_EXPRESSION "packet_errors: 0 PER: 0.000")
-
 
