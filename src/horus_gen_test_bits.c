@@ -206,10 +206,10 @@ int main(int argc,char *argv[]) {
     } else if (horus_mode == 2) {
       asn_enc_rval_t ec;
       Telemetry_t *packet;
-      char * callsign = "VK3FUR";
+      char * callsign = "4FSKTEST-V2";
       packet = calloc(1, sizeof(Telemetry_t));
 
-      packet->payloadCallsign.size=6;
+      packet->payloadCallsign.size=11;
       
       packet->payloadCallsign.buf = (uint8_t *)callsign;
 
@@ -268,7 +268,7 @@ int main(int argc,char *argv[]) {
       CustomFieldValues_t *customSensorValues;
       IA5String_t *sensorName;
 
-      char * callsign = "VK3FUR";
+      char * callsign = "4FSKTEST-V2";
       
       packet = calloc(1, sizeof(Telemetry_t));
       sensors = calloc(1, sizeof(AdditionalSensors_t));
@@ -276,7 +276,7 @@ int main(int argc,char *argv[]) {
       sensorName = calloc(1, sizeof(IA5String_t));
       customSensorValues = calloc(1, sizeof(CustomFieldValues_t));
 
-      packet->payloadCallsign.size=6;
+      packet->payloadCallsign.size=11;
       
       packet->payloadCallsign.buf = (uint8_t *)callsign;
 
@@ -286,7 +286,6 @@ int main(int argc,char *argv[]) {
       packet->longitude=34;
       packet->altitudeMeters=56;
 
-      packet->payloadCallsign.size=6;
       packet->payloadCallsign.buf = (uint8_t *)callsign;
 
       packet->sequenceNumber = 1;
@@ -380,7 +379,7 @@ int main(int argc,char *argv[]) {
       IA5String_t *sensorName;
       OCTET_STRING_t *customData;
 
-      char * callsign = "VK3FUR";
+      char * callsign = "4FSKTEST-V2";
       
       packet = calloc(1, sizeof(Telemetry_t));
       sensors = calloc(1, sizeof(AdditionalSensors_t));
@@ -389,7 +388,7 @@ int main(int argc,char *argv[]) {
       customData = calloc(1,sizeof(OCTET_STRING_t));
       customSensorValues = calloc(1, sizeof(CustomFieldValues_t));
 
-      packet->payloadCallsign.size=6;
+      packet->payloadCallsign.size=11;
       
       packet->payloadCallsign.buf = (uint8_t *)callsign;
 
@@ -399,7 +398,6 @@ int main(int argc,char *argv[]) {
       packet->longitude=34;
       packet->altitudeMeters=56;
 
-      packet->payloadCallsign.size=6;
       packet->payloadCallsign.buf = (uint8_t *)callsign;
 
       packet->sequenceNumber = 1;
