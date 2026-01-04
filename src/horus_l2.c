@@ -62,6 +62,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <math.h>
 #include "mpdecode_core.h"
 #include "horus_l2.h"
 #include "golay23.h"
@@ -481,19 +482,28 @@ void horus_l2_decode_rx_packet(unsigned char *output_payload_data,
 
 #ifdef INTERLEAVER
 
-uint16_t primes[] = {
-    2,      3,      5,      7,      11,     13,     17,     19,     23,     29, 
-    31,     37,     41,     43,     47,     53,     59,     61,     67,     71, 
-    73,     79,     83,     89,     97,     101,    103,    107,    109,    113, 
-    127,    131,    137,    139,    149,    151,    157,    163,    167,    173, 
-    179,    181,    191,    193,    197,    199,    211,    223,    227,    229, 
-    233,    239,    241,    251,    257,    263,    269,    271,    277,    281, 
-    283,    293,    307,    311,    313,    317,    331,    337,    347,    349,
-    379,    383,    389,    757,    761,    769,    773
-};
+// from https://github.com/drowe67/codec2/blob/96e8a19c2487fd83bd981ce570f257aef42618f9/src/gp_interleaver.c#L39-L40
+int is_prime(int x) {
+  for (int i = 2; i < x; i++) {
+    if ((x % i) == 0) return 0;
+  }
+  return 1;
+}
+
+int next_prime(int x) {
+  x++;
+  while (is_prime(x) == 0) x++;
+  return x;
+}
+
+int choose_interleaver_b(int Nbits) {
+  int b = floor(Nbits / 1.62);
+  b = next_prime(b);
+  return b;
+}
 
 void interleave(unsigned char *inout, int nbytes, int dir)
-{
+{   
     /* note: to work on small uCs (e.g. AVR) needed to declare specific words sizes */
     uint16_t nbits = (uint16_t)nbytes*8;
     uint32_t i, j, n, ibit, ibyte, ishift, jbyte, jshift;
@@ -501,15 +511,21 @@ void interleave(unsigned char *inout, int nbytes, int dir)
     unsigned char out[nbytes];
 
     memset(out, 0, nbytes);
-           
-    /* b chosen to be co-prime with nbits, I'm cheating by just finding the 
-       nearest prime to nbits.  It also uses storage, is run on every call,
-       and has an upper limit.  Oh Well, still seems to interleave OK. */
-    i = 1;
-    uint16_t imax = sizeof(primes)/sizeof(uint16_t);
-    while ((primes[i] < nbits) && (i < imax))
-        i++;
-    b = primes[i-1];
+
+    switch(nbytes)
+    {
+        case 43: // horus v1
+            b = 337;
+            break;
+        case 63: // horus v2
+            b = 389;
+            break;
+        default: // everything else (including horus v3)
+            b = choose_interleaver_b(nbits);
+    }
+
+    // fprintf(stderr,"n: %d b: %d bits: %d\n",nbytes, b, nbits);
+
 
     for(n=0; n<nbits; n++) {
 
