@@ -68,6 +68,15 @@ enable_testing()
               )
              set_tests_properties(test_horus_binary_v2 PROPERTIES PASS_REGULAR_EXPRESSION "0102030405060708091DBB")
 
+     add_test(NAME test_horus_binary_v3
+             # currently using a perfect by performing:  ./horus_gen_test_bits 4 10 | ./fsk_mod 4 8000 100 1000 270 - -  > ../../samples/horus_v3_100bd_8000_s16.raw
+             COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
+                            sox -t raw -r 8000 -e signed-integer -b 16 -c 1 ${CMAKE_CURRENT_SOURCE_DIR}/samples/horus_v3_100bd_8000_s16.raw -r 48000 -t raw - | 
+                            ./horus_demod -m binary - -"
+              )
+             set_tests_properties(test_horus_binary_v3 PROPERTIES PASS_REGULAR_EXPRESSION "5AC0401A1917967D079F021100000000889545744AA2881083CEB9ECC2B9ECC2802F79D73D98573D985005EF3AE7B30AE7B30A00BDE75CF6615CF6614017B20574F4F46574F4F46574F4F46574F4F46574F4F46574F4F46574F4F46574F4F460E02ED8FF0100000000000042000000000C6AE5910100000040416F0002000000")
+
+
      add_test(NAME test_horus_rtty_7n1
              COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
                             sox ${CMAKE_CURRENT_SOURCE_DIR}/samples/rtty_7n1.wav -r 48000 -t raw - |
