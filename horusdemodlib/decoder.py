@@ -238,7 +238,7 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             _raw_fields.pop('counts')
         
         if 'customData' in _raw_fields:
-            _output['custom_data'] = _raw_fields.pop('customData')
+            _output['custom_data'] = _raw_fields.pop('customData').hex()
             _output["custom_field_names"].append('custom_data')
         # We might only get names for sensors occasionally, so if we see the name, lets cache it
         if 'extraSensors' in _raw_fields:

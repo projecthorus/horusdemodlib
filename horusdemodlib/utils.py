@@ -11,6 +11,7 @@ import datetime
 import logging
 from .delegates import fix_datetime
 import unittest
+import traceback
 
 def telem_to_sondehub(telemetry, metadata=None, check_time=True):
     """
@@ -62,6 +63,7 @@ def telem_to_sondehub(telemetry, metadata=None, check_time=True):
         logging.error(
             "SondeHub Data Reformatter - Error converting telemetry datetime to string - %s" % str(e)
         )
+        logging.error(traceback.format_exc())
         logging.debug("SondeHub Data Reformatter - Offending datetime_dt: %s" % str(telemetry["time"]))
         return None
 

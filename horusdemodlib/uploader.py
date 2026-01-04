@@ -22,6 +22,8 @@ from .payloads import init_custom_field_list, init_payload_id_list
 from .demodstats import FSKDemodStats
 import horusdemodlib.payloads
 import horusdemodlib
+import unittest
+from unittest.mock import patch, Mock, MagicMock
 
 def read_config(filename):
     ''' Read in the user configuation file.'''
@@ -60,7 +62,7 @@ def main():
     # Read command-line arguments
     parser = argparse.ArgumentParser(description="Project Horus Binary/RTTY Telemetry Handler", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-c', '--config', type=str, default='user.cfg', help="Configuration file to use. Default: user.cfg")
-    parser.add_argument("--noupload", action="store_true", default=False, help="Disable Habitat upload.")
+    parser.add_argument("--noupload", action="store_true", default=False, help="Disable SondeHub upload.")
     parser.add_argument("--rtty", action="store_true", default=False, help="Expect only RTTY inputs, do not update payload lists.")
     parser.add_argument("--log", type=str, default="telemetry.log", help="Write decoded telemetry to this log file.")
     parser.add_argument("--debuglog", type=str, default="horusb_debug.log", help="Write debug log to this file.")
@@ -116,7 +118,7 @@ def main():
 
         logging.info(f"Custom Field list contains {len(list(horusdemodlib.payloads.HORUS_CUSTOM_FIELDS.keys()))} entries.")
 
-    # Start the Habitat uploader thread.
+    # Start the SondeHub uploader thread.
 
     if args.freq_target_hz:
         _listener_freq_str = f" ({args.freq_target_hz/1e6:.3f} MHz)"
@@ -176,7 +178,6 @@ def main():
                     # Add in frequency estimate, if we have been supplied a receiver frequency.
                     if args.freq_hz:
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
-                        #habitat_uploader.last_freq_hz = _decoded['f_centre']
 
                     # Add in baud rate, if provided.
                     if args.baud_rate:
@@ -185,9 +186,8 @@ def main():
                     # Send via UDP
                     send_payload_summary(_decoded, port=user_config['summary_port'])
 
-                    # Upload the string to Habitat
+                    # Logfile string
                     _decoded_str = "$$" + data.split('$')[-1] + '\n'
-                    #habitat_uploader.add(_decoded_str)
 
                     # Upload the string to Sondehub Amateur
                     sondehub_uploader.add(_decoded)
@@ -199,7 +199,7 @@ def main():
                     logging.info(f"Decoded String (SNR {demod_stats.snr:.1f} dB): {_decoded_str[:-1]}")
 
                 except Exception as e:
-                    logging.error(f"Decode Failed: {str(e)}")
+                    logging.error(f"Decode Failed: {traceback.format_exc()}")
             
             elif data.startswith('{'):
                 # Possibly a line of modem statistics, attempt to decode it.
@@ -242,7 +242,6 @@ def main():
                     # Add in frequency estimate, if we have been supplied a receiver frequency.
                     if args.freq_hz:
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
-                        #habitat_uploader.last_freq_hz = _decoded['f_centre']
 
                     # Add in baud rate, if provided.
                     if args.baud_rate:
@@ -250,9 +249,6 @@ def main():
 
                     # Send via UDP
                     send_payload_summary(_decoded, port=user_config['summary_port'])
-
-                    # Do not upload Horus Binary packets to the Habitat endpoint.
-                    # habitat_uploader.add(_decoded['ukhas_str']+'\n')
 
                     # Upload the string to Sondehub Amateur
                     sondehub_uploader.add(_decoded)
@@ -268,13 +264,119 @@ def main():
                     _temp_packet.pop('ukhas_str')
                     logging.debug(f"Binary Packet Contents: {_temp_packet}")
                 except Exception as e:
-                    logging.error(f"Decode Failed: {str(e)}")
+                    logging.error(f"Decode Failed: {traceback.format_exc()}")
 
     except KeyboardInterrupt:
         logging.info("Caught CTRL-C, exiting.")
 
-    #habitat_uploader.close()
     sondehub_uploader.close()
+    sondehub_uploader.input_process_thread.join()
+
+class HorusUploaderTests(unittest.TestCase):
+    class mockArgs():
+        verbose=False
+        config='user.cfg.example'
+        log="none"
+        rtty=True
+        nodownload=True
+        payload_list="payload_id_list.txt"
+        custom_fields="custom_field_list.json"
+        freq_target_hz=None
+        noupload=False
+        freq_hz=433
+        baud_rate=100
+    
+    def sleep(self):
+        return
+    
+    time.sleep = sleep
+    
+    def telem_to_sondehub(telemetry, metadata=None, check_time=True):
+        import horusdemodlib.utils
+        telemetry['callsign'] = 'UNITTEST'
+        telemetry['latitude'] = 90
+        telemetry['longitude'] = 90
+        horusdemodlib.utils.telem_to_sondehub(telemetry, metadata=None, check_time=True)
+
+    class mockRequestPut():
+        status_code = 200
+
+    @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
+    @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
+    @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
+    @patch("horusdemodlib.sondehubamateur.telem_to_sondehub", wraps=telem_to_sondehub)
+    def test_uploader_v3(self, to_sondehub, dt, sondehub, args):
+
+        dt.now.side_effect = [
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+
+        ]
+        sys.stdin.readline = MagicMock()
+        sys.stdin.readline.side_effect = ["5AC0401A1917967D079F021100000000889545744AA2881083CEB9ECC2B9ECC2802F79D73D98573D985005EF3AE7B30AE7B30A00BDE75CF6615CF6614017B20574F4F46574F4F46574F4F46574F4F46574F4F46574F4F46574F4F46574F4F460E02ED8FF0100000000000042000000000C6AE5910100000040416F0002000000",""]
+        
+        main()
+        self.assertEqual(to_sondehub.call_count,1)
+
+
+    @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
+    @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
+    @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
+    @patch("horusdemodlib.sondehubamateur.telem_to_sondehub", wraps=telem_to_sondehub)
+    def test_uploader_rtty(self, to_sondehub, dt, sondehub, args):
+
+        dt.now.side_effect = [
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+
+        ]
+        sys.stdin.readline = MagicMock()
+        sys.stdin.readline.side_effect = ["$$$$$HORUS,4,07:24:17,0.000000,0.000000,0,0,0,1304,20*938B",""]
+        
+        main()
+        self.assertEqual(to_sondehub.call_count,1)
+
+    @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
+    @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
+    @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
+    @patch("horusdemodlib.sondehubamateur.telem_to_sondehub", wraps=telem_to_sondehub)
+    def test_uploader_v2(self, to_sondehub, dt, sondehub, args):
+
+        dt.now.side_effect = [
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+
+        ]
+        sys.stdin.readline = MagicMock()
+        sys.stdin.readline.side_effect = ["000103000C2238000000000000000000000000000001020304050607080920E2",""]
+        
+        main()
+        self.assertEqual(to_sondehub.call_count,1)
+
+    @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
+    @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
+    @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
+    @patch("horusdemodlib.sondehubamateur.telem_to_sondehub", wraps=telem_to_sondehub)
+    def test_uploader_v1(self, to_sondehub, dt, sondehub, args):
+
+        dt.now.side_effect = [
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+
+        ]
+        sys.stdin.readline = MagicMock()
+        sys.stdin.readline.side_effect = ["0112000000230000000000000000000000001C9A9545",""]
+        
+        main()
+        self.assertEqual(to_sondehub.call_count,1)
 
 if __name__ == "__main__":
     main()
