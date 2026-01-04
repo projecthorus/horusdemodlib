@@ -885,6 +885,15 @@ void fsk_demod_core(struct FSK *fsk, uint8_t rx_bits[], float rx_sd[], COMP fsk_
                ind = 2*P*i + neyeoffset + j*neyesamp_dec;
                assert((i*M+m) < MODEM_STATS_ET_MAX);
                assert(ind < (nsym+1)*P);
+
+               if (ind<0){
+                ind=0; // this was often negative 1 for me...
+               }
+               if (ind > sizeof(f_int[0])/sizeof(f_int[0][0])-1){
+                ind = sizeof(f_int[0])/sizeof(f_int[0][0])-1;
+               }
+
+               
                fsk->stats->rx_eye[i*M+m][j] = cabsolute(f_int[m][ind]);
             }
         }
