@@ -1,0 +1,30 @@
+Source: horusdemodlib
+Section: hamradio
+Priority: optional
+Maintainer: Mark Jessop <vk5qi@rfhead.net>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper (>= 11.0.0),
+ dh-python,
+ cmake,
+ pkg-config,
+ python3-dev,
+Standards-Version: 4.5.0
+Homepage: https://github.com/projecthorus/horusdemodlib
+
+Package: horusdemodlib
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Project Horus's Telemetry Demodulator Library
+ This package includes:
+  - libhorus: C library containing a high performance 2/4-FSK-demodulator (originally developed as part of the Codec2 project by David Rowe), along with Golay and LDPC forward-error correction algorithms.
+  - horus_demod: command-line version of the FSK demodulator.
+
+Package: python3-horusdemodlib
+Architecture: any
+Depends: ${misc:Depends}, ${python3:Depends},
+ horusdemodlib,
+Description: Project Horus's Telemetry Demodulator Library
+ This package includes:
+  - horusdemodlib: Python library which wraps libhorus, and provides additional functions to decode telemetry into formats suitable for uploading to the Habhub tracker and other services.
+
