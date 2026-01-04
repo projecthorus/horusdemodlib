@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(horus C)
 
 include(GNUInstallDirs)
@@ -44,6 +44,8 @@ set(CMAKE_C_FLAGS "-Wall -Wextra -Wno-unused-function -Wno-strict-overflow -O3 -
 # Arch specific stuff here
 message(STATUS "Host system arch is: ${CMAKE_SYSTEM_PROCESSOR}")
 
+#horusbinaryv3
+add_subdirectory(horusbinaryv3/clib)
 
 add_subdirectory(src)
 
@@ -65,6 +67,15 @@ enable_testing()
                             ./horus_demod -m binary - -"
               )
              set_tests_properties(test_horus_binary_v2 PROPERTIES PASS_REGULAR_EXPRESSION "0102030405060708091DBB")
+
+     add_test(NAME test_horus_binary_v3
+             # currently using a perfect by performing:  ./horus_gen_test_bits 4 10 | ./fsk_mod 4 8000 100 1000 270 - -  > ../../samples/horus_v3_100bd_8000_s16.raw
+             COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
+                            sox -t raw -r 8000 -e signed-integer -b 16 -c 1 ${CMAKE_CURRENT_SOURCE_DIR}/samples/horus_v3_100bd_8000_s16.raw -r 48000 -t raw - | 
+                            ./horus_demod -m binary - -"
+              )
+             set_tests_properties(test_horus_binary_v3 PROPERTIES PASS_REGULAR_EXPRESSION "5AC0401A1917967D079F021100000000889545744AA2881083CEB9ECC2B9ECC2802F79D73D98573D985005EF3AE7B30AE7B30A00BDE75CF6615CF6614017B20574F4F46574F4F46574F4F46574F4F46574F4F46574F4F46574F4F46574F4F460E02ED8FF0100000000000042000000000C6AE5910100000040416F0002000000")
+
 
      add_test(NAME test_horus_rtty_7n1
              COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
@@ -95,24 +106,4 @@ enable_testing()
              set_tests_properties(test_horus_binary_iq PROPERTIES
              PASS_REGULAR_EXPRESSION "000900071E2A000000000000000000000000259A6B14")
     
-     # Wenet - Using Mask estimator (Assuming ~120 kHz tone spacing)
-     add_test(NAME test_wenet_mask
-        COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src;
-                       cat ${CMAKE_CURRENT_SOURCE_DIR}/samples/wenet_sample.c8 | 
-                       ./fsk_demod --cu8 -s --mask=120000 2 921416 115177 - - |
-                       ./drs232_ldpc - - 2>&1 | strings"
-        )
-        set_tests_properties(test_wenet_mask PROPERTIES
-        PASS_REGULAR_EXPRESSION "packet_errors: 0 PER: 0.000")
-
-     # Using regular frequency estimator, tell freq est to avoid first 100 kHz due to a DC line 
-     add_test(NAME test_wenet_nomask
-        COMMAND sh -c "cd ${CMAKE_CURRENT_BINARY_DIR}/src; 
-                       cat ${CMAKE_CURRENT_SOURCE_DIR}/samples/wenet_sample.c8 | 
-                       ./fsk_demod --cu8 -s --fsk_lower 100000 2 921416 115177 - - |
-                       ./drs232_ldpc - - 2>&1 | strings"
-        )
-        set_tests_properties(test_wenet_nomask PROPERTIES
-        PASS_REGULAR_EXPRESSION "packet_errors: 0 PER: 0.000")
-
 

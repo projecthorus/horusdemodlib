@@ -184,6 +184,9 @@ class HorusLib():
         # horus_crc_ok
         self.c_lib.horus_crc_ok.restype = c_int
 
+        # horus_packet_version
+        self.c_lib.horus_packet_version.restype = c_int
+
         # horus_get_modem_extended_stats - (struct horus *hstates, struct MODEM_STATS *stats)
         self.c_lib.horus_get_modem_extended_stats.argtype = [
             POINTER(MODEM_STATS),

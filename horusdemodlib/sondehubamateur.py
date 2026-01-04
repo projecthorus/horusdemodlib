@@ -22,6 +22,8 @@ from threading import Thread
 from email.utils import formatdate
 from .delegates import fix_datetime
 from .utils import telem_to_sondehub
+import unittest
+
 
 try:
     # Python 2
@@ -411,12 +413,15 @@ class SondehubAmateurUploader(object):
         """
         logging.warning("Sondehub Amateur Uploader - %s" % line)
 
+class HorusSondeHub(unittest.TestCase):
+    def test_sondehub(self):    
+        _test = SondehubAmateurUploader()
+        time.sleep(5)
+        _test.close()
 
 if __name__ == "__main__":
     # Test Script
     logging.basicConfig(
         format="%(asctime)s %(levelname)s:%(message)s", level=logging.DEBUG
     )
-    _test = SondehubAmateurUploader()
-    time.sleep(5)
-    _test.close()
+    unittest.main()
