@@ -194,7 +194,7 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             _output["custom_field_names"].append("ascent_rate")
                 
         if 'pressurehPa-x10' in _raw_fields:
-            _output["ext_pressure"] = _raw_fields.pop("pressurehPa") / 10
+            _output["ext_pressure"] = _raw_fields.pop("pressurehPa-x10") / 10
             _output["custom_field_names"].append("ext_pressure")
               
         if 'humidityPercentage' in _raw_fields:
@@ -202,19 +202,19 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             _output["custom_field_names"].append("ext_humidity")
 
         if 'temperatureCelsius-x10' in _raw_fields:
-            if 'internal' in _raw_fields['temperatureCelsius']:
-                _output["temperature"] = _raw_fields['temperatureCelsius']['internal'] / 10
+            if 'internal' in _raw_fields['temperatureCelsius-x10']:
+                _output["temperature"] = _raw_fields['temperatureCelsius-x10']['internal'] / 10
                 _output["packet_format"]["fields"].append(["temperature", "none"])
-            if 'external' in _raw_fields['temperatureCelsius']:
-                _output["ext_temperature"] = _raw_fields['temperatureCelsius'].pop('external') / 10
+            if 'external' in _raw_fields['temperatureCelsius-x10']:
+                _output["ext_temperature"] = _raw_fields['temperatureCelsius-x10'].pop('external') / 10
                 _output["custom_field_names"].append("ext_temperature")
-            if 'custom1' in _raw_fields['temperatureCelsius']:
-                _output["ext_temperature_custom_1"] = _raw_fields['temperatureCelsius'].pop('custom1') / 10
+            if 'custom1' in _raw_fields['temperatureCelsius-x10']:
+                _output["ext_temperature_custom_1"] = _raw_fields['temperatureCelsius-x10'].pop('custom1') / 10
                 _output["custom_field_names"].append("ext_temperature_custom_1")
-            if 'custom2' in _raw_fields['temperatureCelsius']:
-                _output["ext_temperature_custom_2"] = _raw_fields['temperatureCelsius'].pop('custom2') / 10
+            if 'custom2' in _raw_fields['temperatureCelsius-x10']:
+                _output["ext_temperature_custom_2"] = _raw_fields['temperatureCelsius-x10'].pop('custom2') / 10
                 _output["custom_field_names"].append("ext_temperature_custom_2")    
-            _raw_fields.pop('temperatureCelsius')    
+            _raw_fields.pop('temperatureCelsius-x10')    
 
         if 'milliVolts' in _raw_fields:
             if 'battery' in _raw_fields['milliVolts']:
@@ -486,7 +486,7 @@ class HorusDecoderTests(unittest.TestCase):
             "velocityHorizontalKilometersPerHour": 255,
             "gnssSatellitesVisible": 31,
             "ascentRateCentimetersPerSecond": 32767,
-            "pressurehPa": 127,
+            "pressurehPa-x10": 127,
             "temperatureCelsius": {
                 "internal": -127,
                 "external": 127,
@@ -543,17 +543,17 @@ class HorusDecoderTests(unittest.TestCase):
         self.assertEqual(_decoded['ascent_rate'],data["ascentRateCentimetersPerSecond"] / 100)
 
         # pressure
-        self.assertEqual(_decoded['ext_pressure'], data['pressurehPa']/10)
+        self.assertEqual(_decoded['ext_pressure'], data['pressurehPa-x10']/10)
         
         # humidity
         self.assertEqual(_decoded['ext_humidity'], data['humidityPercentage'])
         self.assertIn('ext_humidity', _decoded['custom_field_names'])
 
         #temps
-        self.assertEqual(_decoded['temperature'],data['temperatureCelsius']['internal']/10)
-        self.assertEqual(_decoded['ext_temperature'],data['temperatureCelsius']['external']/10)
-        self.assertEqual(_decoded['ext_temperature_custom_1'],data['temperatureCelsius']['custom1']/10)
-        self.assertEqual(_decoded['ext_temperature_custom_2'],data['temperatureCelsius']['custom2']/10)
+        self.assertEqual(_decoded['temperature'],data['temperatureCelsius-x10']['internal']/10)
+        self.assertEqual(_decoded['ext_temperature'],data['temperatureCelsius-x10']['external']/10)
+        self.assertEqual(_decoded['ext_temperature_custom_1'],data['temperatureCelsius-x10']['custom1']/10)
+        self.assertEqual(_decoded['ext_temperature_custom_2'],data['temperatureCelsius-x10']['custom2']/10)
 
         #volts
         self.assertEqual(_decoded['battery_voltage'],data['milliVolts']['battery']/1000)
