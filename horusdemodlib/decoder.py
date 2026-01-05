@@ -487,7 +487,7 @@ class HorusDecoderTests(unittest.TestCase):
             "gnssSatellitesVisible": 31,
             "ascentRateCentimetersPerSecond": 32767,
             "pressurehPa-x10": 127,
-            "temperatureCelsius": {
+            "temperatureCelsius-x10": {
                 "internal": -127,
                 "external": 127,
                 "custom1": -127,
