@@ -64,7 +64,7 @@ def _(ASN1_DEF, mo):
         "velocityHorizontalKilometersPerHour": 200,
         "gnssSatellitesVisible": 18,
 
-        "temperatureCelsius": {
+        "temperatureCelsius-x10": {
             "internal": 100,
             "external": 200
         },
