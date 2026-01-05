@@ -277,7 +277,7 @@ memb_ascentRateCentimetersPerSecond_constraint_1(const asn_TYPE_descriptor_t *td
 }
 
 static int
-memb_pressurehPa_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
+memb_pressurehPa_x10_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	long value;
 	
@@ -290,7 +290,7 @@ memb_pressurehPa_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
 	
 	value = *(const long *)sptr;
 	
-	if((value >= 0 && value <= 1200)) {
+	if((value >= 0 && value <= 12000)) {
 		/* Constraint check succeeded */
 		return 0;
 	} else {
@@ -352,6 +352,32 @@ memb_counts_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
 	}
 }
 
+static int
+memb_customData_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const OCTET_STRING_t *st = (const OCTET_STRING_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	size = st->size;
+	
+	if((size <= 255)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
 static asn_per_constraints_t asn_PER_type_counts_constr_16 CC_NOTUSED = {
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	{ APC_CONSTRAINED,	 3,  3,  1,  8 }	/* (SIZE(1..8)) */,
@@ -403,8 +429,8 @@ static asn_per_constraints_t asn_PER_memb_ascentRateCentimetersPerSecond_constr_
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
-static asn_per_constraints_t asn_PER_memb_pressurehPa_constr_12 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 11,  11,  0,  1200 }	/* (0..1200) */,
+static asn_per_constraints_t asn_PER_memb_pressurehPa_x10_constr_12 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 14,  14,  0,  12000 }	/* (0..12000) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
@@ -416,6 +442,11 @@ static asn_per_constraints_t asn_PER_memb_humidityPercentage_constr_14 CC_NOTUSE
 static asn_per_constraints_t asn_PER_memb_counts_constr_16 CC_NOTUSED = {
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	{ APC_CONSTRAINED,	 3,  3,  1,  8 }	/* (SIZE(1..8)) */,
+	0, 0	/* No PER value map */
+};
+static asn_per_constraints_t asn_PER_memb_customData_constr_19 CC_NOTUSED = {
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	{ APC_CONSTRAINED,	 8,  8,  0,  255 }	/* (SIZE(0..255)) */,
 	0, 0	/* No PER value map */
 };
 static asn_TYPE_member_t asn_MBR_counts_16[] = {
@@ -546,23 +577,23 @@ static asn_TYPE_member_t asn_MBR_Telemetry_1[] = {
 		0, 0, /* No default value */
 		"ascentRateCentimetersPerSecond"
 		},
-	{ ATF_POINTER, 7, offsetof(struct Telemetry, pressurehPa),
+	{ ATF_POINTER, 7, offsetof(struct Telemetry, pressurehPa_x10),
 		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_NativeInteger,
 		0,
-		{ 0, &asn_PER_memb_pressurehPa_constr_12,  memb_pressurehPa_constraint_1 },
+		{ 0, &asn_PER_memb_pressurehPa_x10_constr_12,  memb_pressurehPa_x10_constraint_1 },
 		0, 0, /* No default value */
-		"pressurehPa"
+		"pressurehPa-x10"
 		},
-	{ ATF_POINTER, 6, offsetof(struct Telemetry, temperatureCelsius),
+	{ ATF_POINTER, 6, offsetof(struct Telemetry, temperatureCelsius_x10),
 		(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_TemperatureSensors,
 		0,
 		{ 0, 0, 0 },
 		0, 0, /* No default value */
-		"temperatureCelsius"
+		"temperatureCelsius-x10"
 		},
 	{ ATF_POINTER, 5, offsetof(struct Telemetry, humidityPercentage),
 		(ASN_TAG_CLASS_CONTEXT | (12 << 2)),
@@ -605,7 +636,7 @@ static asn_TYPE_member_t asn_MBR_Telemetry_1[] = {
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,
-		{ 0, 0, 0 },
+		{ 0, &asn_PER_memb_customData_constr_19,  memb_customData_constraint_1 },
 		0, 0, /* No default value */
 		"customData"
 		},
@@ -625,8 +656,8 @@ static const asn_TYPE_tag2member_t asn_MAP_Telemetry_tag2el_1[] = {
     { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* velocityHorizontalKilometersPerHour */
     { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* gnssSatellitesVisible */
     { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* ascentRateCentimetersPerSecond */
-    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 }, /* pressurehPa */
-    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 }, /* temperatureCelsius */
+    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 }, /* pressurehPa-x10 */
+    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 }, /* temperatureCelsius-x10 */
     { (ASN_TAG_CLASS_CONTEXT | (12 << 2)), 12, 0, 0 }, /* humidityPercentage */
     { (ASN_TAG_CLASS_CONTEXT | (13 << 2)), 13, 0, 0 }, /* milliVolts */
     { (ASN_TAG_CLASS_CONTEXT | (14 << 2)), 14, 0, 0 }, /* counts */

@@ -43,6 +43,7 @@ static int
 memb_horusStr_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	const IA5String_t *st = (const IA5String_t *)sptr;
+	size_t size;
 	
 	if(!sptr) {
 		ASN__CTFAIL(app_key, td, sptr,
@@ -51,8 +52,10 @@ memb_horusStr_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
 		return -1;
 	}
 	
+	size = st->size;
 	
-	if(!check_permitted_alphabet_2(st)) {
+	if((size <= 255)
+		 && !check_permitted_alphabet_2(st)) {
 		/* Constraint check succeeded */
 		return 0;
 	} else {
@@ -137,7 +140,7 @@ static asn_per_constraints_t asn_PER_type_horusReal_constr_5 CC_NOTUSED = {
 };
 static asn_per_constraints_t asn_PER_memb_horusStr_constr_2 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 7,  7,  32,  122 }	/* (32..122) */,
-	{ APC_SEMI_CONSTRAINED,	-1, -1,  0,  0 }	/* (SIZE(0..MAX)) */,
+	{ APC_CONSTRAINED,	 8,  8,  0,  255 }	/* (SIZE(0..255)) */,
 	asn_PER_MAP_horusStr_2_v2c,	/* Value to PER code map */
 	asn_PER_MAP_horusStr_2_c2v	/* PER code to value map */
 };

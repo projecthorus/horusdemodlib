@@ -41,8 +41,8 @@ typedef struct Telemetry {
 	long	*velocityHorizontalKilometersPerHour	/* OPTIONAL */;
 	long	*gnssSatellitesVisible	/* OPTIONAL */;
 	long	*ascentRateCentimetersPerSecond	/* OPTIONAL */;
-	long	*pressurehPa	/* OPTIONAL */;
-	struct TemperatureSensors	*temperatureCelsius	/* OPTIONAL */;
+	long	*pressurehPa_x10	/* OPTIONAL */;
+	struct TemperatureSensors	*temperatureCelsius_x10	/* OPTIONAL */;
 	long	*humidityPercentage	/* OPTIONAL */;
 	struct MilliVoltSensors	*milliVolts	/* OPTIONAL */;
 	struct counts {
