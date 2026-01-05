@@ -161,6 +161,8 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             raise ValueError(f"Decoder - Input data has length {len(data)}, should be length {_struct_length}.")
 
     _ukhas_fields = []
+
+    _output["packet_format"] = deepcopy(packet_format)
     
     if  packet_format['name'] == "Horus Binary v3":
         _raw_fields = HORUS_ASN.decode("Telemetry", data[2:])
@@ -172,7 +174,6 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
         _output["sequence_number"] =  _raw_fields.pop("sequenceNumber")
         _output["latitude"] = _raw_fields.pop("latitude") / 100000
         _output["longitude"] = _raw_fields.pop("longitude") / 100000
-        _output["packet_format"] = deepcopy(packet_format)
         _output["packet_format"]['length'] = len(data)
 
         
