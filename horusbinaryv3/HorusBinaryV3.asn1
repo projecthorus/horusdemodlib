@@ -16,7 +16,7 @@ CustomFieldValues ::= CHOICE {
   -- prefixed with horus otherwise c codegen is bad
 
   -- allows base64 - if you were crazy enough, but really you should use customData instead
-  horusStr   IA5String (FROM("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ +/=-.")), 
+  horusStr   IA5String (FROM("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ +/=-.")^SIZE (0..255)), 
   horusInt   SEQUENCE(SIZE(1..4)) OF INTEGER,
   horusReal  SEQUENCE(SIZE(1..4)) OF REAL,
 
@@ -93,7 +93,7 @@ Telemetry ::= SEQUENCE {
   gnssPowerSaveState   GnssPowerSaveState              OPTIONAL,
 
   -- binary data
-  customData           OCTET STRING OPTIONAL,
+  customData           OCTET STRING(SIZE (0..255)) OPTIONAL,
   ...  -- this is an extension marker - it lets us add fields
 }
 END
