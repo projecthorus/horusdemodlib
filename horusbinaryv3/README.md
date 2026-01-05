@@ -63,7 +63,7 @@ These fields are optional, and store only a single value.
 | ascentRateCentimetersPerSecond | -32767 - 32767 | Ascent rate in centimeters per second. Centimeters is used here to avoid using a REAL which takes up 2 bytes. |
 | gnssSatellitesVisible | 0 - 31 | Number of satellites the payload can see. This figure should not roll over and should cap at 31 if over this value. |
 | humidityPercentage | 0 - 100 | Relative humidity in percentage |
-| pressurehPa | 0 - 1200 | Atmospheric pressure in hPa |
+| pressurehPa-x10 | 0 - 12000 | Atmospheric pressure in hPa * 10|
 | customData | OCTET STRING (aka bytes) | Used to encode binary data. Won't be presented on SondeHub but will be recorded |
 | - | - | - |
 | gnssPowerSaveState | 0-5 | u-blox GNSS Power Save State |
@@ -73,7 +73,7 @@ Each of these fields can have several values. When sending multiple values, ensu
 
 | Field Name | Sub Field name| Constraint | Description |
 | -- | -- | -- | -- |
-| temperatureCelsius |  |  |
+| temperatureCelsius-x10 |  |  |
 | -                  | internal | -1023 - 1023 | Sensor temperature in Celsius ** value *10 ** |
 | -                  | external | -1023 - 1023 | Sensor temperature in Celsius ** value *10 ** |
 | -                  | custom1  | -1023 - 1023 | Sensor temperature in Celsius ** value *10 ** |

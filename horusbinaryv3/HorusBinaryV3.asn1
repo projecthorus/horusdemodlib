@@ -82,15 +82,15 @@ Telemetry ::= SEQUENCE {
   velocityHorizontalKilometersPerHour  INTEGER (0..512)         OPTIONAL, -- km/hr
   gnssSatellitesVisible                INTEGER (0..31)          OPTIONAL,
   ascentRateCentimetersPerSecond       INTEGER (-32767..32767)  OPTIONAL, -- cm/s
-  pressurehPa                          INTEGER (0..1200)        OPTIONAL, -- hPa
+  pressurehPa-x10                      INTEGER (0..12000)        OPTIONAL, -- hPa * 10
 
 
   -- additional but fairly common fields so we make them explicit
-  temperatureCelsius   TemperatureSensors              OPTIONAL, -- C
-  humidityPercentage   INTEGER (0..100)                OPTIONAL, -- %
-  milliVolts           MilliVoltSensors                OPTIONAL, -- 
-  counts               SEQUENCE(SIZE(1..8)) OF INTEGER OPTIONAL,
-  gnssPowerSaveState   GnssPowerSaveState              OPTIONAL,
+  temperatureCelsius-x10 TemperatureSensors              OPTIONAL, -- C
+  humidityPercentage     INTEGER (0..100)                OPTIONAL, -- %
+  milliVolts             MilliVoltSensors                OPTIONAL, -- 
+  counts                 SEQUENCE(SIZE(1..8)) OF INTEGER OPTIONAL,
+  gnssPowerSaveState     GnssPowerSaveState              OPTIONAL,
 
   -- binary data
   customData           OCTET STRING(SIZE (0..255)) OPTIONAL,

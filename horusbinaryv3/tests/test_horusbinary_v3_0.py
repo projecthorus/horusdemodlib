@@ -22,8 +22,8 @@ class TestHorusBinaryV3_0(unittest.TestCase):
             "velocityHorizontalKilometersPerHour": 255,
             "gnssSatellitesVisible": 31,
             "ascentRateCentimetersPerSecond": 32767,
-            "pressurehPa": 127,
-            "temperatureCelsius": {
+            "pressurehPa-x10": 1270,
+            "temperatureCelsius-x10": {
                 "internal": -127,
                 "external": 127,
                 "custom1": -127,
@@ -77,8 +77,8 @@ class TestHorusBinaryV3_0(unittest.TestCase):
             "velocityHorizontalKilometersPerHour": 255,
             "gnssSatellitesVisible": 31,
             "ascentRateCentimetersPerSecond": 32767,
-            "pressurehPa": 127,
-            "temperatureCelsius": {
+            "pressurehPa-x10": 1270,
+            "temperatureCelsius-x10": {
                 "internal": -127,
                 "external": 127,
                 "custom1": -127,
@@ -191,7 +191,7 @@ class TestHorusBinaryV3_0(unittest.TestCase):
 
     def test_can_decode_known(self):
         # Ensure that we can decode an older packet and nothing has changed. Once spec finialised this value shouldn't need changing
-        KNOW_PAYLOAD="7ffe9a7a0f4110020c41669e803fffea30312a88000000031ce3e6918a9220c52462a488314918a9220ca0202020594d71708217ff41b20449142654b142a58b860e2040712adeae58d5a2c7ab98b61301903f2e48e8a71de61300020460cf0fbab73a1301903f2e48e8a71de61300020460cf0fbab73a7ffffff83ffb808fce023f64f0003fff0003fffc020202c80407d0044e2006030d40061e8480061e8480c21b595bdddb595bddc0"
+        KNOW_PAYLOAD="7ffe9a7a0f4110020c41669e803fffea30312a88000000031ce3e6918a9220c52462a488314918a9220ca0202020594d71708217ff41b20449142654b142a58b860e2040712adeae58d5a2c7ab98b61301903f2e48e8a71de61300020460cf0fbab73a1301903f2e48e8a71de61300020460cf0fbab73a7ffffff84f6f7011f9c047ec9e0007ffe0007fff804040590080fa0089c400c061a800c3d09000c3d09018436b2b7bbb6b2b7bb8"
         data = { # This is an example packet that will be way too big, but it highlights all the features
             "payloadCallsign": "abcDEF-0123abc-",
             "sequenceNumber": 65535,
@@ -202,8 +202,8 @@ class TestHorusBinaryV3_0(unittest.TestCase):
             "velocityHorizontalKilometersPerHour": 255,
             "gnssSatellitesVisible": 31,
             "ascentRateCentimetersPerSecond": 32767,
-            "pressurehPa": 127,
-            "temperatureCelsius": {
+            "pressurehPa-x10": 1270,
+            "temperatureCelsius-x10": {
                 "internal": -127,
                 "external": 127,
                 "custom1": -127,
@@ -265,14 +265,14 @@ class TestHorusBinaryV3_0(unittest.TestCase):
                 "altitudeMeters": data['alt'],
 
                 "gnssSatellitesVisible": data['sats'],
-                "temperatureCelsius": {
+                "temperatureCelsius-x10": {
                     "internal": int(data['temp']), 
                     "external": int(data['ext_temperature'])
                 },
                 "milliVolts": {"battery": int(data['batt']*1000)},
                 "humidityPercentage": data['ext_humidity'],
                 "ascentRateCentimetersPerSecond": int(data["ascent_rate"]*100),
-                "pressurehPa": int(data['ext_pressure']),
+                "pressurehPa-x10": int(data['ext_pressure'])*10,
                 "gnssPowerSaveState": "tracking",
             }
             encoded = self.uper.encode("Telemetry",to_encode)
@@ -287,9 +287,10 @@ class TestHorusBinaryV3_0(unittest.TestCase):
             self.assertEqual(decoded["payloadCallsign"],data['payload_callsign'])
             self.assertEqual(decoded["latitude"],int(data['lat']*10_0000))
             self.assertEqual(decoded["longitude"],int(data['lon']*10_0000))
-            self.assertEqual(decoded["temperatureCelsius"]["internal"],data['temp'])
+            self.assertEqual(decoded["temperatureCelsius-x10"]["internal"],data['temp'])
             self.assertEqual(decoded["ascentRateCentimetersPerSecond"],int(data["ascent_rate"]*100))
             self.assertEqual(decoded["milliVolts"]["battery"],int(data['batt']*1000))
+            self.assertEqual(decoded["pressurehPa-x10"],int(data['ext_pressure']*10))
             self.assertLess(len(encoded),48)
             logging.debug(f"Length: {len(encoded)} Data: {encoded.hex()}")
         logging.debug(f"Max length was {max_length}")
