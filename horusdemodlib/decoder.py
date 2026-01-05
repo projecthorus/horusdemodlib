@@ -193,15 +193,15 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             _output["ascent_rate"] = _raw_fields.pop("ascentRateCentimetersPerSecond") / 100 # cm/s -> m/s
             _output["custom_field_names"].append("ascent_rate")
                 
-        if 'pressurehPa' in _raw_fields:
-            _output["ext_pressure"] = _raw_fields.pop("pressurehPa")
+        if 'pressurehPa-x10' in _raw_fields:
+            _output["ext_pressure"] = _raw_fields.pop("pressurehPa") / 10
             _output["custom_field_names"].append("ext_pressure")
               
         if 'humidityPercentage' in _raw_fields:
             _output["ext_humidity"] = _raw_fields.pop("humidityPercentage")
             _output["custom_field_names"].append("ext_humidity")
 
-        if 'temperatureCelsius' in _raw_fields:
+        if 'temperatureCelsius-x10' in _raw_fields:
             if 'internal' in _raw_fields['temperatureCelsius']:
                 _output["temperature"] = _raw_fields['temperatureCelsius']['internal'] / 10
                 _output["packet_format"]["fields"].append(["temperature", "none"])
@@ -543,7 +543,7 @@ class HorusDecoderTests(unittest.TestCase):
         self.assertEqual(_decoded['ascent_rate'],data["ascentRateCentimetersPerSecond"] / 100)
 
         # pressure
-        self.assertEqual(_decoded['ext_pressure'], data['pressurehPa'])
+        self.assertEqual(_decoded['ext_pressure'], data['pressurehPa']/10)
         
         # humidity
         self.assertEqual(_decoded['ext_humidity'], data['humidityPercentage'])
