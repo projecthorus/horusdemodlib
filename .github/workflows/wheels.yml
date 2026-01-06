@@ -18,13 +18,14 @@ jobs:
       - run: |
           echo '[build]' > setup.cfg
           echo 'compiler = mingw32' >> setup.cfg
+        if: matrix.os  == 'windows-latest'
       - uses: bwoodsend/setup-winlibs-action@v1
         if: matrix.os  == 'windows-latest'
       
       - run: |
-          pip install poetry
-          poerty install
-          poetry build
+          pip3 install poetry
+          python3 -m poerty install
+          python3 -m poetry build
       # - name: Build wheels
       #   uses: pypa/cibuildwheel@v3.3.1
       #   env:
