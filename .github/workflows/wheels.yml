@@ -18,7 +18,7 @@ jobs:
           echo '[build]' > setup.cfg
           echo 'compiler = mingw32' >> setup.cfg
       - uses: bwoodsend/setup-winlibs-action@v1
-        if: ${{ matrix.os }} == 'windows-latest'
+        if: matrix.os  == 'windows-latest'
       
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.3.1
