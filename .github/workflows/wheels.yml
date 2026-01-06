@@ -25,7 +25,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.3.1
         env:
-          CIBW_SKIP: cp38-* pp* cp39-* cp310-* cp311-* *-win32
+          CIBW_SKIP: cp38-* pp* cp39-* cp310-* cp311-* *-win32 cp314t-*
           CIBW_BEFORE_BUILD: |
             python3 -m pip install pipx --break-system-packages
             python3 -m pipx ensurepath
