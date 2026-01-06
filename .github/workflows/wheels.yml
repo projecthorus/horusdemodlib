@@ -28,8 +28,10 @@ jobs:
           CIBW_SKIP: cp38-* pp* cp39-* cp310-* cp311-* *-win32
           CIBW_BEFORE_BUILD: |
             python3 -m pip install --user pipx --break-system-packages
-            python3 -m pipx ensurepath;pipx install poetry
-            pipx run poetry install;pipx run poetry build
+            python3 -m pipx ensurepath
+            pipx install poetry
+            pipx run poetry install
+            pipx run poetry build
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
