@@ -27,7 +27,7 @@ jobs:
         env:
           CIBW_SKIP: cp38-* pp* cp39-* cp310-* cp311-* *-win32
           CIBW_BEFORE_BUILD: |
-            python3 -m pip install --user pipx --break-system-packages
+            python3 -m pip install pipx --break-system-packages
             python3 -m pipx ensurepath
             pipx install poetry
             pipx run poetry install
