@@ -1,5 +1,4 @@
 requests
-numpy
 python-dateutil
 audioop-lts; python_version>='3.13'
 asn1tools
