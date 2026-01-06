@@ -247,7 +247,7 @@ class HorusLib():
         _frame = None
         while _processing:
             # Process data until we have less than _nin samples.
-            _nin = int(self.nin*(self.audio_sample_rate/self.modem_sample_rate))
+            _nin = int(self.nin*(self.audio_sample_rate/self.modem_sample_rate)) * (2 if self.stereo_iq else 1)
             if len(self.input_buffer) > (_nin * 2):
                 # Demodulate
                 _frame = self.demodulate(self.input_buffer[:(_nin*2)])
