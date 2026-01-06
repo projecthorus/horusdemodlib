@@ -1,5 +1,6 @@
 from cffi import FFI
 import re
+import platform
 
 ffibuilder = FFI()
 
@@ -317,7 +318,9 @@ ffibuilder.set_source("_horus_api_cffi",
         "./src/horus_l2.c",
       ],
        include_dirs = [ "./src"],
-       extra_compile_args = ["-DHORUS_L2_RX","-DINTERLEAVER","-DSCRAMBLER","-DRUN_TIME_TABLES"]
+       extra_compile_args = ["-DHORUS_L2_RX","-DINTERLEAVER","-DSCRAMBLER","-DRUN_TIME_TABLES"],
+       # ideally we would detect mingw32 compiler but that appears to be hard
+       extra_linker_args = ["-static"] if platform.system() == "Windows" else []
      )   # library name, for the linker
 
 if __name__ == "__main__":
