@@ -285,8 +285,8 @@ def main():
     parser.add_argument('-q', action="store_true",default=False,help="use stereo (IQ) input")
     parser.add_argument('-v', action="store_true",default=False,help="verbose debug info")
     parser.add_argument('-c', action="store_true",default=False,help="display CRC results for each packet")
-    parser.add_argument('-u', action="store",default=False,help="Estimator FSK upper limit")
-    parser.add_argument('-b', action="store",default=False,help="Estimator FSK lower limit")
+    parser.add_argument('-u',"--fsk_upper", type=int, action="store",default=False,help="Estimator FSK upper limit")
+    parser.add_argument('-b',"--fsk_lower", type=int, action="store",default=False,help="Estimator FSK lower limit")
     parser.add_argument('input',nargs='?',action='store', default=sys.stdin.buffer, help="Input filename")
     parser.add_argument('output',nargs='?',action='store', default=sys.stdout, help="Output filename")
 
@@ -325,8 +325,8 @@ def main():
 
 
     with HorusLib(mode=mode,tone_spacing=args.tonespacing, stereo_iq=args.q, verbose=int(args.v), callback=frame_callback, sample_rate=args.sample_rate, rate=int(args.rate)) as horus:
-        if args.b > -99999 and args.u > args.b:
-            horus.set_estimator_limits(args.b, args.u)
+        if args.fsk_lower > -99999 and args.fsk_upper > args.fsk_lower:
+            horus.set_estimator_limits(args.fsk_lower, args.fsk_upper)
         if type(args.input) == type(sys.stdin.buffer) or args.input == "-":
             f = sys.stdin.buffer
         else:
@@ -339,7 +339,7 @@ def main():
         
         stats_counter = args.stats
         while True:
-            data = f.read(horus.nin)
+            data = f.read()
             if not data: # EOF
                 break
             output = horus.add_samples(data)
