@@ -10,7 +10,7 @@ jobs:
       matrix:
         # macos-15-intel is an Intel runner, macos-14 is Apple silicon
         # macos-15-intel, macos-14
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+        os: [ windows-latest]
 
     steps:
       - uses: actions/checkout@v5
