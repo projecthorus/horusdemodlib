@@ -21,12 +21,16 @@ jobs:
       - uses: bwoodsend/setup-winlibs-action@v1
         if: matrix.os  == 'windows-latest'
       
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v3.3.1
-        env:
-          CIBW_SKIP: cp38-* pp*
-          CIBW_BEFORE_BUILD: pip install poetry; poetry install; poetry build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl
+      - run: |
+          pip install poetry
+          poerty install
+          poetry build
+      # - name: Build wheels
+      #   uses: pypa/cibuildwheel@v3.3.1
+      #   env:
+      #     CIBW_SKIP: cp38-* pp*
+      #     CIBW_BEFORE_BUILD: pip install poetry; poetry install; poetry build
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+      #     path: ./wheelhouse/*.whl
