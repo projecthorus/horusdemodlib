@@ -14,6 +14,7 @@ import os
 import unittest
 from unittest.mock import patch
 from copy import deepcopy
+import json
 
 HORUS_ASN = asn1tools.compile_files(os.path.join(os.path.dirname(__file__), '../horusbinaryv3/HorusBinaryV3.asn1'), codec="uper")
 
@@ -166,7 +167,10 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
     
     if  packet_format['name'] == "Horus Binary v3":
         _raw_fields = HORUS_ASN.decode("Telemetry", data[2:])
-        _output['ukhas_str'] = str(_raw_fields) # cheeky hack to get asn1 decoded json output into horus gui
+        _ukhas_obj = deepcopy(_raw_fields)
+        if 'customData' in _ukhas_obj:
+            _ukhas_obj['customData'] = _ukhas_obj['customData'].hex()
+        _output['ukhas_str'] = json.dumps(_ukhas_obj) # cheeky hack to get asn1 decoded json output into horus gui
         
         _output["custom_field_names"] = []
 
@@ -522,6 +526,7 @@ class HorusDecoderTests(unittest.TestCase):
                     "values": ("horusReal",[0.1234,1232342345234234,0.1234,1232342345234234])
                 }
             ],
+            "customData": b'abcedf'
         }
         horus_v3_bells_and_whistles = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
         payload_crcd = add_packet_crc(horus_v3_bells_and_whistles, tail=False)
@@ -586,6 +591,11 @@ class HorusDecoderTests(unittest.TestCase):
 
         #timecheck
         self.assertEqual(_decoded['time'],"00:00:05")
+
+        # custom data / ukas string
+        self.assertIn((b'abcedf').hex(), _decoded['ukhas_str'])
+        # check that we can json load the ukas string
+        json.loads(_decoded['ukhas_str'])
 
     def test_horus_v3_unknown_fields(self):
         # Test to make sure name caching is working for additional sensors
