@@ -186,8 +186,8 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
             _output["packet_format"]["fields"].append(["satellites", "none"])
         
         if 'velocityHorizontalKilometersPerHour' in _raw_fields:
-            _output["vel_h"] = _raw_fields.pop("velocityHorizontalKilometersPerHour") /(1*60*60/1000) # km/h -> m/s
-            _output["packet_format"]["fields"].append(["vel_h", "none"])
+            _output["speed"] = _raw_fields.pop("velocityHorizontalKilometersPerHour") 
+            _output["packet_format"]["fields"].append(["speed", "none"])
 
         if 'ascentRateCentimetersPerSecond' in _raw_fields:
             _output["ascent_rate"] = _raw_fields.pop("ascentRateCentimetersPerSecond") / 100 # cm/s -> m/s
