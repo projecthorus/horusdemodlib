@@ -339,7 +339,7 @@ def main():
         
         stats_counter = args.stats
         while True:
-            data = f.read()
+            data = f.read(horus.nin * 2 * (2 if horus.stereo_iq else 1))
             if not data: # EOF
                 break
             output = horus.add_samples(data)
