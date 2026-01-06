@@ -539,7 +539,7 @@ class HorusDecoderTests(unittest.TestCase):
         self.assertEqual(_decoded['satellites'],data['gnssSatellitesVisible'])
 
         # rates
-        self.assertEqual(_decoded['vel_h'],data["velocityHorizontalKilometersPerHour"] /(1*60*60/1000))
+        self.assertEqual(_decoded['speed'],data["velocityHorizontalKilometersPerHour"])
         self.assertEqual(_decoded['ascent_rate'],data["ascentRateCentimetersPerSecond"] / 100)
 
         # pressure
