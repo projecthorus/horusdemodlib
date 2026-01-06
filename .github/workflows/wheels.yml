@@ -25,7 +25,7 @@ jobs:
         uses: pypa/cibuildwheel@v3.3.1
         env:
           CIBW_SKIP: cp38-* pp*
-          CIBW_BEFORE_BUILD: poetry install; poetry build
+          CIBW_BEFORE_BUILD: pip install poetry; poetry install; poetry build
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
