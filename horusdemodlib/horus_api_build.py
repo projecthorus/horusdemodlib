@@ -320,7 +320,7 @@ ffibuilder.set_source("_horus_api_cffi",
        include_dirs = [ "./src"],
        extra_compile_args = ["-DHORUS_L2_RX","-DINTERLEAVER","-DSCRAMBLER","-DRUN_TIME_TABLES"],
        # ideally we would detect mingw32 compiler but that appears to be hard
-       extra_linker_args = ["-static"] if platform.system() == "Windows" else []
+       extra_link_args = ["-static"] if platform.system() == "Windows" else []
      )   # library name, for the linker
 
 if __name__ == "__main__":
