@@ -23,7 +23,7 @@ jobs:
         if: matrix.os  == 'windows-latest'
       
       - run: |
-          pip3 install poetry
+          python3 -m install poetry
           python3 -m poerty install
           python3 -m poetry build
       # - name: Build wheels
