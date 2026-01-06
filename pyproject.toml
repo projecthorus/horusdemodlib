@@ -6,12 +6,12 @@ authors = ["Mark Jessop"]
 license = "LGPL-2.1-or-later"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.9"
 requests = "^2.24.0"
 crcmod = "^1.7"
 numpy = "^1.17"
 python-dateutil = "^2.8"
-cffi = "^1.17.1"
+cffi = "^1.15.1"
 audioop-lts = { version = "*", python = "^3.13" }
 
 [tool.poetry.build]
@@ -20,8 +20,11 @@ generate-setup-file = true
 
 [tool.poetry.group.dev.dependencies]
 setuptools = "^75.8.2"
-cffi = "1.17.1"
+cffi = "^1.15.1"
 
 [build-system]
 requires = ["poetry-core","setuptools","cffi"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+horus_demod = 'horusdemodlib:demod.main'

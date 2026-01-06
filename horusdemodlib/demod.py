@@ -13,6 +13,7 @@ import logging
 from .decoder import decode_packet, hex_to_bytes
 import argparse
 import sys
+import json
 
 horus_api = _horus_api_cffi.lib
 
@@ -81,6 +82,7 @@ class HorusLib():
 
     def __init__(
         self,
+        libpath=f"",
         mode=Mode.BINARY,
         rate=-1,
         tone_spacing=-1,
@@ -92,6 +94,8 @@ class HorusLib():
         """
         Parameters
         ----------
+        libpath : ""
+            No longer used since moving to cffi.
         mode : Mode
             horuslib.Mode.BINARY, horuslib.Mode.BINARY_V2_256BIT, horuslib.Mode.BINARY_V2_128BIT, horuslib.Mode.RTTY, RTTY_7N2 = 99
         rate : int
@@ -119,8 +123,7 @@ class HorusLib():
 
         self.input_buffer = bytearray(b"")
 
-        # intial nin
-        self.nin = 0
+        
 
         # try to open the modem and set the verbosity
         self.hstates = horus_api.horus_open_advanced(
@@ -146,6 +149,7 @@ class HorusLib():
         self.audio_sample_rate = sample_rate
         self.modem_sample_rate = 48000
 
+
     # in case someone wanted to use `with` style. I'm not sure if closing the modem does a lot.
     def __enter__(self):
         return self
@@ -153,21 +157,16 @@ class HorusLib():
     def __exit__(self, *a):
         self.close()
 
+    @property
+    def nin(self):
+        return horus_api.horus_nin(self.hstates)
+
     def close(self) -> None:
         """
         Closes Horus modem.
         """
         horus_api.horus_close(self.hstates)
         logging.debug("Shutdown horus modem")
-
-    def _update_nin(self) -> None:
-        """
-        Updates nin. Called every time RF is demodulated and doesn't need to be run manually
-        """
-        new_nin = horus_api.horus_nin(self.hstates)
-        if self.nin != new_nin:
-            logging.debug(f"Updated nin {new_nin}")
-        self.nin = new_nin
 
     def demodulate(self, demod_in: bytes) -> Frame:
         """
@@ -198,7 +197,6 @@ class HorusLib():
 
         crc = horus_api.horus_crc_ok(self.hstates)
 
-        self._update_nin()
 
         # strip the null terminator out
         data_out = data_out[:-1]
@@ -265,9 +263,14 @@ class HorusLib():
                 _processing = False
         
         return _frame
+    @property
+    def stats(self):
+        stats = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
+        horus_api.horus_get_modem_extended_stats(self.hstates,stats)
+        return stats
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(
                     prog='horus_demod',
                     description='')    
@@ -276,13 +279,15 @@ if __name__ == "__main__":
     parser.add_argument('-m','--mode',choices=modes+[x.lower() for x in modes], default="binary", help="RTTY or binary Horus protocol")
     parser.add_argument('--sample-rate',default=48000, type=int,help="Audio sample rate")
     parser.add_argument('--rate',default=100, type=int,help="Customise modem baud rate. Default: (depends on mode)")
-    parser.add_argument('--tonespacing',default=-1,help="Transmitter Tone Spacing (Hz) Default: Not used.")
+    parser.add_argument('--tonespacing',default=-1, type=int,help="Transmitter Tone Spacing (Hz) Default: Not used.")
     parser.add_argument('-t','--stats', default=None,  nargs='?', const=8, type=int, help="Print out modem statistics to stderr in JSON") # TODO 
     parser.add_argument('-g', action="store_true", default=False,help="Emit Stats on stdout instead of stderr")
     parser.add_argument('-q', action="store_true",default=False,help="use stereo (IQ) input")
     parser.add_argument('-v', action="store_true",default=False,help="verbose debug info")
     parser.add_argument('-c', action="store_true",default=False,help="display CRC results for each packet")
-    parser.add_argument('input',nargs='?',action='store', default=sys.stdin, help="Input filename")
+    parser.add_argument('-u', action="store",default=False,help="Estimator FSK upper limit")
+    parser.add_argument('-b', action="store",default=False,help="Estimator FSK lower limit")
+    parser.add_argument('input',nargs='?',action='store', default=sys.stdin.buffer, help="Input filename")
     parser.add_argument('output',nargs='?',action='store', default=sys.stdout, help="Output filename")
 
     args = parser.parse_args()
@@ -302,13 +307,14 @@ if __name__ == "__main__":
         stats_outfile = sys.stderr
 
     def frame_callback(frame):
-        print(frame.data.hex(), end="")
+        fout.write(frame.data.hex())
         if args.c:
             if frame.crc_pass:
-                print(f"  CRC OK",end="")
+                fout.write(f"  CRC OK")
             else:
-                print(f"  CRC BAD",end="")
-        print()
+                fout.write(f"  CRC BAD")
+        fout.write("\n")
+        fout.flush()
 
 
     # Setup Logging
@@ -317,21 +323,56 @@ if __name__ == "__main__":
             format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG
         )
 
-    # TODO STATS
-    # TODO CRC
-    # TODO OUTPUT WRITE
-    with HorusLib(mode=mode,tone_spacing=args.tonespacing, verbose=int(args.v), callback=frame_callback, sample_rate=args.sample_rate, rate=int(args.rate)) as horus:
-        #horus.set_estimator_limits(10.0, 3000.0)
-        if type(args.input) == type(sys.stdin.buffer):
+
+    with HorusLib(mode=mode,tone_spacing=args.tonespacing, stereo_iq=args.q, verbose=int(args.v), callback=frame_callback, sample_rate=args.sample_rate, rate=int(args.rate)) as horus:
+        if args.b > -99999 and args.u > args.b:
+            horus.set_estimator_limits(args.b, args.u)
+        if type(args.input) == type(sys.stdin.buffer) or args.input == "-":
             f = sys.stdin.buffer
         else:
             f = open(args.input, "rb")
 
+        if type(args.output) == type(sys.stdout) or args.output == "-":
+            fout = sys.stdout
+        else:
+            fout = open(args.output, "w")
+        
+        stats_counter = args.stats
         while True:
-            # Fixed read size - 2000 samples
-            data = f.read(2000 * 2)
-            if horus.nin != 0 and data == b"":  # detect end of file
+            data = f.read(horus.nin)
+            if not data: # EOF
                 break
             output = horus.add_samples(data)
             if args.v:
-                print(f"Sync: {output.sync}  SNR: {output.snr}")
+                if output:
+                    sys.stderr.write(f"Sync: {output.sync}  SNR: {output.snr}\n")
+            if args.stats != None:
+                if stats_counter <= 0:
+                    stats_counter = args.stats
+                    stats_out = {
+                        "EbNodB": horus.stats.snr_est,
+                        "ppm": horus.stats.clock_offset,
+                        "f1_est": horus.stats.f_est[0],
+                        "f2_est": horus.stats.f_est[1]
+                    }
+                
+                    if horus.mfsk == 4:
+                        stats_out["f3_est"] = horus.stats.f_est[2]
+                        stats_out["f4_est"] = horus.stats.f_est[3]
+                    
+                    eye_diagram = []
+                    for i in range(horus.stats.neyetr):
+                        eye_diagram.append([])
+                        for j in range(horus.stats.neyesamp):
+                            eye_diagram[i].append(horus.stats.rx_eye[i][j])
+                    stats_out['eye_diagram'] = eye_diagram
+                    stats_out['samp_fft']=[0]*128 # broken in horus_demod.c - replicating the same output
+                    if args.g:
+                        print(json.dumps(stats_out))
+                    else:
+                        sys.stderr.write(json.dumps(stats_out)+"\n")
+                stats_counter = stats_counter - 1
+
+# workaround for poetry install script
+if __name__ == "__main__":
+    main()
