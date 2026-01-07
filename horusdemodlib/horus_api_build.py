@@ -313,9 +313,6 @@ ffibuilder.cdef(preprocess_h()
 # to make the declarated functions, types and globals available,
 # so it is often just the "#include".
 
-from distutils import sysconfig
-
-
 ffibuilder.set_source("_horus_api_cffi",
 """
      #include "horus_api.h"   // the C header of the library
