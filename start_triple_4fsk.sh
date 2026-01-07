@@ -2,8 +2,6 @@
 #
 #	Horus Binary *Triple* Decoder Script
 #	Intended for situations with three payloads in the air, spaced ~10 kHz apart.
-#   NOTE - Ensure your horus_demod build is from newer than ~5th April 2024, else this
-#   will not work correctly!
 #
 #   It also possible to extend this approach further to handle as many transmissions
 #   as can be safely fitted into the receiver passband (+/- 24 kHz). Spacings of
@@ -61,15 +59,6 @@ PPM=0
 
 
 
-# Check that the horus_demod decoder has been compiled.
-DECODER=horus_demod
-if [ -f "$(which $DECODER)" ]; then
-    echo "Found horus_demod."
-else 
-    echo "ERROR - $DECODER does not exist - have you installed the python library (pip install .)"
-	exit 1
-fi
-
 # Check that bc is available on the system path.
 if echo "1+1" | bc > /dev/null; then
     echo "Found bc."
@@ -85,6 +74,23 @@ if [ -d "$VENV_DIR" ]; then
     source $VENV_DIR/bin/activate
 fi
 
+# Check that the horusdemodlib decoder script is available
+DECODER=horus_demod
+if [ -f "$(which $DECODER)" ]; then
+    echo "Found horus_demod."
+else 
+    echo "ERROR - $DECODER does not exist - have you installed the python library? (pip install horusdemodlib)"
+	exit 1
+fi
+
+# Check that the horusdemodlib uploader script is available
+UPLOADER=horus_uploader
+if [ -f "$(which $UPLOADER)" ]; then
+    echo "Found horus_uploader."
+else 
+    echo "ERROR - $UPLOADER does not exist - have you installed the python library? (pip install horusdemodlib)"
+	exit 1
+fi
 
 # Calculate the frequency estimator limits for each decoder
 MFSK1_LOWER=$(echo "$MFSK1_SIGNAL - $RXBANDWIDTH/2" | bc)
@@ -120,17 +126,11 @@ else
 	GAIN_SETTING=" -g $GAIN"
 fi
 
-STATS_SETTING=""
-
-if [ "$STATS_OUTPUT" = "1" ]; then
-	echo "Enabling Modem Statistics."
-	STATS_SETTING=" --stats=100"
-fi
 
 # Start the receive chain.
 # Note that we now pass in the SDR centre frequency ($RXFREQ) and 'target' signal frequency ($MFSK1_CENTRE)
 # to enable providing additional metadata to SondeHub
 rtl_fm -M raw -F9 -d $SDR_DEVICE -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK1_LOWER --fsk_upper=$MFSK1_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK1_CENTRE ) \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK3_LOWER --fsk_upper=$MFSK3_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK3_CENTRE ) \
-  >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK2_LOWER --fsk_upper=$MFSK2_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ ) > /dev/null
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK1_LOWER --fsk_upper=$MFSK1_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK1_CENTRE ) \
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK3_LOWER --fsk_upper=$MFSK3_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK3_CENTRE ) \
+  >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK2_LOWER --fsk_upper=$MFSK2_UPPER - - | $UPLOADER --freq_hz $RXFREQ ) > /dev/null

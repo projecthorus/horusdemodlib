@@ -2,8 +2,6 @@
 #
 #   Horus Binary *Eight-way* Decoder Script
 #   Intended for situations with up to eight payloads in the air, spaced 5 kHz apart.
-#   NOTE - Ensure your horus_demod build is from newer than ~5th April 2024, else this
-#   will not work correctly!
 #
 #   Note: Don't try this with DFM17's.  They have significant frequency drift and may 
 #   interfere with adjoining payloads.
@@ -16,7 +14,6 @@
 
 # Center Frequency 
 RXFREQ=432622500
-
 
 # Change directory to the horusdemodlib directory.
 # If running as a different user, you will need to change this line
@@ -71,14 +68,6 @@ BIAS=0
 # Receiver PPM offset
 PPM=0
 
-# Check that the horus_demod decoder has been compiled.
-DECODER=horus_demod
-if [ -f "$(which $DECODER)" ]; then
-    echo "Found horus_demod."
-else 
-    echo "ERROR - $DECODER does not exist - have you installed the python library (pip install .)"
-	exit 1
-fi
 
 # Check that bc is available on the system path.
 if echo "1+1" | bc > /dev/null; then
@@ -93,6 +82,24 @@ VENV_DIR=venv
 if [ -d "$VENV_DIR" ]; then
     echo "Entering venv."
     source $VENV_DIR/bin/activate
+fi
+
+# Check that the horusdemodlib decoder script is available
+DECODER=horus_demod
+if [ -f "$(which $DECODER)" ]; then
+    echo "Found horus_demod."
+else 
+    echo "ERROR - $DECODER does not exist - have you installed the python library? (pip install horusdemodlib)"
+	exit 1
+fi
+
+# Check that the horusdemodlib uploader script is available
+UPLOADER=horus_uploader
+if [ -f "$(which $UPLOADER)" ]; then
+    echo "Found horus_uploader."
+else 
+    echo "ERROR - $UPLOADER does not exist - have you installed the python library? (pip install horusdemodlib)"
+	exit 1
 fi
 
 
@@ -166,12 +173,12 @@ fi
 # Note that we now pass in the SDR centre frequency ($RXFREQ) and 'target' signal frequency ($MFSK1_CENTRE)
 # to enable providing additional metadata to SondeHub
 rtl_fm -M raw -F9 -d $SDR_DEVICE -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK1_LOWER --fsk_upper=$MFSK1_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK1_CENTRE ) \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK2_LOWER --fsk_upper=$MFSK2_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK2_CENTRE ) \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK3_LOWER --fsk_upper=$MFSK3_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK3_CENTRE ) \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK4_LOWER --fsk_upper=$MFSK4_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK4_CENTRE ) \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK5_LOWER --fsk_upper=$MFSK5_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK5_CENTRE ) \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK6_LOWER --fsk_upper=$MFSK6_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK6_CENTRE ) \
-  | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK7_LOWER --fsk_upper=$MFSK7_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK7_CENTRE ) \
-  >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK8_LOWER --fsk_upper=$MFSK8_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK8_CENTRE ) > /dev/null
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK1_LOWER --fsk_upper=$MFSK1_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK1_CENTRE ) \
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK2_LOWER --fsk_upper=$MFSK2_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK2_CENTRE ) \
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK3_LOWER --fsk_upper=$MFSK3_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK3_CENTRE ) \
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK4_LOWER --fsk_upper=$MFSK4_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK4_CENTRE ) \
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK5_LOWER --fsk_upper=$MFSK5_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK5_CENTRE ) \
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK6_LOWER --fsk_upper=$MFSK6_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK6_CENTRE ) \
+  | tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK7_LOWER --fsk_upper=$MFSK7_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK7_CENTRE ) \
+  >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK8_LOWER --fsk_upper=$MFSK8_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK8_CENTRE ) > /dev/null
 
