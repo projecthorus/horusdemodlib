@@ -39,6 +39,9 @@ jobs:
           path: ./wheelhouse/*.whl
 
   release_test_wheels:
+    permissions:
+      id-token: write
+    needs: [build_wheels]
     name: Release Test Wheels
     environment: test
     runs-on: ubuntu-latest
@@ -52,6 +55,9 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
   release_prod_wheels:
+    permissions:
+      id-token: write
+    needs: [build_wheels]
     name: Release Producation Wheels
     if: github.event_name == 'release' && github.event.action == 'published'
     environment: release
