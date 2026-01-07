@@ -26,7 +26,7 @@ setuptools = "^80.9.0"
 cffi = ">1.15.0,<2"
 
 [build-system]
-requires = ["poetry-core","setuptools","cffi"]
+requires = ["poetry-core","setuptools","cffi <2"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
