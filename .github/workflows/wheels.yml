@@ -73,7 +73,7 @@ jobs:
   release_prod_wheels:
     permissions:
       id-token: write
-    needs: [build_wheels]
+    needs: [build_wheels, make_sdist]
     name: Release Producation Wheels
     if: github.event_name == 'release' && github.event.action == 'published'
     environment: release
