@@ -23,7 +23,7 @@ from .demodstats import FSKDemodStats
 import horusdemodlib.payloads
 import horusdemodlib
 import unittest
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock, MagicMock, mock_open
 
 def read_config(filename):
     ''' Read in the user configuation file.'''
@@ -286,6 +286,20 @@ class HorusUploaderTests(unittest.TestCase):
         freq_hz=433
         baud_rate=100
     
+    example_config = """
+[user]
+callsign = YOUR_CALL_HERE
+station_lat = 0.0
+station_lon = 0.0
+radio_comment = HorusDemodLib + Your Radio Description Here
+antenna_comment = Your Antenna Description Here
+[horus_udp]
+summary_port = 55672
+ozimux_port = 55683
+"""
+
+
+
     def sleep(self):
         return
     
@@ -301,6 +315,7 @@ class HorusUploaderTests(unittest.TestCase):
     class mockRequestPut():
         status_code = 200
 
+    @patch("builtins.open", mock_open(read_data=example_config)) 
     @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
     @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
     @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
@@ -320,7 +335,7 @@ class HorusUploaderTests(unittest.TestCase):
         main()
         self.assertEqual(to_sondehub.call_count,1)
 
-
+    @patch("builtins.open", mock_open(read_data=example_config)) 
     @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
     @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
     @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
@@ -340,6 +355,7 @@ class HorusUploaderTests(unittest.TestCase):
         main()
         self.assertEqual(to_sondehub.call_count,1)
 
+    @patch("builtins.open", mock_open(read_data=example_config)) 
     @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
     @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
     @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
@@ -359,6 +375,7 @@ class HorusUploaderTests(unittest.TestCase):
         main()
         self.assertEqual(to_sondehub.call_count,1)
 
+    @patch("builtins.open", mock_open(read_data=example_config)) 
     @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
     @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
     @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)

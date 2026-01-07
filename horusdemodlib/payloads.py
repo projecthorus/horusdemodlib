@@ -8,6 +8,7 @@ import struct
 import unittest
 import unittest.mock
 import sys
+import os
 
 # Global payload list - Basic version
 HORUS_PAYLOAD_LIST = {0:'4FSKTEST', 1:'HORUSBINARY', 256: '4FSKTEST-V2'}
@@ -107,7 +108,12 @@ def read_payload_list(filename="payload_id_list.txt"):
             payload_list = parse_payload_list(_text)
 
     except Exception as e:
-        logging.error(f"Error reading Payload ID list, does it exist? Error: {str(e)}")
+        try: # also try the payload list provided in the package
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..", filename),'r') as file:
+                _text = file.read()
+                payload_list = parse_payload_list(_text)
+        except Exception as e:   
+            logging.error(f"Error reading Payload ID list, does it exist? Error: {str(e)}")
 
     logging.debug("Known Payload IDs:")
     for _payload in payload_list:
@@ -246,8 +252,14 @@ def read_custom_field_list(filename="custom_field_list.json"):
         _f.close()
 
     except Exception as e:
-        logging.error(f"Error loading custom field list file ({filename}), using defaults: {str(e)}")
-        return _custom_field_list
+        try:
+            # Read in entirity of file contents.
+            _f = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..",filename),'r')
+            _raw_data = _f.read()
+            _f.close()
+        except:
+            logging.error(f"Error loading custom field list file ({filename}), using defaults: {str(e)}")
+            return _custom_field_list
 
     return parse_custom_field_list(_raw_data)
 
