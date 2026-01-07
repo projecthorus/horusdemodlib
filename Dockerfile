@@ -12,7 +12,7 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
     libopus-dev librtlsdr-dev libusb-1.0-0-dev libusb-dev \
     portaudio19-dev libasound2-dev libogg-dev uuid-dev rsync unzip \
     python3-dateutil python3-requests python3-pip \
-    python3-poetry python3-dev python3-cffi &&\
+    python3-poetry python3-dev python3-cffi libffi-dev &&\
     rm -rf /var/lib/apt/lists/*
 
 # install everything in /target and it will go in to / on destination image. symlink make it easier for builds to find files installed by this.
