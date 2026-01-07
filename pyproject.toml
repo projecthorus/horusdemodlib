@@ -23,7 +23,7 @@ generate-setup-file = true
 
 [tool.poetry.group.dev.dependencies]
 setuptools = "^80.9.0"
-cffi = "^1.15.1"
+cffi = "^1.15.1,<2"
 
 [build-system]
 requires = ["poetry-core","setuptools","cffi"]
