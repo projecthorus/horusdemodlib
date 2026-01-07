@@ -1,6 +1,6 @@
 name: Horusdemodlib Wheels
 
-on: [push, workflow_dispatch]
+on: [push, workflow_dispatch, release]
 
 jobs:
   build_wheels:
@@ -37,3 +37,29 @@ jobs:
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
+
+  release_test_wheels:
+    name: Release Test Wheels
+    environment: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+  release_prod_wheels:
+    name: Release Producation Wheels
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1
