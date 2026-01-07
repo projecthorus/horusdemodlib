@@ -12,7 +12,7 @@ include = [
 python = "^3.9"
 requests = "^2.32.5"
 python-dateutil = "^2.8"
-cffi = "^1.15.1"
+cffi = "^1.15.1,<2"
 audioop-lts = { version = "*", python = "^3.13" }
 asn1tools = "^0.165.0"
 crc = "^7.1.0"
