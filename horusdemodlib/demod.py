@@ -303,7 +303,11 @@ def main():
     def frame_callback(frame):
         # Print out only CRC-passing frames, unless we are in verbose mode
         if frame.crc_pass or args.v:
-            fout.write(frame.data.hex().upper())
+
+            if type(frame.data) == bytes:
+                fout.write(frame.data.hex().upper())
+            else:
+                fout.write(frame.data)
         
             if args.c:
                 if frame.crc_pass:
