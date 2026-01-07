@@ -31,3 +31,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 horus_demod = 'horusdemodlib:demod.main'
+horus_uploader = 'horusdemodlib:uploader.main'
