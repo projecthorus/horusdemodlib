@@ -198,17 +198,10 @@ class HorusLib():
         crc = horus_api.horus_crc_ok(self.hstates)
 
 
-        # strip the null terminator out
-        data_out = data_out[:-1]
-
-        if data_out == bytes(len(data_out)):
-            data_out = (
-                b""  # check if bytes is just null and return an empty bytes instead
-            )
-        elif (self.mode != Mode.RTTY_7N2) and (self.mode != Mode.RTTY_8N2) and (self.mode != Mode.RTTY_7N1):
+        if (self.mode != Mode.RTTY_7N2) and (self.mode != Mode.RTTY_8N2) and (self.mode != Mode.RTTY_7N1):
             try:
-                # Strip out any additional nulls.
-                data_out = bytes.fromhex(data_out.decode("ascii").rstrip('\0'))
+                # We are currently getting the whole buffer from the demod. We only want the first null-terminated section.
+                data_out = bytes.fromhex(data_out.decode("ascii").split('\0')[0])
             except ValueError:
                 logging.debug(data_out)
                 logging.error("Couldn't decode the hex from the modem")
@@ -216,7 +209,8 @@ class HorusLib():
         else:
             # Ascii
             try:
-                data_out = data_out.decode("ascii")
+                # Same thing here - we might have multiple bits of data
+                data_out = data_out.decode("ascii").split('\0')[0]
             except Exception as e:
                 logging.error(f"Couldn't decode ASCII - {str(e)} - {str(data_out)}")
                 data_out = ""
@@ -307,14 +301,17 @@ def main():
         stats_outfile = sys.stderr
 
     def frame_callback(frame):
-        fout.write(frame.data.hex())
-        if args.c:
-            if frame.crc_pass:
-                fout.write(f"  CRC OK")
-            else:
-                fout.write(f"  CRC BAD")
-        fout.write("\n")
-        fout.flush()
+        # Print out only CRC-passing frames, unless we are in verbose mode
+        if frame.crc_pass or args.v:
+            fout.write(frame.data.hex().upper())
+        
+            if args.c:
+                if frame.crc_pass:
+                    fout.write(f"  CRC OK")
+                else:
+                    fout.write(f"  CRC BAD")
+            fout.write("\n")
+            fout.flush()
 
 
     # Setup Logging
@@ -347,31 +344,28 @@ def main():
                 if output:
                     sys.stderr.write(f"Sync: {output.sync}  SNR: {output.snr}\n")
             if args.stats != None:
-                if stats_counter <= 0:
-                    stats_counter = args.stats
-                    stats_out = {
-                        "EbNodB": horus.stats.snr_est,
-                        "ppm": horus.stats.clock_offset,
-                        "f1_est": horus.stats.f_est[0],
-                        "f2_est": horus.stats.f_est[1]
-                    }
+                stats_out = {
+                    "EbNodB": horus.stats.snr_est,
+                    "ppm": horus.stats.clock_offset,
+                    "f1_est": horus.stats.f_est[0],
+                    "f2_est": horus.stats.f_est[1]
+                }
+            
+                if horus.mfsk == 4:
+                    stats_out["f3_est"] = horus.stats.f_est[2]
+                    stats_out["f4_est"] = horus.stats.f_est[3]
                 
-                    if horus.mfsk == 4:
-                        stats_out["f3_est"] = horus.stats.f_est[2]
-                        stats_out["f4_est"] = horus.stats.f_est[3]
-                    
-                    eye_diagram = []
-                    for i in range(horus.stats.neyetr):
-                        eye_diagram.append([])
-                        for j in range(horus.stats.neyesamp):
-                            eye_diagram[i].append(horus.stats.rx_eye[i][j])
-                    stats_out['eye_diagram'] = eye_diagram
-                    stats_out['samp_fft']=[0]*128 # broken in horus_demod.c - replicating the same output
-                    if args.g:
-                        print(json.dumps(stats_out))
-                    else:
-                        sys.stderr.write(json.dumps(stats_out)+"\n")
-                stats_counter = stats_counter - 1
+                eye_diagram = []
+                for i in range(horus.stats.neyetr):
+                    eye_diagram.append([])
+                    for j in range(horus.stats.neyesamp):
+                        eye_diagram[i].append(horus.stats.rx_eye[i][j])
+                stats_out['eye_diagram'] = eye_diagram
+                stats_out['samp_fft']=[0]*128 # broken in horus_demod.c - replicating the same output
+                if args.g:
+                    print(json.dumps(stats_out))
+                else:
+                    sys.stderr.write(json.dumps(stats_out)+"\n")
 
 # workaround for poetry install script
 if __name__ == "__main__":
