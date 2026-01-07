@@ -3,70 +3,33 @@
 #   HorusDemodLib - LibHorus Wrapper Class
 #
 
+import _horus_api_cffi
 import audioop
-import ctypes
-from ctypes import *
 import logging
 import sys
 from enum import Enum
 import os
 import logging
 from .decoder import decode_packet, hex_to_bytes
+import argparse
+import sys
+import json
 
-MODEM_STATS_NR_MAX = 8
-MODEM_STATS_NC_MAX = 50
-MODEM_STATS_ET_MAX = 8
-MODEM_STATS_EYE_IND_MAX = 160
-MODEM_STATS_NSPEC = 512
-MODEM_STATS_MAX_F_EST = 4
+horus_api = _horus_api_cffi.lib
 
-
-class COMP(Structure):
-    """
-    Used in MODEM_STATS for representing IQ.
-    """
-    _fields_ = [
-        ("real", c_float),
-        ("imag", c_float)
-    ]
-
-
-class MODEM_STATS(Structure):  # modem_stats.h
-    """
-    Extended modem stats structure
-    """
-    _fields_ = [
-        ("Nc", c_int),
-        ("snr_est", c_float),
-        # rx_symbols[MODEM_STATS_NR_MAX][MODEM_STATS_NC_MAX+1];
-        ("rx_symbols", (COMP * MODEM_STATS_NR_MAX)*(MODEM_STATS_NC_MAX+1)),
-        ("nr", c_int),
-        ("sync", c_int),
-        ("foff", c_float),
-        ("rx_timing", c_float),
-        ("clock_offset", c_float),
-        ("sync_metric", c_float),
-        # float  rx_eye[MODEM_STATS_ET_MAX][MODEM_STATS_EYE_IND_MAX];
-        ("rx_eye", (c_float * MODEM_STATS_ET_MAX)*MODEM_STATS_EYE_IND_MAX),
-        ("neyetr", c_int),
-        ("neyesamp", c_int),
-        ("f_est", c_float*MODEM_STATS_MAX_F_EST),
-        ("fft_buf", c_float * 2*MODEM_STATS_NSPEC),
-        ("fft_cfg", POINTER(c_ubyte))
-    ]
 
 
 class Mode(Enum):
     """
     Modes (and aliases for modes) for the HorusLib modem
     """
-    BINARY = 0
-    BINARY_V1 = 0
-    BINARY_V2 = 0
-    RTTY_7N1 = 89
-    RTTY_7N2 = 90
-    RTTY = 90
-    RTTY_8N2 = 91
+    BINARY = horus_api.HORUS_MODE_BINARY_V1
+    BINARY_V1 = horus_api.HORUS_MODE_BINARY_V1
+    BINARY_V2 = horus_api.HORUS_MODE_BINARY_V1
+    RTTY_7N1 = horus_api.HORUS_MODE_RTTY_7N1
+    RTTY_7N2 = horus_api.HORUS_MODE_RTTY_7N2
+    RTTY = horus_api.HORUS_MODE_RTTY_7N2
+    RTTY_8N2 = horus_api.HORUS_MODE_RTTY_8N2
 
 
 class Frame():
@@ -88,7 +51,7 @@ class Frame():
         Extended modem stats. These are provided as c_types so will need to be cast prior to use. See MODEM_STATS for structure details
     """
 
-    def __init__(self, data: bytes, sync: bool, crc_pass: bool, snr: float, extended_stats: MODEM_STATS):
+    def __init__(self, data: bytes, sync: bool, crc_pass: bool, snr: float, extended_stats):
         self.data = data
         self.sync = sync
         self.snr = snr
@@ -131,8 +94,8 @@ class HorusLib():
         """
         Parameters
         ----------
-        libpath : str
-            Path to libhorus
+        libpath : ""
+            No longer used since moving to cffi.
         mode : Mode
             horuslib.Mode.BINARY, horuslib.Mode.BINARY_V2_256BIT, horuslib.Mode.BINARY_V2_128BIT, horuslib.Mode.RTTY, RTTY_7N2 = 99
         rate : int
@@ -149,56 +112,6 @@ class HorusLib():
             The input sample rate of the audio input
         """
 
-        if sys.platform == "darwin":
-            libpath = os.path.join(libpath, "libhorus.dylib")
-        elif sys.platform == "win32":
-            libpath = os.path.join(libpath, "libhorus.dll")
-        else:
-            libpath = os.path.join(libpath, "libhorus.so")
-
-        # future improvement would be to try a few places / names
-        self.c_lib = ctypes.cdll.LoadLibrary(libpath)
-
-        # horus_open_advanced
-        self.c_lib.horus_open_advanced.restype = POINTER(c_ubyte)
-
-        # horus_nin
-        self.c_lib.horus_nin.restype = c_uint32
-
-        # horus_get_Fs
-        self.c_lib.horus_get_Fs.restype = c_int
-
-        # horus_set_freq_est_limits - (struct horus *hstates, float fsk_lower, float fsk_upper)
-        self.c_lib.horus_set_freq_est_limits.argtype = [
-            POINTER(c_ubyte),
-            c_float,
-            c_float,
-        ]
-
-        # horus_get_max_demod_in
-        self.c_lib.horus_get_max_demod_in.restype = c_int
-
-        # horus_get_max_ascii_out_len
-        self.c_lib.horus_get_max_ascii_out_len.restype = c_int
-
-        # horus_crc_ok
-        self.c_lib.horus_crc_ok.restype = c_int
-
-        # horus_packet_version
-        self.c_lib.horus_packet_version.restype = c_int
-
-        # horus_get_modem_extended_stats - (struct horus *hstates, struct MODEM_STATS *stats)
-        self.c_lib.horus_get_modem_extended_stats.argtype = [
-            POINTER(MODEM_STATS),
-            POINTER(c_ubyte),
-        ]
-
-        # horus_get_mFSK
-        self.c_lib.horus_get_mFSK.restype = c_int
-
-        # horus_rx
-        self.c_lib.horus_rx.restype = c_int
-
         if type(mode) != type(Mode(0)):
             raise ValueError("Must be of type horuslib.Mode")
         else:
@@ -210,14 +123,13 @@ class HorusLib():
 
         self.input_buffer = bytearray(b"")
 
-        # intial nin
-        self.nin = 0
+        
 
         # try to open the modem and set the verbosity
-        self.hstates = self.c_lib.horus_open_advanced(
+        self.hstates = horus_api.horus_open_advanced(
             self.mode.value, rate, tone_spacing
         )
-        self.c_lib.horus_set_verbose(self.hstates, int(verbose))
+        horus_api.horus_set_verbose(self.hstates, int(verbose))
 
         # check that the modem was actually opened and we don't just have a null pointer
         if bool(self.hstates):
@@ -227,22 +139,16 @@ class HorusLib():
             raise EnvironmentError("Couldn't open Horus API")
 
         # build some class types to fit the data for demodulation using ctypes
-        max_demod_in = int(self.c_lib.horus_get_max_demod_in(self.hstates))
-        max_ascii_out = int(self.c_lib.horus_get_max_ascii_out_len(self.hstates))
-        self.DemodIn = c_short * (max_demod_in * (1 + int(self.stereo_iq)))
-        self.DataOut = c_char * max_ascii_out
-        self.c_lib.horus_rx.argtype = [
-            POINTER(c_ubyte),
-            c_char * max_ascii_out,
-            c_short * max_demod_in,
-            c_int,
-        ]
+        self.max_demod_in = horus_api.horus_get_max_demod_in(self.hstates)
+        self.max_ascii_out = horus_api.horus_get_max_ascii_out_len(self.hstates)
 
-        self.mfsk = int(self.c_lib.horus_get_mFSK(self.hstates))
+
+        self.mfsk = horus_api.horus_get_mFSK(self.hstates)
 
         self.resampler_state = None
         self.audio_sample_rate = sample_rate
         self.modem_sample_rate = 48000
+
 
     # in case someone wanted to use `with` style. I'm not sure if closing the modem does a lot.
     def __enter__(self):
@@ -251,21 +157,16 @@ class HorusLib():
     def __exit__(self, *a):
         self.close()
 
+    @property
+    def nin(self):
+        return horus_api.horus_nin(self.hstates)
+
     def close(self) -> None:
         """
         Closes Horus modem.
         """
-        self.c_lib.horus_close(self.hstates)
+        horus_api.horus_close(self.hstates)
         logging.debug("Shutdown horus modem")
-
-    def _update_nin(self) -> None:
-        """
-        Updates nin. Called every time RF is demodulated and doesn't need to be run manually
-        """
-        new_nin = int(self.c_lib.horus_nin(self.hstates))
-        if self.nin != new_nin:
-            logging.debug(f"Updated nin {new_nin}")
-        self.nin = new_nin
 
     def demodulate(self, demod_in: bytes) -> Frame:
         """
@@ -279,28 +180,23 @@ class HorusLib():
         # resample to 48khz
         (demod_in, self.resampler_state) = audioop.ratecv(demod_in, 2, 1+int(self.stereo_iq), self.audio_sample_rate, self.modem_sample_rate, self.resampler_state)
 
-        # from_buffer_copy requires exact size so we pad it out.
-        buffer = bytearray(
-            len(self.DemodIn()) * sizeof(c_short)
-        )  # create empty byte array
-        buffer[: len(demod_in)] = demod_in  # copy across what we have
 
-        modulation = self.DemodIn  # get an empty modulation array
-        modulation = modulation.from_buffer_copy(
-            buffer
-        )  # copy buffer across and get a pointer to it.
+        audio_id_data = _horus_api_cffi.ffi.new("char[]",demod_in)
+        data_in = _horus_api_cffi.ffi.cast( # cast bytes to short
+            "short *",
+            audio_id_data
+        )
+        data_out = _horus_api_cffi.ffi.new("char[]", self.max_ascii_out)
 
-        data_out = self.DataOut()  # initilize a pointer to where bytes will be outputed
+        horus_api.horus_rx(self.hstates, data_out, data_in, int(self.stereo_iq))
+        data_out = bytes(_horus_api_cffi.ffi.buffer(data_out))
 
-        self.c_lib.horus_rx(self.hstates, data_out, modulation, int(self.stereo_iq))
+        stats = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
+        horus_api.horus_get_modem_extended_stats(self.hstates, stats)
 
-        stats = MODEM_STATS()
-        self.c_lib.horus_get_modem_extended_stats(self.hstates, byref(stats))
 
-        crc = bool(self.c_lib.horus_crc_ok(self.hstates))
+        crc = horus_api.horus_crc_ok(self.hstates)
 
-        data_out = bytes(data_out)
-        self._update_nin()
 
         # strip the null terminator out
         data_out = data_out[:-1]
@@ -338,7 +234,7 @@ class HorusLib():
     
     def set_estimator_limits(self, lower: float, upper: float):
         """ Update the modems internal frequency estimator limits """
-        self.c_lib.horus_set_freq_est_limits(self.hstates, c_float(lower), c_float(upper))
+        horus_api.horus_set_freq_est_limits(self.hstates, lower, upper)
 
 
     def add_samples(self, samples: bytes):
@@ -351,7 +247,7 @@ class HorusLib():
         _frame = None
         while _processing:
             # Process data until we have less than _nin samples.
-            _nin = int(self.nin*(self.audio_sample_rate/self.modem_sample_rate))
+            _nin = int(self.nin*(self.audio_sample_rate/self.modem_sample_rate)) * (2 if self.stereo_iq else 1)
             if len(self.input_buffer) > (_nin * 2):
                 # Demodulate
                 _frame = self.demodulate(self.input_buffer[:(_nin*2)])
@@ -367,50 +263,116 @@ class HorusLib():
                 _processing = False
         
         return _frame
+    @property
+    def stats(self):
+        stats = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
+        horus_api.horus_get_modem_extended_stats(self.hstates,stats)
+        return stats
 
 
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) != 4:
-        raise ArgumentError("Usage python3 -m horusdemodlib.demod mode filename sample_rate")
-    filename = sys.argv[2]
-    rate = int(sys.argv[3])
+def main():
+    parser = argparse.ArgumentParser(
+                    prog='horus_demod',
+                    description='')    
 
-    if sys.argv[1] == 'rtty7n2':
+    modes = ["RTTY","RTTY7N1","RTTY8N2","RTTY7N2","BINARY"]
+    parser.add_argument('-m','--mode',choices=modes+[x.lower() for x in modes], default="binary", help="RTTY or binary Horus protocol")
+    parser.add_argument('--sample-rate',default=48000, type=int,help="Audio sample rate")
+    parser.add_argument('--rate',default=100, type=int,help="Customise modem baud rate. Default: (depends on mode)")
+    parser.add_argument('--tonespacing',default=-1, type=int,help="Transmitter Tone Spacing (Hz) Default: Not used.")
+    parser.add_argument('-t','--stats', default=None,  nargs='?', const=8, type=int, help="Print out modem statistics to stderr in JSON") # TODO 
+    parser.add_argument('-g', action="store_true", default=False,help="Emit Stats on stdout instead of stderr")
+    parser.add_argument('-q', action="store_true",default=False,help="use stereo (IQ) input")
+    parser.add_argument('-v', action="store_true",default=False,help="verbose debug info")
+    parser.add_argument('-c', action="store_true",default=False,help="display CRC results for each packet")
+    parser.add_argument('-u',"--fsk_upper", type=int, action="store",default=False,help="Estimator FSK upper limit")
+    parser.add_argument('-b',"--fsk_lower", type=int, action="store",default=False,help="Estimator FSK lower limit")
+    parser.add_argument('input',nargs='?',action='store', default=sys.stdin.buffer, help="Input filename")
+    parser.add_argument('output',nargs='?',action='store', default=sys.stdout, help="Output filename")
+
+    args = parser.parse_args()
+
+    if args.mode.lower() == 'rtty7n2' or args.mode.lower() == 'rtty':
         mode = Mode.RTTY_7N2
-    elif sys.argv[1] == 'rtty7n1':
+    elif args.mode.lower() == 'rtty7n1':
         mode = Mode.RTTY_7N1
-    elif sys.argv[1] == 'rtty8n2':
+    elif args.mode.lower() == 'rtty8n2':
         mode = Mode.RTTY_8N2
     else:
         mode = Mode.BINARY
 
-    def frame_callback(frame):
-        if type(frame) == bytes:
-            print(f"Callback: {frame.data.hex()} SNR: {frame.snr}")
+    if args.g:
+        stats_outfile = sys.stdout
+    else:
+        stats_outfile = sys.stderr
 
-            try:
-                _packet = decode_packet(frame.data)
-                print(f"Decoded Packet: {_packet['ukhas_str']}")
-            except Exception as e:
-                print(f"Error decoding packet: {str(e)}.")
-        else:
-            print(f"Callback: {frame.data} SNR: {frame.snr}")
+    def frame_callback(frame):
+        fout.write(frame.data.hex())
+        if args.c:
+            if frame.crc_pass:
+                fout.write(f"  CRC OK")
+            else:
+                fout.write(f"  CRC BAD")
+        fout.write("\n")
+        fout.flush()
 
 
     # Setup Logging
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG
-    )
+    if args.v:
+        logging.basicConfig(
+            format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG
+        )
 
-    with HorusLib(mode=mode, verbose=False, callback=frame_callback, sample_rate=rate, rate=100) as horus:
-        #horus.set_estimator_limits(10.0, 3000.0)
-        with open(filename, "rb") as f:
-            while True:
-                # Fixed read size - 2000 samples
-                data = f.read(2000 * 2)
-                if horus.nin != 0 and data == b"":  # detect end of file
-                    break
-                output = horus.add_samples(data)
+
+    with HorusLib(mode=mode,tone_spacing=args.tonespacing, stereo_iq=args.q, verbose=int(args.v), callback=frame_callback, sample_rate=args.sample_rate, rate=int(args.rate)) as horus:
+        if args.fsk_lower > -99999 and args.fsk_upper > args.fsk_lower:
+            horus.set_estimator_limits(args.fsk_lower, args.fsk_upper)
+        if type(args.input) == type(sys.stdin.buffer) or args.input == "-":
+            f = sys.stdin.buffer
+        else:
+            f = open(args.input, "rb")
+
+        if type(args.output) == type(sys.stdout) or args.output == "-":
+            fout = sys.stdout
+        else:
+            fout = open(args.output, "w")
+        
+        stats_counter = args.stats
+        while True:
+            data = f.read(horus.nin * 2 * (2 if horus.stereo_iq else 1))
+            if not data: # EOF
+                break
+            output = horus.add_samples(data)
+            if args.v:
                 if output:
-                    print(f"Sync: {output.sync}  SNR: {output.snr}")
+                    sys.stderr.write(f"Sync: {output.sync}  SNR: {output.snr}\n")
+            if args.stats != None:
+                if stats_counter <= 0:
+                    stats_counter = args.stats
+                    stats_out = {
+                        "EbNodB": horus.stats.snr_est,
+                        "ppm": horus.stats.clock_offset,
+                        "f1_est": horus.stats.f_est[0],
+                        "f2_est": horus.stats.f_est[1]
+                    }
+                
+                    if horus.mfsk == 4:
+                        stats_out["f3_est"] = horus.stats.f_est[2]
+                        stats_out["f4_est"] = horus.stats.f_est[3]
+                    
+                    eye_diagram = []
+                    for i in range(horus.stats.neyetr):
+                        eye_diagram.append([])
+                        for j in range(horus.stats.neyesamp):
+                            eye_diagram[i].append(horus.stats.rx_eye[i][j])
+                    stats_out['eye_diagram'] = eye_diagram
+                    stats_out['samp_fft']=[0]*128 # broken in horus_demod.c - replicating the same output
+                    if args.g:
+                        print(json.dumps(stats_out))
+                    else:
+                        sys.stderr.write(json.dumps(stats_out)+"\n")
+                stats_counter = stats_counter - 1
+
+# workaround for poetry install script
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,38 @@
+name: Build
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # macos-15-intel is an Intel runner, macos-14 is Apple silicon
+        # macos-15-intel, macos-14
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-15-intel, macos-14]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - run: |
+          echo '[build]' > setup.cfg
+          echo 'compiler = mingw32' >> setup.cfg
+        if: matrix.os  == 'windows-latest'
+      - uses: bwoodsend/setup-winlibs-action@v1
+        if: matrix.os  == 'windows-latest'
+      
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.3.1
+        env:
+          CIBW_SKIP: cp38-* pp* *-win32 cp314t-*
+          CIBW_BEFORE_BUILD: |
+            python3 -m pip install pipx --break-system-packages
+            python3 -m pipx ensurepath
+            pipx install poetry
+            pipx run poetry install
+            pipx run poetry build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl

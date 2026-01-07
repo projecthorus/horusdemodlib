@@ -10,11 +10,11 @@
 MODE="binary"
 
 # Check that the horus_demod decoder has been compiled.
-DECODER=./build/src/horus_demod
-if [ -f "$DECODER" ]; then
+DECODER=horus_demod
+if [ -f "$(which $DECODER)" ]; then
     echo "Found horus_demod."
 else 
-    echo "ERROR - $DECODER does not exist - have you compiled it yet?"
+    echo "ERROR - $DECODER does not exist - have you installed the python library (pip install .)"
 	exit 1
 fi
 

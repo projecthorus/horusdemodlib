@@ -114,14 +114,15 @@
     ]
 },
 "KD2EAT-DFM": {
-    "comment": "custom fields for KD2EAT DFM17 testing",
-    "struct": "<hhBHBx",
+    "comment": "Default custom fields for RS41ng-Mod",
+    "struct": "<hhBHBB",
     "fields": [
         ["ascent_rate", "divide_by_100"],
         ["ext_temperature", "divide_by_10"],
         ["ext_humidity", "none"],
         ["ext_pressure", "divide_by_10"],
-        ["mcu_calibration", "none"]
+        ["rp_xtal_code", "none"],
+        ["rp_lu", "none"]
     ]
 },
 "DF7PN": {
@@ -134,17 +135,17 @@
 },
 "SP9SKP": {
     "comment": "SKP telemetry",
-    "struct": "<BBBBBHH",
+    "struct": "<hBHBBBx",
     "fields": [
-        ["fix_voltage", "battery_5v_byte"],
-        ["io_voltage", "battery_5v_byte"],
-        ["reset_voltage", "battery_5v_byte"],
-        ["pv_voltage", "divide_by_100"],
-        ["time_to_fix", "none"],
-        ["uv_max", "none"],
-        ["uv_avg", "none"]
-    ]
-    },
+            ["ext_temperature", "divide_by_10"],
+            ["ext_humidity", "none"],
+            ["ext_pressure", "divide_by_10"],
+            ["pv_voltage", "battery_5v_byte"],
+            ["time_to_fix", "none"],
+            ["C1", "none"]
+    ],
+    "other_payloads": ["SP9SKP-1", "SP9SKP-2", "SP9SKP-3", "SP9SKP-4"]
+},
 "SKPQKM": {
         "comment": "SKPQKM telemetry",
         "struct": "<BBBBBHH",
@@ -307,15 +308,16 @@
 },
 "SP2ZIE": {
     "comment": "Custom fields for M20",
-    "struct": "<hhBHH",
+    "struct": "<hhBHBB",
     "fields": [
         ["ascent_rate", "divide_by_100"],
         ["ext_temperature", "divide_by_10"],
         ["ext_humidity", "none"],
         ["ext_pressure", "divide_by_10"],
-	["payload_voltage", "divide_by_100"]
+		["gps_restarts", "none"],
+		["pv_voltage", "battery_5v_byte"]
     ],
-    "other_payloads": ["SQ2IPS"]
+    "other_payloads": ["SQ2IPS", "SP6MPL-M20"]
 },
 "K5PRK": {
     "comment": "K5PRK Radiation Monitor Payload, Geiger Counter",

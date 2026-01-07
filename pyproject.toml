@@ -11,14 +11,23 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.9"
 requests = "^2.32.5"
-python-dateutil = "^2.9.0.post0"
+python-dateutil = "^2.8"
+cffi = "^1.15.1"
 audioop-lts = { version = "*", python = "^3.13" }
-asn1tools = "^0.167.0"
+asn1tools = "^0.165.0"
 crc = "^7.1.0"
+
+[tool.poetry.build]
+script = "build_lib.py"
+generate-setup-file = true
 
 [tool.poetry.group.dev.dependencies]
 setuptools = "^80.9.0"
+cffi = "^1.15.1"
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core","setuptools","cffi"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+horus_demod = 'horusdemodlib:demod.main'

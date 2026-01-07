@@ -73,21 +73,23 @@ The horusdemodlib Python library contains decoders for the different Project Hor
 It also contains a wrapper around the C library (mentioned above), which contains the Horus modem demodulators.
 
 The easiest way to install horusdemodlib is via pypi:
+
+First install pipx following [these instructions for your system](https://pipx.pypa.io/stable/installation/). Then:
+
 ```
-$ pip install horusdemodlib
+$ pipx install horusdemodlib
 ```
 
 If you want to install directly from this repository, you can run:
 ```
-$ pip install -r requirements.txt
-$ pip install -e .
+$ pipx install -e .
 ```
 (Note - this has some issues relating to setuptools currently... use pip)
 
 ### Updating
 If you have installed horusdemodlib via pypi, then you can run (from within your venv, if you are using one):
 ```
-$ pip install -U horusdemodlib
+$ pipx install -U horusdemodlib
 ```
 This will also install any new dependencies.
 
@@ -96,7 +98,6 @@ If you have installed 'directly', then you will need to run:
 ```
 $ git stash 
 $ git pull
-$ pip install -r requirements.txt
 $ pip install -e .
 ```
 (Note - this has some issues relating to setuptools currently... use pip)
