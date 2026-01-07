@@ -11,6 +11,7 @@ from enum import Enum
 import os
 import logging
 from .decoder import decode_packet, hex_to_bytes
+import horusdemodlib
 import argparse
 import sys
 import json
@@ -319,15 +320,22 @@ def main():
 
 
     # Setup Logging
+    log_level = logging.INFO
     if args.v:
-        logging.basicConfig(
-            format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG
-        )
+        log_level = logging.DEBUG
+    
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s: %(message)s", level=log_level
+    )
 
+    logging.info(f"horusdemodlib v{horusdemodlib.__version__} - horus_demod")
+    _decoder_info = f"Starting {args.mode} decoder, {args.rate} baud, {f'{args.tonespacing} Hz Tone Spacing, ' if args.tonespacing>0 else ''} {args.sample_rate} Hz sample rate {'IQ' if args.q else ''}"
+    logging.info(_decoder_info)
 
     with HorusLib(mode=mode,tone_spacing=args.tonespacing, stereo_iq=args.q, verbose=int(args.v), callback=frame_callback, sample_rate=args.sample_rate, rate=int(args.rate)) as horus:
         if args.fsk_lower > -99999 and args.fsk_upper > args.fsk_lower:
             horus.set_estimator_limits(args.fsk_lower, args.fsk_upper)
+            logging.info(f"Frequency Estimator Limits set to {args.fsk_lower}-{args.fsk_upper} Hz.")
         if type(args.input) == type(sys.stdin.buffer) or args.input == "-":
             f = sys.stdin.buffer
         else:
