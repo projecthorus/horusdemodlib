@@ -47,12 +47,6 @@ jobs:
         env:
           CIBW_SKIP: cp38-* pp* *-win32 cp314t-*
           CIBW_ARCHS_LINUX: ${{ runner.arch == 'X64' && 'auto armv7l' || 'auto' }}
-          CIBW_BEFORE_BUILD: |
-            python3 -m pip install pipx --break-system-packages
-            python3 -m pipx ensurepath
-            pipx install poetry
-            pipx run poetry install
-            pipx run poetry build
           CIBW_TEST_COMMAND: python3 -m unittest discover -t {project} -s horusdemodlib -p "*.py"
       - uses: actions/upload-artifact@v4
         with:
