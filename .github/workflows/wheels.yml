@@ -30,7 +30,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
       - run: |
           echo '[build]' > setup.cfg
           echo 'compiler = mingw32' >> setup.cfg
@@ -42,6 +46,7 @@ jobs:
         uses: pypa/cibuildwheel@v3.3.1
         env:
           CIBW_SKIP: cp38-* pp* *-win32 cp314t-*
+          CIBW_ARCHS_LINUX: ${{ runner.arch == 'X64' && 'auto armv7l' || 'auto' }}
           CIBW_BEFORE_BUILD: |
             python3 -m pip install pipx --break-system-packages
             python3 -m pipx ensurepath
