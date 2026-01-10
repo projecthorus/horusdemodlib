@@ -6,6 +6,7 @@ authors = ["Mark Jessop"]
 license = "LGPL-2.1-or-later"
 include = [
     { path = "horusbinaryv3/HorusBinaryV3.asn1", format = ["sdist", "wheel"] },
+    { path = "src", format = ["sdist"]},
     { path = "payload_id_list.txt", format = ["sdist", "wheel"] },
     { path = "custom_field_list.json", format = ["sdist", "wheel"] }
 ]
