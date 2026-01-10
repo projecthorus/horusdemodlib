@@ -1,0 +1,28 @@
+#!/usr/bin/make -f
+
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+export DEB_HOST_MULTIARCH
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+export DEB_HOST_ARCH
+
+
+%:
+	dh $@ --with python3
+
+override_dh_auto_clean:
+	dh_auto_clean -O--buildsystem=cmake
+	dh_auto_clean -O--buildsystem=pybuild
+	rm -rf *.egg-info
+
+override_dh_auto_configure:
+	dh_auto_configure -O--buildsystem=cmake
+	dh_auto_configure -O--buildsystem=pybuild
+
+override_dh_auto_build:
+	dh_auto_build -O--buildsystem=cmake
+	dh_auto_build -O--buildsystem=pybuild
+
+override_dh_auto_install:
+	dh_auto_install -O--buildsystem=cmake
+	dh_auto_install -O--buildsystem=pybuild 
+
