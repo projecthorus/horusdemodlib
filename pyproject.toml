@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "horusdemodlib"
-version = "0.5.5"
+version = "0.5.6"
 description = "Project Horus HAB Telemetry Demodulators"
 authors = ["Mark Jessop"]
 license = "LGPL-2.1-or-later"
@@ -15,7 +15,7 @@ include = [
 python = "^3.9"
 requests = "^2.32.5"
 python-dateutil = "^2.8"
-cffi = ">1.15.0"
+cffi = ">1.14.0"
 audioop-lts = { version = "*", python = "^3.13" }
 asn1tools = "^0.165.0"
 crc = "^7.1.0"
@@ -26,10 +26,10 @@ generate-setup-file = true
 
 [tool.poetry.group.dev.dependencies]
 setuptools = "^80.9.0"
-cffi = ">1.15.0"
+cffi = ">1.14.0"
 
 [build-system]
-requires = ["poetry-core","setuptools","cffi >1.15.0"]
+requires = ["poetry-core","setuptools","cffi >1.14.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
