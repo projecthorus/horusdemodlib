@@ -11,7 +11,8 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
     libfftw3-dev libhackrf-dev libiniparser-dev libncurses5-dev \
     libopus-dev librtlsdr-dev libusb-1.0-0-dev libusb-dev \
     portaudio19-dev libasound2-dev libogg-dev uuid-dev rsync unzip \
-    python3-crcmod python3-dateutil python3-numpy python3-requests python3-pip python3-poetry &&\
+    python3-dateutil python3-requests python3-pip \
+    python3-poetry python3-dev python3-cffi libffi-dev &&\
     rm -rf /var/lib/apt/lists/*
 
 # install everything in /target and it will go in to / on destination image. symlink make it easier for builds to find files installed by this.
@@ -20,8 +21,6 @@ RUN mkdir -p /target/usr && rm -rf /usr/local && ln -sf /target/usr /usr/local &
 COPY . /horusdemodlib
 
 RUN cd /horusdemodlib &&\
-    cmake -B build -DCMAKE_INSTALL_PREFIX=/target/usr -DCMAKE_BUILD_TYPE=Release &&\
-    cmake --build build --target install &&\
     poetry build -f wheel &&\
     cp dist/* /target/wheels
 
@@ -52,11 +51,11 @@ FROM debian:bookworm-slim AS prod
 RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-recommends \
     libusb-1.0-0 \
     python3-venv \
-    python3-crcmod \
     python3-dateutil \
-    python3-numpy \
     python3-requests \
     python3-pip \
+    python3-bitstruct \
+    python3-cffi \
     sox \
     bc \
     procps \
@@ -71,5 +70,5 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install --no-install-r
 RUN sed -i -e 's/files dns/files mdns4_minimal [NOTFOUND=return] dns/g' /etc/nsswitch.conf
 
 COPY --from=builder /target /
-RUN pip install --break-system-packages --no-cache-dir horusdemodlib --find-links=/wheels --no-index
+RUN pip install --break-system-packages --no-cache-dir horusdemodlib --find-links=/wheels
 CMD ["bash"]

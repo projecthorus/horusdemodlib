@@ -7,6 +7,9 @@
   Octave and C programs.
 */
 
+#ifndef _USE_MATH_DEFINES 
+#define _USE_MATH_DEFINES 
+#endif
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>

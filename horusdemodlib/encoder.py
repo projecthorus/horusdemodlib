@@ -2,8 +2,8 @@
 #
 #   HorusDemodLib - Encoder helper functions
 #
-import ctypes
-from ctypes import *
+
+import _horus_api_cffi
 import codecs
 import datetime
 import logging
@@ -14,7 +14,9 @@ import os
 import logging
 from .decoder import decode_packet, hex_to_bytes
 from .checksums import add_packet_crc
+import unittest
 
+horus_api = _horus_api_cffi.lib
 
 class Encoder():
     """
@@ -35,42 +37,9 @@ class Encoder():
             Path to libhorus
         """
 
-        if sys.platform == "darwin":
-            libpath = os.path.join(libpath, "libhorus.dylib")
-        elif sys.platform == "win32":
-            libpath = os.path.join(libpath, "libhorus.dll")
-        else:
-            libpath = os.path.join(libpath, "libhorus.so")
-
-        # future improvement would be to try a few places / names
-        self.c_lib = ctypes.cdll.LoadLibrary(libpath)
-
-
-        # Encoder/decoder functions
-        self.c_lib.horus_l2_get_num_tx_data_bytes.restype = c_int
-
-        self.c_lib.horus_l2_encode_tx_packet.restype = c_int
-        # self.c_lib.horus_l2_encode_tx_packet.argtype = [
-        #     POINTER(c_ubyte),
-        #     c_ubyte * 
-        #     POINTER(c_ubyte),
-        #     c_int
-        # ]
-
-        self.c_lib.horus_l2_decode_rx_packet.argtype = [
-            POINTER(c_ubyte),
-            POINTER(c_ubyte),
-            c_int
-        ]
-
-        self.c_lib.horus_l2_gen_crc16.restype = c_ushort
-        self.c_lib.horus_l2_gen_crc16.argtype = [
-            POINTER(c_ubyte),
-            c_uint8
-        ]
 
         # Init 
-        self.c_lib.horus_l2_init()
+        horus_api.horus_l2_init()
 
     # in case someone wanted to use `with` style. I'm not sure if closing the modem does a lot.
     def __enter__(self):
@@ -92,7 +61,7 @@ class Encoder():
         Calculate the number of transmit data bytes (uw+packet+fec) for a given
         input packet size.
         """
-        return int(self.c_lib.horus_l2_get_num_tx_data_bytes(int(packet_size)))
+        return horus_api.horus_l2_get_num_tx_data_bytes(int(packet_size))
 
 
     def horus_l2_encode_packet(self, packet):
@@ -108,21 +77,14 @@ class Encoder():
         if type(packet) != bytes:
             raise TypeError("Input to encode_packet must be bytes!")
 
-        _unencoded = c_ubyte * len(packet)
-        _unencoded = _unencoded.from_buffer_copy(packet)
-        _num_encoded_bytes = self.get_num_tx_data_bytes(len(packet))
-        _encoded = c_ubyte * _num_encoded_bytes
-        _encoded = _encoded()
+        _unencoded = _horus_api_cffi.ffi.new("char[]", packet)
 
-        self.c_lib.horus_l2_encode_tx_packet.argtype = [
-            c_ubyte * _num_encoded_bytes,
-            c_ubyte * len(packet),
-            c_int
-        ]
+        _encoded = _horus_api_cffi.ffi.new("char[]", self.get_num_tx_data_bytes(len(packet)))
 
-        _num_bytes = int(self.c_lib.horus_l2_encode_tx_packet(_encoded, _unencoded, int(len(packet))))
 
-        return (bytes(_encoded), _num_bytes)
+        _num_bytes = int(horus_api.horus_l2_encode_tx_packet(_encoded, _unencoded, int(len(packet))))
+
+        return (bytes(_horus_api_cffi.ffi.buffer(_encoded)), _num_bytes)
 
 
     def horus_l2_decode_packet(self, packet, num_payload_bytes):
@@ -137,20 +99,15 @@ class Encoder():
 
         if type(packet) != bytes:
             raise TypeError("Input to encode_packet must be bytes!")
-        _encoded = c_ubyte * len(packet)
-        _encoded = _encoded.from_buffer_copy(packet)
-        _decoded = c_ubyte * num_payload_bytes
-        _decoded = _decoded()
 
-        self.c_lib.horus_l2_encode_tx_packet.argtype = [
-            c_ubyte * num_payload_bytes,
-            c_ubyte * len(packet),
-            c_int
-        ]
+        _encoded = _horus_api_cffi.ffi.new("char[]", packet)
 
-        self.c_lib.horus_l2_decode_rx_packet(_decoded, _encoded, num_payload_bytes)
+        _decoded = _horus_api_cffi.ffi.new("char[]", num_payload_bytes)
 
-        return bytes(_decoded)
+
+        horus_api.horus_l2_decode_rx_packet(_decoded, _encoded, num_payload_bytes)
+
+        return bytes(_horus_api_cffi.ffi.buffer(_decoded))
     
 
     def bytes_to_4fsk_symbols(self, 
@@ -386,45 +343,50 @@ class Encoder():
             return _coded
 
 
+class HorusEncoderTests(unittest.TestCase):        
+    def test_encoder(self):
+        import pprint
+        e = Encoder()
+
+        # Check of get_num_tx_data_bytes
+        logging.debug(f"Horus v1: 22 bytes in, {e.get_num_tx_data_bytes(22)} bytes out.")
+        logging.debug(f"Horus v2: 32 bytes in, {e.get_num_tx_data_bytes(32)} bytes out.")
+
+        logging.debug("Encoder Tests: ")
+        horus_v1_unencoded = "000900071E2A000000000000000000000000259A6B14"
+        horus_v1_unencoded = "e701010000000000000000000000000000000022020000000000000000006e8e"
+        logging.debug(f"  Horus v1 Input:  {horus_v1_unencoded}")
+        horus_v1_unencoded_bytes = codecs.decode(horus_v1_unencoded, 'hex')
+        (_encoded, _num_bytes) = e.horus_l2_encode_packet(horus_v1_unencoded_bytes)
+        logging.debug(f"  Horus v1 Output: {codecs.encode(_encoded, 'hex').decode().upper()}")
+
+
+        logging.debug("Decoder Tests:")
+        horus_v1_encoded = "2424C06B300D0415C5DBD332EFD7C190D7AF7F3C2891DE9F4BA1EB2B437BE1E2D8419D3DC9E44FDF78DAA07A98"
+        logging.debug(f"  Horus v1 Input:  {horus_v1_encoded}")
+        horus_v1_encoded_bytes = codecs.decode(horus_v1_encoded, 'hex')
+        _decoded = e.horus_l2_decode_packet(horus_v1_encoded_bytes, 22)
+        logging.debug(f"  Horus v1 Output: {codecs.encode(_decoded, 'hex').decode().upper()}")
+
+
+        logging.debug("Horus V2 Packet Generator Tests:")
+        # Null packet, using all default fields
+        horusv2_null = e.create_horus_v2_packet(return_uncoded=True)
+        logging.debug(f"Horus V2 Null Packet, Uncoded: {codecs.encode(horusv2_null, 'hex').decode().upper()}")
+        horusv2_null_decoded = decode_packet(horusv2_null)
+        logging.debug(f"Horus V2 Null Packet, Decoded:")
+        logging.debug(pprint.pformat(horusv2_null_decoded))
+
+        horusv2_null = e.create_horus_v2_packet(return_uncoded=False)
+        logging.debug(f"Horus V2 Null Packet, Coded: {codecs.encode(horusv2_null, 'hex').decode().upper()}")
+        horusv2_null_decoded = decode_packet(e.horus_l2_decode_packet(horusv2_null, 32))
+        logging.debug(f"Horus V2 Null Packet, Decoded:")
+        logging.debug(pprint.pformat(horusv2_null_decoded))
+
+        logging.debug(f"Horus v2 Null Packet Encoded 4FSK Symbols: {e.bytes_to_4fsk_symbols(horusv2_null)}")
+        logging.debug(f"Horus v2 Null Packet Encoded OneBitPerByte: {e.bytes_to_onebitperbyte(horusv2_null)}")
+
+
 if __name__ == "__main__":
-    import sys, pprint
-
-    e = Encoder()
-
-    # Check of get_num_tx_data_bytes
-    print(f"Horus v1: 22 bytes in, {e.get_num_tx_data_bytes(22)} bytes out.")
-    print(f"Horus v2: 32 bytes in, {e.get_num_tx_data_bytes(32)} bytes out.")
-
-    print("Encoder Tests: ")
-    horus_v1_unencoded = "000900071E2A000000000000000000000000259A6B14"
-    horus_v1_unencoded = "e701010000000000000000000000000000000022020000000000000000006e8e"
-    print(f"  Horus v1 Input:  {horus_v1_unencoded}")
-    horus_v1_unencoded_bytes = codecs.decode(horus_v1_unencoded, 'hex')
-    (_encoded, _num_bytes) = e.horus_l2_encode_packet(horus_v1_unencoded_bytes)
-    print(f"  Horus v1 Output: {codecs.encode(_encoded, 'hex').decode().upper()}")
-
-
-    print("Decoder Tests:")
-    horus_v1_encoded = "2424C06B300D0415C5DBD332EFD7C190D7AF7F3C2891DE9F4BA1EB2B437BE1E2D8419D3DC9E44FDF78DAA07A98"
-    print(f"  Horus v1 Input:  {horus_v1_encoded}")
-    horus_v1_encoded_bytes = codecs.decode(horus_v1_encoded, 'hex')
-    _decoded = e.horus_l2_decode_packet(horus_v1_encoded_bytes, 22)
-    print(f"  Horus v1 Output: {codecs.encode(_decoded, 'hex').decode().upper()}")
-
-
-    print("Horus V2 Packet Generator Tests:")
-    # Null packet, using all default fields
-    horusv2_null = e.create_horus_v2_packet(return_uncoded=True)
-    print(f"Horus V2 Null Packet, Uncoded: {codecs.encode(horusv2_null, 'hex').decode().upper()}")
-    horusv2_null_decoded = decode_packet(horusv2_null)
-    print(f"Horus V2 Null Packet, Decoded:")
-    pprint.pprint(horusv2_null_decoded)
-
-    horusv2_null = e.create_horus_v2_packet(return_uncoded=False)
-    print(f"Horus V2 Null Packet, Coded: {codecs.encode(horusv2_null, 'hex').decode().upper()}")
-    horusv2_null_decoded = decode_packet(e.horus_l2_decode_packet(horusv2_null, 32))
-    print(f"Horus V2 Null Packet, Decoded:")
-    pprint.pprint(horusv2_null_decoded)
-
-    print(f"Horus v2 Null Packet Encoded 4FSK Symbols: {e.bytes_to_4fsk_symbols(horusv2_null)}")
-    print(f"Horus v2 Null Packet Encoded OneBitPerByte: {e.bytes_to_onebitperbyte(horusv2_null)}")
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main()

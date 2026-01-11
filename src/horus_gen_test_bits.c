@@ -17,12 +17,19 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <getopt.h>
+#include <sys/types.h>
 
 #include "horus_l2.h"
 #include "H_128_384_23.h"
 #include "H_256_768_22.h"
 
-// TODO: Move these packet format definitions to somehwere common.
+#include "Telemetry.h"
+#include "AdditionalSensors.h"
+#include "AdditionalSensorType.h"
+#include "CustomFieldValues.h"
+
+
+// TODO: Move these packet format definitions to somewhere common.
 
 /* Horus Mode 0 (Legacy 22-byte) Binary Packet */
 struct TBinaryPacket0
@@ -35,7 +42,7 @@ struct TBinaryPacket0
     float	Latitude;
     float	Longitude;
     uint16_t  	Altitude;
-    uint8_t     Speed;       // Speed in Knots (1-255 knots)
+    uint8_t     Speed;       // Speed in km/hr
     uint8_t     Sats;
     int8_t      Temp;        // Twos Complement Temp value.
     uint8_t     BattVoltage; // 0 = 0.5v, 255 = 2.0V, linear steps in-between.
@@ -53,7 +60,7 @@ struct TBinaryPacket1
     float	Latitude;
     float	Longitude;
     uint16_t  	Altitude;
-    uint8_t     Speed;       // Speed in Knots (1-255 knots)
+    uint8_t     Speed;       // Speed in km/hr
     uint8_t     Sats;
     int8_t      Temp;        // Twos Complement Temp value.
     uint8_t     BattVoltage; // 0 = 0.5v, 255 = 2.0V, linear steps in-between.
@@ -88,7 +95,7 @@ int main(int argc,char *argv[]) {
     int i, framecnt;
     int horus_mode = 0;
 
-    char usage[] = "usage: %s horus_mode numFrames\nMode 0 = Legacy 22-byte Golay FEC\nMode 1 = 32-byte Golay FEC\n";
+    char usage[] = "usage: %s horus_mode numFrames\nMode 0 = Legacy 22-byte Golay FEC\nMode 1 = 32-byte Golay FEC\nMode 2 = 32 byte Horus V3\n";
 
     if (argc < 3) {
         fprintf(stderr, usage, argv[0]);
@@ -166,7 +173,7 @@ int main(int argc,char *argv[]) {
           }
           framecnt -= 1;
           counter += 1;
-      }
+      } 
     // Leaving this in place unless we ever decide to do an LDPC mode.
     // } else if(horus_mode == 2){
     //   // 16-Byte LDPC Encoded mode.
@@ -196,6 +203,291 @@ int main(int argc,char *argv[]) {
     //       }
     //       framecnt -= 1;
     //   }
+    } else if (horus_mode == 2) {
+      asn_enc_rval_t ec;
+      Telemetry_t *packet;
+      char * callsign = "4FSKTEST-V2";
+      packet = calloc(1, sizeof(Telemetry_t));
+
+      packet->payloadCallsign.size=11;
+      
+      packet->payloadCallsign.buf = (uint8_t *)callsign;
+
+      packet->sequenceNumber = 1;
+      packet->timeOfDaySeconds=3;
+      packet->latitude=23;
+      packet->longitude=34;
+      packet->altitudeMeters=56;
+
+      uint8_t outbuf[30];
+
+
+      unsigned char payload[32] ={ 
+        0x00, 0x00, // crc
+      };
+      
+      int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(sizeof(payload));
+      unsigned char tx[num_tx_data_bytes];
+      uint16_t * checksum = (uint16_t *)payload;
+      
+      uint16_t counter = 0;
+
+      /* all zeros is nastiest sequence for demod before scrambling */
+      while(framecnt > 0){
+        packet->sequenceNumber = counter;
+        ec = uper_encode_to_buffer(&asn_DEF_Telemetry,NULL, packet, outbuf, sizeof(outbuf));
+        if(ec.encoded == -1) {
+            fprintf(stderr, "Could not encode Packet (at %s)\n"
+                ,
+                ec.failed_type ? ec.failed_type->name : "unknown"
+            );
+            exit(1);
+        }
+        
+        memcpy(payload+2,outbuf,30);
+        *checksum = horus_l2_gen_crc16(payload+2, sizeof(payload)-2);
+        horus_l2_encode_tx_packet(tx, payload, sizeof(payload));
+
+        int b;
+        uint8_t tx_bit;
+          for(i=0; i<num_tx_data_bytes; i++) {
+              for(b=0; b<8; b++) {
+                  tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+                  fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+                  fflush(stdout);
+              }
+          }
+          framecnt -= 1;
+          counter += 1;
+      }
+    } else if (horus_mode == 3) {
+      asn_enc_rval_t ec;
+      Telemetry_t *packet;
+      AdditionalSensors_t *sensors;
+      AdditionalSensorType_t *sensor;
+      CustomFieldValues_t *customSensorValues;
+      IA5String_t *sensorName;
+
+      char * callsign = "4FSKTEST-V2";
+      
+      packet = calloc(1, sizeof(Telemetry_t));
+      sensors = calloc(1, sizeof(AdditionalSensors_t));
+      sensor = calloc(1, sizeof(AdditionalSensorType_t));
+      sensorName = calloc(1, sizeof(IA5String_t));
+      customSensorValues = calloc(1, sizeof(CustomFieldValues_t));
+
+      packet->payloadCallsign.size=11;
+      
+      packet->payloadCallsign.buf = (uint8_t *)callsign;
+
+      packet->sequenceNumber = 1;
+      packet->timeOfDaySeconds=3;
+      packet->latitude=23;
+      packet->longitude=34;
+      packet->altitudeMeters=56;
+
+      packet->payloadCallsign.buf = (uint8_t *)callsign;
+
+      packet->sequenceNumber = 1;
+      packet->timeOfDaySeconds=3;
+      packet->latitude=23;
+      packet->longitude=34;
+      packet->altitudeMeters=56;
+      
+      
+      sensorName->buf = (uint8_t *)"meowmeow";
+      sensorName->size=8;
+
+
+      long sensorValue = 123;
+      long *sensorValues[4];
+      sensorValues[0]=&sensorValue;
+      sensorValues[1]=&sensorValue;
+      sensorValues[2]=&sensorValue;
+      sensorValues[3]=&sensorValue;
+
+
+      
+      customSensorValues->choice.horusInt.list.size = 1;
+      customSensorValues->choice.horusInt.list.count = 1;
+      customSensorValues->choice.horusInt.list.array=sensorValues;
+      customSensorValues->present = CustomFieldValues_PR_horusInt;
+
+      sensor->values = customSensorValues;
+      sensor->name = sensorName;
+    
+      AdditionalSensorType_t *listOfSensors[4];
+      listOfSensors[0] = sensor;
+      listOfSensors[1] = sensor;
+      listOfSensors[2] = sensor;
+      listOfSensors[3] = sensor;
+
+      sensors->list.array= listOfSensors;
+      sensors->list.size=4;
+      sensors->list.count=4;
+
+      packet->extraSensors=sensors;
+
+
+      uint8_t outbuf[62];
+
+
+      unsigned char payload[64] ={ 
+        0x00, 0x00, // crc
+      };
+      
+      int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(sizeof(payload));
+      unsigned char tx[num_tx_data_bytes];
+      uint16_t * checksum = (uint16_t *)payload;
+      
+      uint16_t counter = 0;
+
+      /* all zeros is nastiest sequence for demod before scrambling */
+      while(framecnt > 0){
+        packet->sequenceNumber = counter;
+        ec = uper_encode_to_buffer(&asn_DEF_Telemetry,NULL, packet, outbuf, sizeof(outbuf));
+        if(ec.encoded == -1) {
+            fprintf(stderr, "Could not encode Packet (at %s)\n"
+                ,
+                ec.failed_type ? ec.failed_type->name : "unknown"
+            );
+            exit(1);
+        }
+        
+        memcpy(payload+2,outbuf,62);
+        *checksum = horus_l2_gen_crc16(payload+2, sizeof(payload)-2);
+        horus_l2_encode_tx_packet(tx, payload, sizeof(payload));
+
+        int b;
+        uint8_t tx_bit;
+          for(i=0; i<num_tx_data_bytes; i++) {
+              for(b=0; b<8; b++) {
+                  tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+                  fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+                  fflush(stdout);
+              }
+          }
+          framecnt -= 1;
+          counter += 1;
+      }
+} else if (horus_mode == 4) {
+      asn_enc_rval_t ec;
+      Telemetry_t *packet;
+      AdditionalSensors_t *sensors;
+      AdditionalSensorType_t *sensor;
+      CustomFieldValues_t *customSensorValues;
+      IA5String_t *sensorName;
+      OCTET_STRING_t *customData;
+
+      char * callsign = "4FSKTEST-V2";
+      
+      packet = calloc(1, sizeof(Telemetry_t));
+      sensors = calloc(1, sizeof(AdditionalSensors_t));
+      sensor = calloc(1, sizeof(AdditionalSensorType_t));
+      sensorName = calloc(1, sizeof(IA5String_t));
+      customData = calloc(1,sizeof(OCTET_STRING_t));
+      customSensorValues = calloc(1, sizeof(CustomFieldValues_t));
+
+      packet->payloadCallsign.size=11;
+      
+      packet->payloadCallsign.buf = (uint8_t *)callsign;
+
+      packet->sequenceNumber = 1;
+      packet->timeOfDaySeconds=3;
+      packet->latitude=23;
+      packet->longitude=34;
+      packet->altitudeMeters=56;
+
+      packet->payloadCallsign.buf = (uint8_t *)callsign;
+
+      packet->sequenceNumber = 1;
+      packet->timeOfDaySeconds=3;
+      packet->latitude=23;
+      packet->longitude=34;
+      packet->altitudeMeters=56;
+      
+      
+      sensorName->buf = (uint8_t *)"meowmeow";
+      sensorName->size=8;
+
+
+      long sensorValue = 123;
+      long *sensorValues[4];
+      sensorValues[0]=&sensorValue;
+      sensorValues[1]=&sensorValue;
+      sensorValues[2]=&sensorValue;
+      sensorValues[3]=&sensorValue;
+
+
+      
+      customSensorValues->choice.horusInt.list.size = 1;
+      customSensorValues->choice.horusInt.list.count = 1;
+      customSensorValues->choice.horusInt.list.array=sensorValues;
+      customSensorValues->present = CustomFieldValues_PR_horusInt;
+
+      sensor->values = customSensorValues;
+      sensor->name = sensorName;
+    
+      AdditionalSensorType_t *listOfSensors[4];
+      listOfSensors[0] = sensor;
+      listOfSensors[1] = sensor;
+      listOfSensors[2] = sensor;
+      listOfSensors[3] = sensor;
+
+      sensors->list.array= listOfSensors;
+      sensors->list.size=4;
+      sensors->list.count=4;
+
+      packet->extraSensors=sensors;
+
+      char * cdata ="WOOFWOOFWOOFWOOFWOOFWOOFWOOFWOOF";
+
+      customData->buf =  (uint8_t *)cdata;
+      customData->size = 32;
+      packet->customData = customData;
+
+
+      uint8_t outbuf[126];
+
+
+      unsigned char payload[128] ={ 
+        0x00, 0x00, // crc
+      };
+      
+      int num_tx_data_bytes = horus_l2_get_num_tx_data_bytes(sizeof(payload));
+      unsigned char tx[num_tx_data_bytes];
+      uint16_t * checksum = (uint16_t *)payload;
+      
+      uint16_t counter = 0;
+
+      /* all zeros is nastiest sequence for demod before scrambling */
+      while(framecnt > 0){
+        packet->sequenceNumber = counter;
+        ec = uper_encode_to_buffer(&asn_DEF_Telemetry,NULL, packet, outbuf, sizeof(outbuf));
+        if(ec.encoded == -1) {
+            fprintf(stderr, "Could not encode Packet (at %s)\n"
+                ,
+                ec.failed_type ? ec.failed_type->name : "unknown"
+            );
+            exit(1);
+        }
+        
+        memcpy(payload+2,outbuf,126);
+        *checksum = horus_l2_gen_crc16(payload+2, sizeof(payload)-2);
+        horus_l2_encode_tx_packet(tx, payload, sizeof(payload));
+
+        int b;
+        uint8_t tx_bit;
+          for(i=0; i<num_tx_data_bytes; i++) {
+              for(b=0; b<8; b++) {
+                  tx_bit = (tx[i] >> (7-b)) & 0x1; /* msb first */
+                  fwrite(&tx_bit,sizeof(uint8_t),1,stdout);
+                  fflush(stdout);
+              }
+          }
+          framecnt -= 1;
+          counter += 1;
+      }
     } else {
       fprintf(stderr, "Unknown Mode!");
     }

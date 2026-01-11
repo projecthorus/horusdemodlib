@@ -4,10 +4,9 @@
 #	Intended for use with Dual Launches, where both launches have 4FSK payloads closely spaced (~10 kHz)
 #
 #	The SDR is tuned 5 kHz below the Lower 4FSK frequency, and the frequency estimators are set across the two frequencies.
-# 	Modem statistics are sent out via a new 'MODEM_STATS' UDP broadcast message every second.
 #
 
-# Change directory to the horusdemodlib directory.
+# Change directory to the horusdemodlib directory, where your user.cfg file is located
 # If running as a different user, you will need to change this line
 cd /home/pi/horusdemodlib/
 
@@ -53,14 +52,6 @@ PPM=0
 
 
 
-# Check that the horus_demod decoder has been compiled.
-DECODER=./build/src/horus_demod
-if [ -f "$DECODER" ]; then
-    echo "Found horus_demod."
-else 
-    echo "ERROR - $DECODER does not exist - have you compiled it yet?"
-	exit 1
-fi
 
 # Check that bc is available on the system path.
 if echo "1+1" | bc > /dev/null; then
@@ -75,6 +66,25 @@ VENV_DIR=venv
 if [ -d "$VENV_DIR" ]; then
     echo "Entering venv."
     source $VENV_DIR/bin/activate
+fi
+
+
+# Check that the horusdemodlib decoder script is available
+DECODER=horus_demod
+if [ -f "$(which $DECODER)" ]; then
+    echo "Found horus_demod."
+else 
+    echo "ERROR - $DECODER does not exist - have you installed the python library? (pip install horusdemodlib)"
+	exit 1
+fi
+
+# Check that the horusdemodlib uploader script is available
+UPLOADER=horus_uploader
+if [ -f "$(which $UPLOADER)" ]; then
+    echo "Found horus_uploader."
+else 
+    echo "ERROR - $UPLOADER does not exist - have you installed the python library? (pip install horusdemodlib)"
+	exit 1
 fi
 
 
@@ -108,14 +118,10 @@ else
 	GAIN_SETTING=" -g $GAIN"
 fi
 
-STATS_SETTING=""
-
-if [ "$STATS_OUTPUT" = "1" ]; then
-	echo "Enabling Modem Statistics."
-	STATS_SETTING=" --stats=100"
-fi
 
 # Start the receive chain.
 # Note that we now pass in the SDR centre frequency ($RXFREQ) and 'target' signal frequency ($MFSK1_CENTRE)
-# to enable providing additional metadata to Habitat / Sondehub.
-rtl_fm -M raw -F9 -d $SDR_DEVICE -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ | tee >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK1_LOWER --fsk_upper=$MFSK1_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ --freq_target_hz $MFSK1_CENTRE ) >($DECODER -q --stats=5 -g -m binary --fsk_lower=$MFSK2_LOWER --fsk_upper=$MFSK2_UPPER - - | python -m horusdemodlib.uploader --freq_hz $RXFREQ ) > /dev/null
+# to enable providing additional metadata to Sondehub.
+rtl_fm -M raw -F9 -d $SDR_DEVICE -s 48000 -p $PPM $GAIN_SETTING$BIAS_SETTING -f $RXFREQ \
+	| tee >($DECODER -q --stats -g -m binary --fsk_lower=$MFSK1_LOWER --fsk_upper=$MFSK1_UPPER - - | $UPLOADER --freq_hz $RXFREQ --freq_target_hz $MFSK1_CENTRE ) \
+	>($DECODER -q --stats -g -m binary --fsk_lower=$MFSK2_LOWER --fsk_upper=$MFSK2_UPPER - - | $UPLOADER --freq_hz $RXFREQ ) > /dev/null
