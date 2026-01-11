@@ -299,11 +299,10 @@ ozimux_port = 55683
 """
 
 
-
-    def sleep(self):
-        return
+    def setUp(self):
+        time.sleep = lambda *a : None
     
-    time.sleep = sleep
+    
     
     def telem_to_sondehub(telemetry, metadata=None, check_time=True):
         import horusdemodlib.utils
