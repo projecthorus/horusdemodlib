@@ -8,7 +8,7 @@ This proposed Horus Binary v3 format intends to address these shortcomings by de
 To allow this flexibility and to accommodate text descriptions in the callsign and sensor fields the packet size will need to be increased from 32 to 64 for most usages.
 
 ### Playground
-[Play with the prototype encoder / decoder on our demo page](https://xssfox.github.io/horusbinaryv3/)
+[Play with the prototype encoder / decoder on our demo page](https://projecthorus.github.io/horusdemodlib/)
 
 ### Requirements
 - 62 bytes of payload data + 2 bytes of CRC
