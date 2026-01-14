@@ -95,9 +95,6 @@ HORUS_LENGTH_TO_FORMAT = {
     22: 'horus_binary_v1',
     16: 'horus_binary_v2_16byte',
     32: 'horus_binary_v2_32byte',
-    64: 'horus_binary_v3',
-    96: 'horus_binary_v3',
-    128: 'horus_binary_v3'
 }
 
 HORUS_V3_NAME_CACHE = {
