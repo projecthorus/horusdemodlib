@@ -49,7 +49,7 @@ class FSKDemodStats(object):
         self.peak_hold = peak_hold
         self.decoder_id = str(decoder_id)
 
-        # Input data store: deque of (time, snr, ppm) samples.
+        # Input data store: deque of (time, snr, ppm, spacing) samples.
         self.samples = deque()
 
 
@@ -123,12 +123,12 @@ class FSKDemodStats(object):
             for value in self.fest[1:]:
                 total_spacing += value - prev
                 prev = value
-            self.fest_spacing = total_spacing / (len(self.fest) - 1)
+            _fest_spacing = total_spacing / (len(self.fest) - 1)
         else:
-            self.fest_spacing = 0.0
+            _fest_spacing = 0.0
 
         # Time-series data
-        self.samples.append((_time, _data['EbNodB'], _data['ppm']))
+        self.samples.append((_time, _data['EbNodB'], _data['ppm'], _fest_spacing))
 
         # Drop samples outside the averaging window.
         _cutoff = _time - self.averaging_time
@@ -139,10 +139,13 @@ class FSKDemodStats(object):
             return
 
         # Calculate SNR / PPM from recent samples.
-        _, _snrs, _ppms = zip(*self.samples)
+        _, _snrs, _ppms, _spacing = zip(*self.samples)
 
         # Always just take a mean of the PPM values.
         self.ppm = sum(_ppms) / len(_ppms)
+
+        # Also take a mean of the estimated tone spacing
+        self.fest_spacing = sum(_spacing) / len(_spacing)
 
         if self.peak_hold:
             self.snr = max(_snrs)
