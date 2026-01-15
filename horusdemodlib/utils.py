@@ -108,7 +108,9 @@ def telem_to_sondehub(telemetry, metadata=None, check_time=True):
 
     # Handle the additional SNR and frequency estimation if we have it
     if "snr" in telemetry:
-        _output["snr"] = telemetry["snr"]
+        # Filter out any invalid (-999.0)
+        if telemetry["snr"] > -100.0:
+            _output["snr"] = telemetry["snr"]
 
     if "f_centre" in telemetry:
         _output["frequency"] = telemetry["f_centre"] / 1e6 # Hz -> MHz

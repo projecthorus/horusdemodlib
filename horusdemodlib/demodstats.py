@@ -32,9 +32,8 @@ class FSKDemodStats(object):
 
 
     def __init__(self,
-        averaging_time = 5.0,
+        averaging_time = 4.0,
         peak_hold = False,
-        snr_max_threshold = 30.0,
         decoder_id = ""
         ):
         """
@@ -48,7 +47,6 @@ class FSKDemodStats(object):
 
         self.averaging_time = float(averaging_time)
         self.peak_hold = peak_hold
-        self.snr_max_threshold = snr_max_threshold
         self.decoder_id = str(decoder_id)
 
         # Input data store: deque of (time, snr, ppm) samples.
@@ -146,7 +144,6 @@ class FSKDemodStats(object):
         # Always just take a mean of the PPM values.
         self.ppm = sum(_ppms) / len(_ppms)
 
-        # TODO - remove any SNR values that exceed self.snr_max_threshold before calculating the output
         if self.peak_hold:
             self.snr = max(_snrs)
         else:
