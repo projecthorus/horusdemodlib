@@ -179,6 +179,10 @@ def main():
                     if args.freq_hz:
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
 
+                    # Add in tone spacing estimate.
+                    if demod_stats.fest_spacing > 0.0:
+                        _decoded['tone_spacing'] = int(demod_stats.fest_spacing)
+
                     # Add in baud rate, if provided.
                     if args.baud_rate:
                         _decoded['baud_rate'] = int(args.baud_rate)
@@ -242,6 +246,10 @@ def main():
                     # Add in frequency estimate, if we have been supplied a receiver frequency.
                     if args.freq_hz:
                         _decoded['f_centre'] = int(demod_stats.fest_mean) + int(args.freq_hz)
+
+                    # Add in tone spacing estimate.
+                    if demod_stats.fest_spacing > 0.0:
+                        _decoded['tone_spacing'] = int(demod_stats.fest_spacing)
 
                     # Add in baud rate, if provided.
                     if args.baud_rate:

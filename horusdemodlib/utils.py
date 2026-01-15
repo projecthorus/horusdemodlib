@@ -113,6 +113,9 @@ def telem_to_sondehub(telemetry, metadata=None, check_time=True):
     if "f_centre" in telemetry:
         _output["frequency"] = telemetry["f_centre"] / 1e6 # Hz -> MHz
 
+    if "tone_spacing" in telemetry:
+        _output["tone_spacing"] = telemetry["tone_spacing"]
+
     if "raw" in telemetry:
         _output["raw"] = telemetry["raw"]
 

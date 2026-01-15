@@ -34,6 +34,7 @@ class FSKDemodStats(object):
     def __init__(self,
         averaging_time = 5.0,
         peak_hold = False,
+        snr_max_threshold = 30.0,
         decoder_id = ""
         ):
         """
@@ -47,6 +48,7 @@ class FSKDemodStats(object):
 
         self.averaging_time = float(averaging_time)
         self.peak_hold = peak_hold
+        self.snr_max_threshold = snr_max_threshold
         self.decoder_id = str(decoder_id)
 
         # Input data store: deque of (time, snr, ppm) samples.
@@ -57,6 +59,7 @@ class FSKDemodStats(object):
         self.snr = -999.0
         self.fest = [0.0,0.0, 0.0,0.0]
         self.fest_mean = 0.0
+        self.fest_spacing = 0.0
         self.fft = []
         self.ppm = 0.0
 
@@ -114,6 +117,18 @@ class FSKDemodStats(object):
         
         self.fest_mean = sum(self.fest) / len(self.fest) if self.fest else 0.0
 
+        # Calculate the mean spacing between tones
+        # Should we be doing this as a running mean? Maybe...
+        if len(self.fest) > 1:
+            total_spacing = 0.0
+            prev = self.fest[0]
+            for value in self.fest[1:]:
+                total_spacing += value - prev
+                prev = value
+            self.fest_spacing = total_spacing / (len(self.fest) - 1)
+        else:
+            self.fest_spacing = 0.0
+
         # Time-series data
         self.samples.append((_time, _data['EbNodB'], _data['ppm']))
 
@@ -131,6 +146,7 @@ class FSKDemodStats(object):
         # Always just take a mean of the PPM values.
         self.ppm = sum(_ppms) / len(_ppms)
 
+        # TODO - remove any SNR values that exceed self.snr_max_threshold before calculating the output
         if self.peak_hold:
             self.snr = max(_snrs)
         else:
@@ -196,6 +212,7 @@ class FSKDemodStatsTests(unittest.TestCase):
         snrs = [float(i) for i in range(sample_count)]
         ppms = [-0.5*sample_count + i for i in range(sample_count)]
         f1, f2, f3, f4 = 1000.0, 1270.0, 1540.0, 1810.0
+        expected_fest_spacing = 270.0
         # This just gets passed through, dont really care so much about it
         fft_sample = [1, 2, 3]
 
@@ -224,13 +241,14 @@ class FSKDemodStatsTests(unittest.TestCase):
         expected_snr = sum(s for _, s, _ in recent) / len(recent)
         expected_ppm = sum(p for _, _, p in recent) / len(recent)
 
-        print(f"SNR: {stats.snr}, PPM: {stats.ppm}, fEst_mean: {stats.fest_mean}")
+        print(f"SNR: {stats.snr}, PPM: {stats.ppm}, fEst_mean: {stats.fest_mean}, fEst_spacing: {stats.fest_spacing}")
 
         self.assertEqual(len(stats.samples), len(recent))
         self.assertAlmostEqual(stats.snr, expected_snr)
         self.assertAlmostEqual(stats.ppm, expected_ppm)
         self.assertEqual(stats.fest, [f1, f2, f3, f4])
         self.assertAlmostEqual(stats.fest_mean, (f1 + f2 + f3 + f4) / 4.0)
+        self.assertAlmostEqual(stats.fest_spacing, expected_fest_spacing)
         self.assertEqual(stats.fft, fft_sample)
 
 
@@ -244,6 +262,7 @@ class FSKDemodStatsTests(unittest.TestCase):
         snrs = [float(i) for i in range(sample_count)]
         ppms = [-0.5*sample_count + i for i in range(sample_count)]
         f1, f2, f3, f4 = 1000.0, 1270.0, 1540.0, 1810.0
+        expected_fest_spacing = 270.0
         # This just gets passed through, dont really care so much about it
         fft_sample = [1, 2, 3]
 
@@ -272,13 +291,14 @@ class FSKDemodStatsTests(unittest.TestCase):
         expected_snr = max(s for _, s, _ in recent)
         expected_ppm = sum(p for _, _, p in recent) / len(recent)
 
-        print(f"SNR: {stats.snr}, PPM: {stats.ppm}, fEst_mean: {stats.fest_mean}")
+        print(f"SNR: {stats.snr}, PPM: {stats.ppm}, fEst_mean: {stats.fest_mean}, fEst_spacing: {stats.fest_spacing}")
 
         self.assertEqual(len(stats.samples), len(recent))
         self.assertAlmostEqual(stats.snr, expected_snr)
         self.assertAlmostEqual(stats.ppm, expected_ppm)
         self.assertEqual(stats.fest, [f1, f2, f3, f4])
         self.assertAlmostEqual(stats.fest_mean, (f1 + f2 + f3 + f4) / 4.0)
+        self.assertAlmostEqual(stats.fest_spacing, expected_fest_spacing)
         self.assertEqual(stats.fft, fft_sample)
 
 
