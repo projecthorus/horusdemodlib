@@ -554,8 +554,8 @@ class HorusDecoderTests(unittest.TestCase):
         #temps
         self.assertEqual(_decoded['temperature'],data['temperatureCelsius-x10']['internal']/10)
         self.assertEqual(_decoded['ext_temperature'],data['temperatureCelsius-x10']['external']/10)
-        self.assertEqual(_decoded['ext_temperature_custom_1'],data['temperatureCelsius-x10']['custom1']/10)
-        self.assertEqual(_decoded['ext_temperature_custom_2'],data['temperatureCelsius-x10']['custom2']/10)
+        self.assertEqual(_decoded['temperature_custom_1'],data['temperatureCelsius-x10']['custom1']/10)
+        self.assertEqual(_decoded['temperature_custom_2'],data['temperatureCelsius-x10']['custom2']/10)
 
         #volts
         self.assertEqual(_decoded['battery_voltage'],data['milliVolts']['battery']/1000)
