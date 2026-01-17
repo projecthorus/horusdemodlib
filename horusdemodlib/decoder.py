@@ -210,11 +210,11 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
                 _output["ext_temperature"] = _raw_fields['temperatureCelsius-x10'].pop('external') / 10
                 _output["custom_field_names"].append("ext_temperature")
             if 'custom1' in _raw_fields['temperatureCelsius-x10']:
-                _output["ext_temperature_custom_1"] = _raw_fields['temperatureCelsius-x10'].pop('custom1') / 10
-                _output["custom_field_names"].append("ext_temperature_custom_1")
+                _output["temperature_custom_1"] = _raw_fields['temperatureCelsius-x10'].pop('custom1') / 10
+                _output["custom_field_names"].append("temperature_custom_1")
             if 'custom2' in _raw_fields['temperatureCelsius-x10']:
-                _output["ext_temperature_custom_2"] = _raw_fields['temperatureCelsius-x10'].pop('custom2') / 10
-                _output["custom_field_names"].append("ext_temperature_custom_2")    
+                _output["temperature_custom_2"] = _raw_fields['temperatureCelsius-x10'].pop('custom2') / 10
+                _output["custom_field_names"].append("temperature_custom_2")    
             _raw_fields.pop('temperatureCelsius-x10')    
 
         if 'milliVolts' in _raw_fields:
