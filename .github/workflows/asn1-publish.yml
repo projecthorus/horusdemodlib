@@ -3,7 +3,7 @@ run-name: Horusbinary v3 ASN.1 Docs
 on:
     push:
         branches:
-            - main
+            - master
 jobs:
     build:
         runs-on: ubuntu-latest
