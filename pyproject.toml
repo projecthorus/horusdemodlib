@@ -1,20 +1,37 @@
 [tool.poetry]
 name = "horusdemodlib"
-version = "0.4.0"
+version = "0.6.0"
 description = "Project Horus HAB Telemetry Demodulators"
-authors = ["Mark Jessop"]
+authors = ["Mark Jessop", "Michaela Wheeler"]
 license = "LGPL-2.1-or-later"
+include = [
+    { path = "horusbinaryv3/HorusBinaryV3.asn1", format = ["sdist", "wheel"] },
+    { path = "src", format = ["sdist"]},
+    { path = "payload_id_list.txt", format = ["sdist", "wheel"] },
+    { path = "custom_field_list.json", format = ["sdist", "wheel"] }
+]
 
 [tool.poetry.dependencies]
-python = "^3.6"
-requests = "^2.24.0"
-crcmod = "^1.7"
-numpy = "^1.17"
+python = "^3.9"
+requests = "^2.25.1"
 python-dateutil = "^2.8"
+cffi = ">1.14.0"
 audioop-lts = { version = "*", python = "^3.13" }
+asn1tools = "^0.165.0"
+crc = "^7.1.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.build]
+script = "build_lib.py"
+generate-setup-file = true
+
+[tool.poetry.group.dev.dependencies]
+setuptools = "^80.9.0"
+cffi = ">1.14.0"
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core","setuptools","cffi >1.14.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+horus_demod = 'horusdemodlib:demod.main'
+horus_uploader = 'horusdemodlib:uploader.main'

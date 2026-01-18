@@ -1,0 +1,86 @@
+name: Horusdemodlib Wheels
+
+on: [push, workflow_dispatch, release]
+
+jobs:
+  make_sdist:
+    name: Make SDist
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0  # Optional, use if you use setuptools_scm
+        submodules: true  # Optional, use if you have submodules
+
+    - name: Build SDist
+      run: pipx run build --sdist
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: cibw-sdist
+        path: dist/*.tar.gz
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # macos-15-intel is an Intel runner, macos-14 is Apple silicon
+        # macos-15-intel, macos-14
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-15-intel, macos-14]
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+      - run: |
+          echo '[build]' > setup.cfg
+          echo 'compiler = mingw32' >> setup.cfg
+        if: matrix.os  == 'windows-latest'
+      - uses: bwoodsend/setup-winlibs-action@v1
+        if: matrix.os  == 'windows-latest'
+      
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.3.1
+        env:
+          CIBW_SKIP: cp38-* pp* *-win32 cp314t-*
+          CIBW_ARCHS_LINUX: ${{ runner.arch == 'X64' && 'auto armv7l' || 'auto' }}
+          CIBW_TEST_COMMAND: python3 -m unittest discover -t {project} -s horusdemodlib -p "*.py"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
+
+  release_test_wheels:
+    permissions:
+      id-token: write
+    needs: [build_wheels]
+    name: Release Test Wheels
+    environment: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+  release_prod_wheels:
+    permissions:
+      id-token: write
+    needs: [build_wheels, make_sdist]
+    name: Release Producation Wheels
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1

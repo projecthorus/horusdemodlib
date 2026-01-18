@@ -8,6 +8,7 @@ import datetime
 import json
 import logging
 import socket
+import unittest
 
 
 def send_payload_summary(telemetry, port=55672, comment="HorusDemodLib"):
@@ -127,24 +128,28 @@ def send_ozimux_message(telemetry, port=55683):
     except Exception as e:
         logging.error(f"Failed to send OziMux packet: {str(e)}")
 
+class HorusUdpTests(unittest.TestCase):
+    def test_udp(self):
+        # Test script for the above functions
+        from horusdemodlib.decoder import parse_ukhas_string
+        from horusdemodlib.checksums import ukhas_crc
+        # Setup Logging
+        logging.basicConfig(
+            format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO
+        )
+
+        sentence = "$$TESTING,1,01:02:03,-34.0,138.0,1000"
+        crc = ukhas_crc(sentence[2:].encode("ascii"))
+        sentence = sentence + "*" + crc
+        logging.info("Sentence: " + sentence)
+
+        _decoded = parse_ukhas_string(sentence)
+        logging.info(_decoded)
+
+        send_payload_summary(_decoded)
+
+        logging.info(send_ozimux_message(_decoded))
 
 if __name__ == "__main__":
-    # Test script for the above functions
-    from horusdemodlib.decoder import parse_ukhas_string
-    from horusdemodlib.checksums import ukhas_crc
-    # Setup Logging
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO
-    )
+    unittest.main()
 
-    sentence = "$$TESTING,1,01:02:03,-34.0,138.0,1000"
-    crc = ukhas_crc(sentence[2:].encode("ascii"))
-    sentence = sentence + "*" + crc
-    print("Sentence: " + sentence)
-
-    _decoded = parse_ukhas_string(sentence)
-    print(_decoded)
-
-    send_payload_summary(_decoded)
-
-    print(send_ozimux_message(_decoded))

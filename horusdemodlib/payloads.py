@@ -5,6 +5,10 @@ import json
 import logging
 import requests
 import struct
+import unittest
+import unittest.mock
+import sys
+import os
 
 # Global payload list - Basic version
 HORUS_PAYLOAD_LIST = {0:'4FSKTEST', 1:'HORUSBINARY', 256: '4FSKTEST-V2'}
@@ -104,7 +108,12 @@ def read_payload_list(filename="payload_id_list.txt"):
             payload_list = parse_payload_list(_text)
 
     except Exception as e:
-        logging.error(f"Error reading Payload ID list, does it exist? Error: {str(e)}")
+        try: # also try the payload list provided in the package
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..", filename),'r') as file:
+                _text = file.read()
+                payload_list = parse_payload_list(_text)
+        except Exception as e:   
+            logging.error(f"Error reading Payload ID list, does it exist? Error: {str(e)}")
 
     logging.debug("Known Payload IDs:")
     for _payload in payload_list:
@@ -243,8 +252,14 @@ def read_custom_field_list(filename="custom_field_list.json"):
         _f.close()
 
     except Exception as e:
-        logging.error(f"Error loading custom field list file ({filename}), using defaults: {str(e)}")
-        return _custom_field_list
+        try:
+            # Read in entirity of file contents.
+            _f = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..",filename),'r')
+            _raw_data = _f.read()
+            _f.close()
+        except:
+            logging.error(f"Error loading custom field list file ({filename}), using defaults: {str(e)}")
+            return _custom_field_list
 
     return parse_custom_field_list(_raw_data)
 
@@ -308,11 +323,36 @@ def update_payload_lists(payload_list, custom_field_list):
     HORUS_PAYLOAD_LIST = payload_list
     HORUS_CUSTOM_FIELDS = custom_field_list
 
+class HorusPayloadsTest(unittest.TestCase):
+    def test_payloads(self):
+        logging.error = unittest.mock.Mock()
+        logging.warning = unittest.mock.Mock()
+        global HORUS_PAYLOAD_LIST
+        global HORUS_CUSTOM_FIELDS 
+        HORUS_PAYLOAD_LIST = {}
+        HORUS_CUSTOM_FIELDS = {}
+        try:
+            nodownload = args.nodownload
+        except NameError:
+            nodownload = True
+        
+        _new_payload_list = init_payload_id_list(nodownload=nodownload)
+        _new_custom_field_list = init_custom_field_list(nodownload=nodownload)
+
+        try:
+            logging.error.assert_not_called()
+        except AssertionError:
+            raise AssertionError(f"Error parsing payloads: {logging.error.call_args_list}") from None
+        
+        try:
+            logging.warning.assert_not_called()
+        except AssertionError:
+            raise AssertionError(f"Warnings when parsing payloads: {logging.warning.call_args_list}") from None
+
 
 if __name__ == "__main__":
     import argparse
     import pprint
-    from unittest.mock import Mock
 
     # Read command-line arguments
     parser = argparse.ArgumentParser(description="Test script for payload ID lists", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -325,22 +365,12 @@ if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.DEBUG)
 
     if args.test:
-        logging.error = Mock()
-        logging.warning = Mock()
+        sys.argv.remove("--test") # remove --test otherwise unittest.main tries to parse that as its own argument
+        unittest.main()
+    else:
+        _new_payload_list = init_payload_id_list(nodownload=args.nodownload)
+        _new_custom_field_list = init_custom_field_list(nodownload=args.nodownload)
 
-    _new_payload_list = init_payload_id_list(nodownload=args.nodownload)
-    _new_custom_field_list = init_custom_field_list(nodownload=args.nodownload)
-
-    if args.test:
-        try:
-            logging.error.assert_not_called()
-        except AssertionError:
-            raise AssertionError(f"Error parsing payloads: {logging.error.call_args_list}") from None
-        
-        try:
-            logging.warning.assert_not_called()
-        except AssertionError:
-            raise AssertionError(f"Warnings when parsing payloads: {logging.warning.call_args_list}") from None
 
     if args.print:
         pprint.pprint(_new_payload_list)

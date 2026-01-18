@@ -1,0 +1,7 @@
+marimo
+asn1tools
+requests
+coverage
+pytest
+nwdiag
+git+https://github.com/yuzutech/blockdiag.git

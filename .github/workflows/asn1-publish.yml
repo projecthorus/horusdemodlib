@@ -1,0 +1,44 @@
+name: Horusbinary v3 ASN.1 Docs
+run-name: Horusbinary v3 ASN.1 Docs
+on:
+    push:
+        branches:
+            - main
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3 
+            - name: Install deps
+              working-directory: horusbinaryv3
+              run: |
+                    python -m pip install --upgrade pip  
+                    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi 
+                    cp HorusBinaryV3.asn1 public/
+            - name: 📄 Export notebook
+              working-directory: asn1
+              run: |
+                  marimo export html-wasm ExampleMarimoNotebook.py -o pages --mode run
+
+            - name: 📦 Upload Pages Artifact
+              uses: actions/upload-pages-artifact@v3
+              with:
+                  path: horusbinaryv3/pages
+
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+
+        permissions:
+            pages: write
+            id-token: write
+
+        steps:
+            - name: 🌐 Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
+              with:
+                  artifact_name: github-pages

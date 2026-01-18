@@ -14,7 +14,9 @@ import logging
 import socket
 import sys
 import time
-import numpy as np
+import unittest
+import unittest.mock
+from collections import deque
 
 
 class FSKDemodStats(object):
@@ -30,7 +32,7 @@ class FSKDemodStats(object):
 
 
     def __init__(self,
-        averaging_time = 5.0,
+        averaging_time = 4.0,
         peak_hold = False,
         decoder_id = ""
         ):
@@ -47,16 +49,15 @@ class FSKDemodStats(object):
         self.peak_hold = peak_hold
         self.decoder_id = str(decoder_id)
 
-        # Input data stores.
-        self.in_times = np.array([])
-        self.in_snr = np.array([])
-        self.in_ppm = np.array([])
+        # Input data store: deque of (time, snr, ppm, spacing) samples.
+        self.samples = deque()
 
 
         # Output State variables.
         self.snr = -999.0
         self.fest = [0.0,0.0, 0.0,0.0]
         self.fest_mean = 0.0
+        self.fest_spacing = 0.0
         self.fft = []
         self.ppm = 0.0
 
@@ -112,28 +113,44 @@ class FSKDemodStats(object):
         else:
             self.fest = self.fest[:2]
         
-        self.fest_mean = np.mean(self.fest)
+        self.fest_mean = sum(self.fest) / len(self.fest) if self.fest else 0.0
+
+        # Calculate the mean spacing between tones
+        # Should we be doing this as a running mean? Maybe...
+        if len(self.fest) > 1:
+            total_spacing = 0.0
+            prev = self.fest[0]
+            for value in self.fest[1:]:
+                total_spacing += value - prev
+                prev = value
+            _fest_spacing = total_spacing / (len(self.fest) - 1)
+        else:
+            _fest_spacing = 0.0
 
         # Time-series data
-        self.in_times = np.append(self.in_times, _time)
-        self.in_snr = np.append(self.in_snr, _data['EbNodB'])
-        self.in_ppm = np.append(self.in_ppm, _data['ppm'])
+        self.samples.append((_time, _data['EbNodB'], _data['ppm'], _fest_spacing))
 
+        # Drop samples outside the averaging window.
+        _cutoff = _time - self.averaging_time
+        while self.samples and self.samples[0][0] <= _cutoff:
+            self.samples.popleft()
 
-        # Calculate SNR / PPM
-        _time_range = self.in_times>(_time-self.averaging_time)
-        # Clip arrays to just the values we want
-        self.in_ppm = self.in_ppm[_time_range]
-        self.in_snr = self.in_snr[_time_range]
-        self.in_times = self.in_times[_time_range]
+        if not self.samples:
+            return
+
+        # Calculate SNR / PPM from recent samples.
+        _, _snrs, _ppms, _spacing = zip(*self.samples)
 
         # Always just take a mean of the PPM values.
-        self.ppm = np.mean(self.in_ppm)
+        self.ppm = sum(_ppms) / len(_ppms)
+
+        # Also take a mean of the estimated tone spacing
+        self.fest_spacing = sum(_spacing) / len(_spacing)
 
         if self.peak_hold:
-            self.snr = np.max(self.in_snr)
+            self.snr = max(_snrs)
         else:
-            self.snr = np.mean(self.in_snr)
+            self.snr = sum(_snrs) / len(_snrs)
 
 
     def log_debug(self, line):
@@ -184,6 +201,107 @@ def send_modem_stats(stats, udp_port=55672):
 
 
 
+class FSKDemodStatsTests(unittest.TestCase):
+    def test_mean_sampling(self):
+        averaging_time = 5.0
+        stats = FSKDemodStats(averaging_time=averaging_time, peak_hold=False)
+
+        base_time = 1_000_000.0
+        interval = 0.5
+        sample_count = 20  # 10 seconds at 2 Hz
+        snrs = [float(i) for i in range(sample_count)]
+        ppms = [-0.5*sample_count + i for i in range(sample_count)]
+        f1, f2, f3, f4 = 1000.0, 1270.0, 1540.0, 1810.0
+        expected_fest_spacing = 270.0
+        # This just gets passed through, dont really care so much about it
+        fft_sample = [1, 2, 3]
+
+        print(f"Input SNRs: {snrs}")
+        print(f"Input PPMs: {ppms}")
+        print(f"Input fEst: {[f1, f2, f3, f4]}")
+
+        times = [base_time + interval * i for i in range(sample_count)]
+        time_iter = iter(times)
+
+        # Feed samples with controlled timestamps so the averaging window is deterministic.
+        with unittest.mock.patch('horusdemodlib.demodstats.time.time', side_effect=time_iter):
+            for snr, ppm in zip(snrs, ppms):
+                stats.update({
+                    'EbNodB': snr,
+                    'ppm': ppm,
+                    'f1_est': f1,
+                    'f2_est': f2,
+                    'f3_est': f3,
+                    'f4_est': f4,
+                    'samp_fft': fft_sample
+                })
+
+        cutoff = times[-1] - averaging_time
+        recent = [(t, s, p) for t, s, p in zip(times, snrs, ppms) if t > cutoff]
+        expected_snr = sum(s for _, s, _ in recent) / len(recent)
+        expected_ppm = sum(p for _, _, p in recent) / len(recent)
+
+        print(f"SNR: {stats.snr}, PPM: {stats.ppm}, fEst_mean: {stats.fest_mean}, fEst_spacing: {stats.fest_spacing}")
+
+        self.assertEqual(len(stats.samples), len(recent))
+        self.assertAlmostEqual(stats.snr, expected_snr)
+        self.assertAlmostEqual(stats.ppm, expected_ppm)
+        self.assertEqual(stats.fest, [f1, f2, f3, f4])
+        self.assertAlmostEqual(stats.fest_mean, (f1 + f2 + f3 + f4) / 4.0)
+        self.assertAlmostEqual(stats.fest_spacing, expected_fest_spacing)
+        self.assertEqual(stats.fft, fft_sample)
+
+
+    def test_peakhold_sampling(self):
+        averaging_time = 5.0
+        stats = FSKDemodStats(averaging_time=averaging_time, peak_hold=True)
+
+        base_time = 1_000_000.0
+        interval = 0.5
+        sample_count = 20  # 10 seconds at 2 Hz
+        snrs = [float(i) for i in range(sample_count)]
+        ppms = [-0.5*sample_count + i for i in range(sample_count)]
+        f1, f2, f3, f4 = 1000.0, 1270.0, 1540.0, 1810.0
+        expected_fest_spacing = 270.0
+        # This just gets passed through, dont really care so much about it
+        fft_sample = [1, 2, 3]
+
+        print(f"Input SNRs: {snrs}")
+        print(f"Input PPMs: {ppms}")
+        print(f"Input fEst: {[f1, f2, f3, f4]}")
+
+        times = [base_time + interval * i for i in range(sample_count)]
+        time_iter = iter(times)
+
+        # Feed samples with controlled timestamps so the averaging window is deterministic.
+        with unittest.mock.patch('horusdemodlib.demodstats.time.time', side_effect=time_iter):
+            for snr, ppm in zip(snrs, ppms):
+                stats.update({
+                    'EbNodB': snr,
+                    'ppm': ppm,
+                    'f1_est': f1,
+                    'f2_est': f2,
+                    'f3_est': f3,
+                    'f4_est': f4,
+                    'samp_fft': fft_sample
+                })
+
+        cutoff = times[-1] - averaging_time
+        recent = [(t, s, p) for t, s, p in zip(times, snrs, ppms) if t > cutoff]
+        expected_snr = max(s for _, s, _ in recent)
+        expected_ppm = sum(p for _, _, p in recent) / len(recent)
+
+        print(f"SNR: {stats.snr}, PPM: {stats.ppm}, fEst_mean: {stats.fest_mean}, fEst_spacing: {stats.fest_spacing}")
+
+        self.assertEqual(len(stats.samples), len(recent))
+        self.assertAlmostEqual(stats.snr, expected_snr)
+        self.assertAlmostEqual(stats.ppm, expected_ppm)
+        self.assertEqual(stats.fest, [f1, f2, f3, f4])
+        self.assertAlmostEqual(stats.fest_mean, (f1 + f2 + f3 + f4) / 4.0)
+        self.assertAlmostEqual(stats.fest_spacing, expected_fest_spacing)
+        self.assertEqual(stats.fft, fft_sample)
+
+
 if __name__ == "__main__":
     # Command line arguments.
     parser = argparse.ArgumentParser()
@@ -227,4 +345,3 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         pass
-
