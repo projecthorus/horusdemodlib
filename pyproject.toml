@@ -18,7 +18,6 @@ python-dateutil = "^2.8"
 cffi = ">1.14.0"
 audioop-lts = { version = "*", python = "^3.13" }
 asn1tools = "^0.165.0"
-crc = "^7.1.0"
 
 [tool.poetry.build]
 script = "build_lib.py"
