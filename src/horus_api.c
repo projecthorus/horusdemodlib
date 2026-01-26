@@ -575,19 +575,27 @@ int extract_horus_binary_v2_256(struct horus *hstates, char hex_out[], int uw_lo
 
     uint16_t crc_tx, crc_rx;
 
-    crc_rx = horus_l2_gen_crc16(payload_bytes, size-2);
-    crc_tx = (uint16_t)payload_bytes[size-2] +
-        ((uint16_t)payload_bytes[size-1]<<8);
-    
-    hstates->crc_ok = (crc_tx == crc_rx);
-    if (!hstates->crc_ok){ // check if horus binary v3 - which has crc16 at the start of the packet
+    // Only check for a CRC at the *end* of a packet if this is could be a Horus v2 packet (32 bytes)
+    if(size == HORUS_BINARY_V2_256BIT_NUM_UNCODED_PAYLOAD_BYTES){
+        crc_rx = horus_l2_gen_crc16(payload_bytes, size-2);
+        crc_tx = (uint16_t)payload_bytes[size-2] +
+            ((uint16_t)payload_bytes[size-1]<<8);
+        
+        hstates->crc_ok = (crc_tx == crc_rx);
+    }else{
+        // Either a 32 byte packet that has failed CRC, or it's a longer packet that might be a Horus v3 packet.
+        hstates->crc_ok = 0;
+    }
+
+    // Not a Horus v2 packet, so now check for a CRC at the start of the packet.
+    if (!hstates->crc_ok){
         crc_rx = horus_l2_gen_crc16(payload_bytes+2, size-2);
         crc_tx = (uint16_t)payload_bytes[0] +
             ((uint16_t)payload_bytes[1]<<8);
         if ((hstates->crc_ok = (crc_tx == crc_rx))){
             hstates->version = 3;
             if (hstates->verbose) {
-                fprintf(stderr, "v3 packet\n");
+                fprintf(stderr, "Found valid v3 packet\n");
             }
         }
         

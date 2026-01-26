@@ -2,21 +2,11 @@
 #   HorusLib - Checksumming functions
 #
 
-import crc
+import binascii
 import logging
 import struct
 import unittest
-from crc import Calculator,  Configuration
 
-
-def mkCrcFun(type):
-        calculator = Calculator(Configuration(
-            16, 0x1021,0xffff
-        ))
-        if type == 'crc-ccitt-false':
-            def check(data):
-                return calculator.checksum(data)
-        return check
 
 def ukhas_crc(data:bytes) -> str:
     """
@@ -24,9 +14,8 @@ def ukhas_crc(data:bytes) -> str:
     
     (CRC16 CCITT: start 0xFFFF, poly 0x1021)
     """
-    crc16 = mkCrcFun('crc-ccitt-false')
 
-    return hex(crc16(data))[2:].upper().zfill(4)
+    return hex(binascii.crc_hqx(data,0xffff))[2:].upper().zfill(4)
 
 
 def check_packet_crc(data:bytes, checksum:str='crc16', tail=True):
@@ -47,8 +36,7 @@ def check_packet_crc(data:bytes, checksum:str='crc16', tail=True):
         _packet_checksum = struct.unpack('<H', data[-2:])[0] if tail else struct.unpack('<H', data[:2])[0]
 
         # Calculate a CRC over the rest of the data
-        _crc16 = mkCrcFun('crc-ccitt-false')
-        _calculated_crc = _crc16(data[:-2] if tail else data[2:])
+        _calculated_crc = binascii.crc_hqx(data[:-2] if tail else data[2:], 0xffff)
 
         if _calculated_crc == _packet_checksum:
             return True
@@ -57,7 +45,7 @@ def check_packet_crc(data:bytes, checksum:str='crc16', tail=True):
             return False
 
     else:
-        raise ValueError(f"Checksum - Unknown Checksym type {checksum}.")
+        raise ValueError(f"Checksum - Unknown Checksum type {checksum}.")
 
 
 def add_packet_crc(data:bytes, checksum:str='crc16', tail=True):
@@ -70,8 +58,7 @@ def add_packet_crc(data:bytes, checksum:str='crc16', tail=True):
 
     if (checksum == 'crc16') or (checksum == 'CRC16') or (checksum == 'crc16-ccitt') or (checksum == 'CRC16-CCITT'):
         # Calculate a CRC over the data
-        _crc16 = mkCrcFun('crc-ccitt-false')
-        _calculated_crc = _crc16(data)
+        _calculated_crc = binascii.crc_hqx(data,0xffff)
 
         _packet_crc = struct.pack('<H', _calculated_crc)
         if tail:
@@ -81,30 +68,56 @@ def add_packet_crc(data:bytes, checksum:str='crc16', tail=True):
 
 
     else:
-        raise ValueError(f"Checksum - Unknown Checksym type {checksum}.")
+        raise ValueError(f"Checksum - Unknown Checksum type {checksum}.")
 
 class HorusChecksumTests(unittest.TestCase):
     def test_crc16_decoder(self):
         tests = [
-        ['crc16', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', True],
-        ['crc16', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', False],
-        ['crc16', b'\x01\x12\x02\x00\x02\xbc\xeb!AR\x10\x00\xff\x00\xe1\x7e', True],
+        ['crc16', True, b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', True],
+        ['crc16', True, b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45', False],
+        ['crc16', True, b'\x01\x12\x02\x00\x02\xbc\xeb!AR\x10\x00\xff\x00\xe1\x7e', True],
         #           id      seq_no  HH   MM  SS  lat             lon             alt    spd  sat tmp bat custom data
-        ['crc16', b'\xFF\xFF\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe8\x82', True],
+        ['crc16', True, b'\xFF\xFF\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe8\x82', True],
+        # Horus v3 packets, CRC is at the start
+        ['crc16', False, b'\xd1\xa2:\x8a\x19\x17\x96}\x07\x9f\x02\x11@\n\x89}\xe5E\x97G\x99%|\x11\x14\x00c\xff\xd4S\xf81x\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00', True],
+        ['crc16', False, b'\xd1\xa2:\x8a\x19\x17\x96}\x07\x9f\x02\x11@\n\x89}\xe5E\x97G\x99%|\x11\x14\x00c\xff\xd4S\xf81x\x00\x00\x00\x00\x00\x01\x02\x03\x00\x00\x00\x00\x00\x00\x00', False]
     ]
         
         for _test in tests:
             _format = _test[0]
-            _input = _test[1]
-            _output = _test[2]
+            _horusv3 = _test[1]
+            _input = _test[2]
+            _output = _test[3]
 
             with self.subTest(format=_format,input=_input,output=_output):
                 if _output == 'error':
                     with self.assertRaises(ValueError) as context:
-                        _decoded = _decoded = check_packet_crc(_input, _format)
+                        _decoded = _decoded = check_packet_crc(_input, _format, tail=_horusv3)
                 else:
-                    _decoded = _decoded = check_packet_crc(_input, _format)
+                    _decoded = _decoded = check_packet_crc(_input, _format, tail=_horusv3)
                 logging.debug(f"Packet: {_input}. CRC OK: {_decoded}")
+
+    def test_crc16_encoder(self):
+        tests = [
+        # Horus v2
+        ['crc16', True, b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A', b'\x01\x12\x00\x00\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1C\x9A\x95\x45'],
+        # Horus v3 packets, CRC is at the start
+        ['crc16', False, b':\x8a\x19\x17\x96}\x07\x9f\x02\x11@\n\x89}\xe5E\x97G\x99%|\x11\x14\x00c\xff\xd4S\xf81x\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00', b'\xd1\xa2:\x8a\x19\x17\x96}\x07\x9f\x02\x11@\n\x89}\xe5E\x97G\x99%|\x11\x14\x00c\xff\xd4S\xf81x\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'],
+    ]
+        
+        for _test in tests:
+            _format = _test[0]
+            _horusv3 = _test[1]
+            _input = _test[2]
+            _output = _test[3]
+
+            with self.subTest(format=_format,input=_input,output=_output):
+                if _output == 'error':
+                    with self.assertRaises(ValueError) as context:
+                        _decoded = _decoded = add_packet_crc(_input, _format, tail=_horusv3)
+                else:
+                    _decoded = _decoded = add_packet_crc(_input, _format, tail=_horusv3)
+                logging.debug(f"Packet: {_input}. Packet+CRC: {_decoded}")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

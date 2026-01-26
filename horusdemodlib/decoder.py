@@ -163,7 +163,8 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
     _output["packet_format"] = deepcopy(packet_format)
     
     if  packet_format['name'] == "Horus Binary v3":
-        _raw_fields = HORUS_ASN.decode("Telemetry", data[2:])
+        # Attempt an ASN.1 decode. Check the constraints in case we have been given some sus data.
+        _raw_fields = HORUS_ASN.decode("Telemetry", data[2:], check_constraints=True)
         _ukhas_obj = deepcopy(_raw_fields)
         if 'customData' in _ukhas_obj:
             _ukhas_obj['customData'] = _ukhas_obj['customData'].hex()
@@ -636,6 +637,33 @@ class HorusDecoderTests(unittest.TestCase):
         _decoded = decode_packet(payload_crcd)
         self.assertTrue(_decoded['testsensor_0_0'],1)
         self.assertTrue(_decoded['testsensor_0_0'],2)
+
+    def test_horus_v3_failed_constraints(self):
+        # Check for fields that fail constraints
+
+        #this 
+        data = { 
+            "payloadCallsign": "abcDEF-0123abc-",
+            "sequenceNumber": 65535,
+            "timeOfDaySeconds": 5,
+            "latitude": 9000000,
+            "longitude": -18000000,
+            "altitudeMeters": 51000, # Out of range, should be within -1000 to 50000
+
+            "extraSensors": [
+                {
+                    "values": ("horusInt", [1,2]) 
+                }
+            ],
+
+        }
+        # Generate a packet where we have an out-of-range field
+        horus_v3_invalid_value = HORUS_ASN.encode("Telemetry", data, check_constraints=False, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_invalid_value, tail=False)
+        with self.assertRaises(asn1tools.codecs.ConstraintsError) as context:
+            _decoded = decode_packet(payload_crcd)
+
+
 
     def test_binary_tests_break_fields(self):
         # Binary packet tests that break various fields
