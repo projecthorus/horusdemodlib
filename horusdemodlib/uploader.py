@@ -271,8 +271,10 @@ def main():
                     _temp_packet.pop('packet_format')
                     _temp_packet.pop('ukhas_str')
                     logging.debug(f"Binary Packet Contents: {_temp_packet}")
+                
                 except Exception as e:
-                    logging.error(f"Decode Failed: {traceback.format_exc()}")
+                    logging.error(f"Decode Failed: {e}")
+                    logging.debug(f"Traceback: {traceback.format_exc()}")
 
     except KeyboardInterrupt:
         logging.info("Caught CTRL-C, exiting.")
