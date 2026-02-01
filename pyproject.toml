@@ -2,8 +2,11 @@
 name = "horusdemodlib"
 version = "0.6.1"
 description = "Project Horus HAB Telemetry Demodulators"
+readme = "README.md"
 authors = ["Mark Jessop", "Michaela Wheeler"]
 license = "LGPL-2.1-or-later"
+repository = "https://github.com/projecthorus/horusdemodlib"
+documentation = "https://github.com/projecthorus/horusdemodlib/wiki"
 include = [
     { path = "horusbinaryv3/HorusBinaryV3.asn1", format = ["sdist", "wheel"] },
     { path = "src", format = ["sdist"]},
