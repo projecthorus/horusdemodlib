@@ -311,6 +311,8 @@ ozimux_port = 55683
 
     def setUp(self):
         time.sleep = lambda *a : None
+        from queue import Queue
+
     
     
     
@@ -319,7 +321,7 @@ ozimux_port = 55683
         telemetry['callsign'] = 'UNITTEST'
         telemetry['latitude'] = 90
         telemetry['longitude'] = 90
-        horusdemodlib.utils.telem_to_sondehub(telemetry, metadata=None, check_time=True)
+        return horusdemodlib.utils.telem_to_sondehub(telemetry, metadata=None, check_time=True)
 
     class mockRequestPut():
         status_code = 200
@@ -343,6 +345,80 @@ ozimux_port = 55683
         
         main()
         self.assertEqual(to_sondehub.call_count,1)
+
+    @patch("horusdemodlib.sondehubamateur.Queue",return_value=Queue())
+    @patch("builtins.open", mock_open(read_data=example_config)) 
+    @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
+    @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
+    @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
+    @patch("horusdemodlib.sondehubamateur.telem_to_sondehub", wraps=telem_to_sondehub)
+    def test_via_sondehub(self, to_sondehub, dt, sondehub, args, input_queue_mock ):
+        from .decoder import HORUS_ASN
+        from .checksums import add_packet_crc
+        dt.now.side_effect = [
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+        ]
+        input_queue_mock.return_value.put = MagicMock()
+        sys.stdin.readline = MagicMock()
+        data = { 
+            "payloadCallsign": "abcDEF-0123abc-",
+            "sequenceNumber": 65535,
+            "timeOfDaySeconds": 5,
+            "latitude": 9000000,
+            "longitude": -18000000,
+            "altitudeMeters": 800,
+            "via": "nohub"
+
+        }
+        horus_v3_nohub = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_nohub, tail=False).hex()
+
+        sys.stdin.readline.side_effect = [payload_crcd,""]
+
+        logging.getLogger().setLevel("DEBUG")
+        main()
+        self.assertFalse(input_queue_mock.return_value.put.called)
+        
+
+    @patch("horusdemodlib.sondehubamateur.Queue",return_value=Queue())
+    @patch("builtins.open", mock_open(read_data=example_config)) 
+    @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())
+    @patch("horusdemodlib.sondehubamateur.requests.put", return_value=mockRequestPut())
+    @patch("horusdemodlib.utils.datetime.datetime", wraps=datetime.datetime)
+    @patch("horusdemodlib.sondehubamateur.telem_to_sondehub", wraps=telem_to_sondehub)
+    def test_via_sondehub(self, to_sondehub, dt, sondehub, args, input_queue_mock ):
+        from .decoder import HORUS_ASN
+        from .checksums import add_packet_crc
+        dt.now.side_effect = [
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+            datetime.datetime.now(tz=datetime.timezone.utc).replace(hour=0,minute=0,second=0),
+        ]
+        input_queue_mock.return_value.put = MagicMock()
+        sys.stdin.readline = MagicMock()
+        data = { 
+            "payloadCallsign": "abcDEF-0123abc-",
+            "sequenceNumber": 65535,
+            "timeOfDaySeconds": 5,
+            "latitude": 9000000,
+            "longitude": -18000000,
+            "altitudeMeters": 800,
+            "via": "sondehub"
+
+        }
+        horus_v3_nohub = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_nohub, tail=False).hex()
+
+        sys.stdin.readline.side_effect = [payload_crcd,""]
+
+        logging.getLogger().setLevel("DEBUG")
+        main()
+        self.assertTrue(input_queue_mock.return_value.put.called)
+        
 
     @patch("builtins.open", mock_open(read_data=example_config)) 
     @patch.object(argparse.ArgumentParser, "parse_args", return_value=mockArgs())

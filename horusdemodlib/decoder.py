@@ -240,6 +240,9 @@ def decode_packet(data:bytes, packet_format:dict = None, ignore_crc:bool = False
                     _output["custom_field_names"].append(key)
             _raw_fields.pop('counts')
         
+        if 'via' in _raw_fields:
+            _output["via"] = _raw_fields["via"]
+        
         if 'customData' in _raw_fields:
             _output['custom_data'] = _raw_fields.pop('customData').hex()
             _output["custom_field_names"].append('custom_data')
@@ -662,6 +665,33 @@ class HorusDecoderTests(unittest.TestCase):
         payload_crcd = add_packet_crc(horus_v3_invalid_value, tail=False)
         with self.assertRaises(asn1tools.codecs.ConstraintsError) as context:
             _decoded = decode_packet(payload_crcd)
+
+    def test_horus_v3_via_field(self):
+        # Check for fields that fail constraints
+
+        #this 
+        data = { 
+            "payloadCallsign": "abcDEF-0123abc-",
+            "sequenceNumber": 65535,
+            "timeOfDaySeconds": 5,
+            "latitude": 9000000,
+            "longitude": -18000000,
+            "altitudeMeters": 800,
+            "via": "sondehub"
+
+        }
+        # Generate a packet where we have an out-of-range field
+        horus_v3_sondehub = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_sondehub, tail=False)
+        _decoded = decode_packet(payload_crcd)
+        self.assertEqual(_decoded["via"], "sondehub") 
+
+        # test again but nohub
+        data['via']='nohub'
+        horus_v3_nohub = HORUS_ASN.encode("Telemetry", data, check_constraints=True, check_types=True)
+        payload_crcd = add_packet_crc(horus_v3_nohub, tail=False)
+        _decoded = decode_packet(payload_crcd)
+        self.assertEqual(_decoded["via"], "nohub") 
 
 
 

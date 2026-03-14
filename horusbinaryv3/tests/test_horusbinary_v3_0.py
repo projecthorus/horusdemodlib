@@ -113,16 +113,17 @@ class TestHorusBinaryV3_0(unittest.TestCase):
                     "values": ("horusReal",[0.1234,1232342345234234,0.1234,1232342345234234])
                 }
             ],
+            "via": "sondehub"
         }
         encoded = self.uper.encode("Telemetry",data)
         
         # extend the spec by adding some extra fields to the end
         with open("./HorusBinaryV3.asn1","r") as f:
             horus_def = f.read()
-        horus_def = horus_def.replace("...","""
-        ...,
-        testExtend1 [19] EXPLICIT INTEGER (0..127),
-        testExtend2 [20] EXPLICIT IA5String -- MARKER
+        horus_def = horus_def.replace("via Via","""
+        via Via,                   
+        testExtend1 INTEGER (0..127),
+        testExtend2 IA5String -- MARKER
         """,1)
         extended_uper = asn1tools.compile_string(horus_def, codec="uper")
         decoded = extended_uper.decode("Telemetry", encoded)

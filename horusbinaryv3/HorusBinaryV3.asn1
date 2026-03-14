@@ -60,6 +60,17 @@ GnssPowerSaveState   ::= ENUMERATED {
   inactive        (5)
 }
 
+Via ::= ENUMERATED {
+  sondehub (0),
+  nohub    (1),
+  unknown  (2),
+  unknown  (3),
+  unknown  (4),
+  unknown  (5),
+  unknown  (6),
+  unknown  (7)
+}
+
 Telemetry ::= SEQUENCE {
   -- required fields
   payloadCallsign     IA5String (FROM("-/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")^SIZE (1..15)),
@@ -94,6 +105,8 @@ Telemetry ::= SEQUENCE {
 
   -- binary data
   customData           OCTET STRING(SIZE (0..255)) OPTIONAL,
-  ...  -- this is an extension marker - it lets us add fields
+  ...,  -- this is an extension marker - it lets us add fields
+
+  via Via OPTIONAL
 }
 END
