@@ -265,7 +265,13 @@ def main():
                         _logfile.write(_decoded['ukhas_str']+'\n')
                         _logfile.flush()
 
-                    logging.info(f"Decoded Binary Packet (SNR:{demod_stats.snr:.1f} dB{' f_centre: ' + str(_decoded['f_centre']) if 'f_centre' in _decoded else ''}{' tone_spacing: ' + str(_decoded['tone_spacing']) if 'tone_spacing' in _decoded else ''}): {_decoded['ukhas_str']}")
+                    logging.info(
+                        f"Decoded Binary Packet (" +
+                        f"SNR: {demod_stats.snr:.1f} dB" +
+                        (f", f_centre: {_decoded['f_centre']/1e6:.6f} MHz" if 'f_centre' in _decoded else '' ) +
+                        (f", tone_spacing: {_decoded['tone_spacing']:.0f} Hz spacing" if 'tone_spacing' in _decoded else '') +
+                        f"): {_decoded['ukhas_str']}"
+                    )
                     # Remove a few fields from the packet before printing.
                     _temp_packet = _decoded.copy()
                     _temp_packet.pop('packet_format')
