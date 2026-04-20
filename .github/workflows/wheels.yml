@@ -1,6 +1,12 @@
 name: Horusdemodlib Wheels
 
-on: [push, workflow_dispatch, release]
+on: 
+  push:
+      branches-ignore:
+        - main # main is built by release
+  workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   make_sdist:

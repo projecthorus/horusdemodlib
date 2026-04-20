@@ -39,7 +39,11 @@ def telem_to_sondehub(telemetry, metadata=None, check_time=True):
         _output = metadata
     else:
         _output = {}
-
+    # check if the packet is event for sondehub
+    if ("via" in telemetry and telemetry["via"] != "sondehub"):  # the first release of horus v3 didn't include via field
+        logging.info(f"Payload contains via field that isn't for SondeHub - not uploading: {telemetry}")
+        return None
+    
     # Mandatory Fields
     # Datetime
     try:
