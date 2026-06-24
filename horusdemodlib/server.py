@@ -60,7 +60,9 @@ class HorusTCPInstance:
         self.next_download_time = time.time()
 
     def configure(self, data):
-        configuration_data = json.loads(data.strip())
+        decoder = json.JSONDecoder()
+        configuration_data, idx = decoder.raw_decode(data.decode(errors="ignore"))
+        logging.debug(configuration_data)
 
         if configuration_data['mode'].lower() == 'rtty7n2' or configuration_data['mode'].lower() == 'rtty':
             mode = Mode.RTTY_7N2
@@ -121,7 +123,7 @@ class HorusTCPInstance:
 
     def write(self,data):
         if not self.h:
-            self.configure(data.split(b"}")[0]+b"}") # hack to get the json object even if there is more data after it.
+            self.configure(data) # hack to get the json object even if there is more data after it.
             return
         
         self.buffer += data
