@@ -22,6 +22,8 @@ from .uploader import read_config
 from .decoder import decode_packet, parse_ukhas_string
 import multiprocessing
 import queue
+import signal
+
 
 # TODO
 # log to file
@@ -257,7 +259,7 @@ class HorusTCPInstance:
 
 
 def worker(s,decoded,log_level):
-
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     poller = select.poll()
     poller.register(s, READ_ONLY)
 
@@ -267,7 +269,7 @@ def worker(s,decoded,log_level):
     )
     logging.info("Worker started.")
     while 1:
-        events = poller.poll(1000) # don't block forever
+        events = poller.poll()
         for fd, flag in events: 
             p = fd_to_socket[fd]
             if flag & (select.POLLIN | select.POLLPRI):
@@ -385,24 +387,20 @@ def main():
 
     decoded = multiprocessing.Queue()
 
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),initializer=worker, initargs=[s, decoded, log_level])
 
+    
+    try:
+        while True:
 
-    workers = [multiprocessing.Process(target=worker, args=[s,decoded, log_level]) for i in #fout,sondehub_uploader,_logfile
-            range(multiprocessing.cpu_count())]
-
-
-    for p in workers:
-        p.daemon = True
-        p.start()
-    while True:
-
-        try:
-            sondehub_data = decoded.get(block=True,timeout=1)
-            logging.debug(sondehub_data)
-            if sondehub_data:
-                sondehub_uploader.add(sondehub_data)
-        except queue.Empty:
-            pass
+            try:
+                sondehub_data = decoded.get(block=True,timeout=1)
+                if sondehub_data:
+                    sondehub_uploader.add(sondehub_data)
+            except queue.Empty:
+                pass
+    except KeyboardInterrupt:
+        sondehub_uploader.close()
 
 
 
