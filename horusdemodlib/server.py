@@ -21,8 +21,10 @@ from .sondehubamateur import *
 from .uploader import read_config
 from .decoder import decode_packet, parse_ukhas_string
 import multiprocessing
-import threading
+import queue
 
+# TODO
+# log to file
 
 horus_api = _horus_api_cffi.lib
 
@@ -38,23 +40,18 @@ READ_WRITE = READ_ONLY | select.POLLOUT
 class HorusTCPInstance:
     def __init__(self,
              connection,
-             args,
-             fout,
-             sondehub_uploader,
-             logfile
+             decoded,
              ):
         
 
         self.h = None
-        self.args = args
         self.buffer = b''
-        self.fout = fout
         self.connection = connection
         self.freq_hz = None
         self.freq_target_hz = None
         self.demod_stats = None
-        self.sondehub_uploader = sondehub_uploader
-        self.logfile = logfile
+        self.decoded = decoded
+        # self.logfile = logfile
 
         # Some variables to handle re-downloading of payload ID lists.
         self.min_download_time = 30*60 # Only try and download new payload ID / custom field lists every 30 min.
@@ -101,7 +98,7 @@ class HorusTCPInstance:
         if "freq_target_hz" in configuration_data:
             self.freq_target_hz = configuration_data["freq_target_hz"]
 
-        self.h = HorusLib(mode=mode,tone_spacing=tonespacing, stereo_iq=iq, verbose=int(self.args.v), callback=self.frame_callback, sample_rate=samplerate, rate=modemrate)
+        self.h = HorusLib(mode=mode,tone_spacing=tonespacing, stereo_iq=iq, verbose=0, callback=self.frame_callback, sample_rate=samplerate, rate=modemrate)
         _decoder_info = f"Starting {mode} decoder, {modemrate} baud, {f'{tonespacing} Hz Tone Spacing, ' if tonespacing>0 else ''} {samplerate} Hz sample rate {'IQ' if iq else ''}"
         logging.info(_decoder_info)
 
@@ -150,14 +147,12 @@ class HorusTCPInstance:
 
     def frame_callback(self, frame):
         # Print out only CRC-passing frames, unless we are in verbose mode
-        if frame.crc_pass or self.args.v:
+        if frame.crc_pass:
             if type(frame.data) == bytes:
-                self.fout.write(frame.data.hex().upper())
+                logging.info(frame.data.hex().upper())
             else:
-                self.fout.write(frame.data)
+                logging.info(frame.data)
         
-            self.fout.write("\n")
-            self.fout.flush()
 
         if frame.crc_pass:
             if frame.data.startswith(b'$$'):
@@ -189,11 +184,12 @@ class HorusTCPInstance:
                     _decoded_str = "$$" + data.split('$')[-1] + '\n'
 
                     # Upload the string to Sondehub Amateur
-                    self.sondehub_uploader.add(_decoded)
+                    self.decoded.put(_decoded)
+                    
 
-                    if self.logfile:
-                        self.logfile.write(_decoded_str)
-                        self.logfile.flush()
+                    # if self.logfile:
+                    #     self.logfile.write(_decoded_str)
+                    #     self.logfile.flush()
 
                     logging.info(f"Decoded String (SNR {self.demod_stats.snr:.1f} dB): {_decoded_str[:-1]}")
 
@@ -242,11 +238,11 @@ class HorusTCPInstance:
                     _decoded['baud_rate'] = int(self.modemrate)
 
                     # Upload the string to Sondehub Amateur
-                    self.sondehub_uploader.add(_decoded)
+                    self.decoded.put(_decoded)
 
-                    if self.logfile:
-                        self.logfile.write(_decoded['ukhas_str']+'\n')
-                        self.logfile.flush()
+                    # if self.logfile:
+                    #     self.logfile.write(_decoded['ukhas_str']+'\n')
+                    #     self.logfile.flush()
 
                     logging.info(f"Decoded Binary Packet (SNR {self.demod_stats.snr:.1f} dB): {_decoded['ukhas_str']}")
                     # Remove a few fields from the packet before printing.
@@ -258,6 +254,50 @@ class HorusTCPInstance:
                 except Exception as e:
                     logging.error(f"Decode Failed: {e}")
                     logging.debug(f"Traceback: {traceback.format_exc()}")
+
+
+def worker(s,decoded,log_level):
+
+    poller = select.poll()
+    poller.register(s, READ_ONLY)
+
+    fd_to_socket = { s.fileno(): s}
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s: %(message)s", level=log_level
+    )
+    logging.info("Worker started.")
+    while 1:
+        events = poller.poll(1000) # don't block forever
+        for fd, flag in events: 
+            p = fd_to_socket[fd]
+            if flag & (select.POLLIN | select.POLLPRI):
+
+                if p is s: # server
+                    connection, client_address = p.accept()
+                    logging.info(f"New client connected: {client_address}")
+                    connection.setblocking(0)
+                    fd_to_socket[ connection.fileno() ] = HorusTCPInstance(connection=connection, decoded=decoded)
+                    poller.register(connection, READ_ONLY)
+                else:
+                    data = p.connection.recv(1024)
+                    if data:
+                        try:
+                            p.write(data)
+                            # Add output channel for response
+                            poller.modify(p.connection, READ_WRITE)
+                        except:
+                            if p.h:
+                                logging.error(f"Error trying to process audio: {traceback.format_exc()}")
+                            else:
+                                logging.error(f"Error trying to configure horus: {traceback.format_exc()}")
+                            p.close()
+                    else:
+                        logging.info(f"Connection with {client_address} lost")
+                        # Stop listening for input on the connection
+                        poller.unregister(p.connection)
+                        p.close()
+                        
+                        del fd_to_socket[fd]
 
 
 def main():
@@ -279,11 +319,6 @@ def main():
 
 
 
-    if type(args.output) == type(sys.stdout) or args.output == "-":
-        fout = sys.stdout
-    else:
-        fout = open(args.output, "w")
-
 
 
     # Setup Logging
@@ -298,11 +333,11 @@ def main():
     logging.info(f"horusdemodlib v{horusdemodlib.__version__} - horus_demod")
 
 
-    if args.log != "none":
-        _logfile = open(args.log, 'a')
-        logging.info(f"Opened log file {args.log}.")
-    else:
-        _logfile = None
+    # if args.log != "none":
+    #     _logfile = open(args.log, 'a')
+    #     logging.info(f"Opened log file {args.log}.")
+    # else:
+    #     _logfile = None
 
 
     # Read in the configuration file.
@@ -347,45 +382,30 @@ def main():
 
 
 
-    poller = select.poll()
-    poller.register(s, READ_ONLY)
-    fd_to_socket = { s.fileno(): s}
 
-    while 1:
-        events = poller.poll(1000) # don't block forever
-        for fd, flag in events: 
-            p = fd_to_socket[fd]
-            if flag & (select.POLLIN | select.POLLPRI):
+    decoded = multiprocessing.Queue()
 
-                if p is s: # server
-                    connection, client_address = p.accept()
-                    logging.info(f"New client connected: {client_address}")
-                    connection.setblocking(0)
-                    fd_to_socket[ connection.fileno() ] = HorusTCPInstance(connection=connection,args=args, fout=fout, sondehub_uploader=sondehub_uploader, logfile=_logfile)
-                    poller.register(connection, READ_ONLY)
-                    
-                else:
-                    data = p.connection.recv(1024)
-                    if data:
-                        try:
-                            p.write(data)
-                            # Add output channel for response
-                            poller.modify(p.connection, READ_WRITE)
-                        except:
-                            if p.h:
-                                logging.error(f"Error trying to process audio: {traceback.format_exc()}")
-                            else:
-                                logging.error(f"Error trying to configure horus: {traceback.format_exc()}")
-                            p.close()
-                    else:
-                        logging.info(f"Connection with {client_address} lost")
-                        # Stop listening for input on the connection
-                        poller.unregister(p.connection)
-                        p.close()
-                        
-                        del fd_to_socket[fd]
 
-    
+
+    workers = [multiprocessing.Process(target=worker, args=[s,decoded, log_level]) for i in #fout,sondehub_uploader,_logfile
+            range(multiprocessing.cpu_count())]
+
+
+    for p in workers:
+        p.daemon = True
+        p.start()
+    while True:
+
+        try:
+            sondehub_data = decoded.get(block=True,timeout=1)
+            logging.debug(sondehub_data)
+            if sondehub_data:
+                sondehub_uploader.add(sondehub_data)
+        except queue.Empty:
+            pass
+
+
+
 
 # workaround for poetry install script
 if __name__ == "__main__":
