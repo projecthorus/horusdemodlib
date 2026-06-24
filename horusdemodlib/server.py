@@ -20,6 +20,8 @@ from .payloads import init_custom_field_list, init_payload_id_list
 from .sondehubamateur import *
 from .uploader import read_config
 from .decoder import decode_packet, parse_ukhas_string
+import multiprocessing
+import threading
 
 
 horus_api = _horus_api_cffi.lib
@@ -120,7 +122,7 @@ class HorusTCPInstance:
 
     def write(self,data):
         if not self.h:
-            self.configure(data)
+            self.configure(data.split(b"}")[0]+b"}") # hack to get the json object even if there is more data after it.
             return
         
         self.buffer += data
@@ -140,12 +142,9 @@ class HorusTCPInstance:
             stats_out["f4_est"] = self.h.stats.f_est[3]
 
         eye_diagram = []
-        for i in range(self.h.stats.neyetr):
-            eye_diagram.append([])
-            for j in range(self.h.stats.neyesamp):
-                eye_diagram[i].append(self.h.stats.rx_eye[i][j])
+        
         stats_out['eye_diagram'] = eye_diagram
-        stats_out['samp_fft']=[0]*128
+        stats_out['samp_fft']=[]
         
         self.demod_stats.update(stats_out)
 
@@ -345,7 +344,7 @@ def main():
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(("0.0.0.0", args.tcp_port))
     s.listen(MAX_CLIENTS)
-    
+
 
 
     poller = select.poll()

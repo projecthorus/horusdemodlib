@@ -143,6 +143,8 @@ class HorusLib():
         self.max_demod_in = horus_api.horus_get_max_demod_in(self.hstates)
         self.max_ascii_out = horus_api.horus_get_max_ascii_out_len(self.hstates)
 
+        self.data_out = _horus_api_cffi.ffi.new("char[]", self.max_ascii_out)
+        self.stats_struct = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
 
         self.mfsk = horus_api.horus_get_mFSK(self.hstates)
 
@@ -182,18 +184,14 @@ class HorusLib():
         (demod_in, self.resampler_state) = audioop.ratecv(demod_in, 2, 1+int(self.stereo_iq), self.audio_sample_rate, self.modem_sample_rate, self.resampler_state)
 
 
-        audio_id_data = _horus_api_cffi.ffi.new("char[]",demod_in)
-        data_in = _horus_api_cffi.ffi.cast( # cast bytes to short
-            "short *",
-            audio_id_data
-        )
-        data_out = _horus_api_cffi.ffi.new("char[]", self.max_ascii_out)
+        data_in = _horus_api_cffi.ffi.from_buffer("short *",demod_in)
 
-        horus_api.horus_rx(self.hstates, data_out, data_in, int(self.stereo_iq))
-        data_out = bytes(_horus_api_cffi.ffi.buffer(data_out))
 
-        stats = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
-        horus_api.horus_get_modem_extended_stats(self.hstates, stats)
+        horus_api.horus_rx(self.hstates, self.data_out, data_in, int(self.stereo_iq))
+        data_out = bytes(_horus_api_cffi.ffi.buffer(self.data_out))
+
+        
+        horus_api.horus_get_modem_extended_stats(self.hstates, self.stats_struct)
 
 
         crc = horus_api.horus_crc_ok(self.hstates)
@@ -220,10 +218,10 @@ class HorusLib():
 
         frame = Frame(
             data=data_out,
-            snr=float(stats.snr_est),
-            sync=bool(stats.sync),
+            snr=float(self.stats_struct.snr_est),
+            sync=bool(self.stats_struct.sync),
             crc_pass=crc,
-            extended_stats=stats,
+            extended_stats=self.stats_struct,
         )
         return frame
     
@@ -260,9 +258,8 @@ class HorusLib():
         return _frame
     @property
     def stats(self):
-        stats = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
-        horus_api.horus_get_modem_extended_stats(self.hstates,stats)
-        return stats
+        horus_api.horus_get_modem_extended_stats(self.hstates,self.stats_struct)
+        return self.stats_struct
 
 
 def main():
