@@ -125,31 +125,29 @@ class HorusTCPInstance:
         
         self.buffer += data
 
-
+        
 
         output = self.h.add_samples(data)
-        # if self.args.v:
-        #     if output:
-        #         sys.stderr.write(f"Sync: {output.sync}  SNR: {output.snr}\n")
-        # stats_out = {
-        #     "EbNodB": self.h.stats.snr_est,
-        #     "ppm": self.h.stats.clock_offset,
-        #     "f1_est": self.h.stats.f_est[0],
-        #     "f2_est": self.h.stats.f_est[1]
-        # }
+        stats_out = {
+            "EbNodB": self.h.stats.snr_est,
+            "ppm": self.h.stats.clock_offset,
+            "f1_est": self.h.stats.f_est[0],
+            "f2_est": self.h.stats.f_est[1]
+        }
     
-        # if self.h.mfsk == 4:
-        #     stats_out["f3_est"] = self.h.stats.f_est[2]
-        #     stats_out["f4_est"] = self.h.stats.f_est[3]
+        if self.h.mfsk == 4:
+            stats_out["f3_est"] = self.h.stats.f_est[2]
+            stats_out["f4_est"] = self.h.stats.f_est[3]
+
+        eye_diagram = []
+        for i in range(self.h.stats.neyetr):
+            eye_diagram.append([])
+            for j in range(self.h.stats.neyesamp):
+                eye_diagram[i].append(self.h.stats.rx_eye[i][j])
+        stats_out['eye_diagram'] = eye_diagram
+        stats_out['samp_fft']=[0]*128
         
-        # eye_diagram = []
-        # for i in range(self.h.stats.neyetr):
-        #     eye_diagram.append([])
-        #     for j in range(self.h.stats.neyesamp):
-        #         eye_diagram[i].append(self.h.stats.rx_eye[i][j])
-        # stats_out['eye_diagram'] = eye_diagram
-        # stats_out['samp_fft']=[0]*128 # broken in horus_demod.c - replicating the same output
-          
+        self.demod_stats.update(stats_out)
 
     def frame_callback(self, frame):
         # Print out only CRC-passing frames, unless we are in verbose mode
