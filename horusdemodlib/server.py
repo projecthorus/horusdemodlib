@@ -285,8 +285,6 @@ def worker(s,decoded,log_level):
                     if data:
                         try:
                             p.write(data)
-                            # Add output channel for response
-                            poller.modify(p.connection, READ_WRITE)
                         except:
                             if p.h:
                                 logging.error(f"Error trying to process audio: {traceback.format_exc()}")
