@@ -122,7 +122,7 @@ class HorusLib():
 
         self.callback = callback
 
-        self.input_buffer = bytearray(b"")
+        self.input_buffer = b""
 
         
 
@@ -181,8 +181,8 @@ class HorusLib():
             16bit, signed for audio in. You'll need .nin frames in to work correctly.
         """
         # resample to 48khz
-        (demod_in, self.resampler_state) = audioop.ratecv(demod_in, 2, 1+int(self.stereo_iq), self.audio_sample_rate, self.modem_sample_rate, self.resampler_state)
-
+        if self.audio_sample_rate != self.modem_sample_rate:
+            (demod_in, self.resampler_state) = audioop.ratecv(demod_in, 2, 1+int(self.stereo_iq), self.audio_sample_rate, self.modem_sample_rate, self.resampler_state)
 
         data_in = _horus_api_cffi.ffi.from_buffer("short *",demod_in)
 
@@ -232,18 +232,24 @@ class HorusLib():
     @property
     def nin_bytes_required(self):
         return int(self.nin*(self.audio_sample_rate/self.modem_sample_rate)) * (2 if self.stereo_iq else 1) * 2
+    @property
+    def read_bytes_required(self):
+        return self.nin_bytes_required - len(self.input_buffer)
     def add_samples(self, samples: bytes):
         """ Add samples to a input buffer, to pass on to demodulate when we have nin samples """
 
         # Add samples to input buffer
-        self.input_buffer.extend(samples)
+        if not self.input_buffer:
+            self.input_buffer = samples
+        else:
+            self.input_buffer += samples
 
         _processing = True
         _frame = None
         while _processing:
             # Process data until we have less than _nin samples.
             _nin = self.nin_bytes_required
-            if len(self.input_buffer) > (_nin ):
+            if len(self.input_buffer) >= (_nin ):
                 # Demodulate
                 _frame = self.demodulate(self.input_buffer[:(_nin)])
 
@@ -347,7 +353,7 @@ def main():
         
         stats_counter = args.stats
         while True:
-            data = f.read(horus.nin * 2 * (2 if horus.stereo_iq else 1))
+            data = f.read(horus.read_bytes_required)
             if not data: # EOF
                 break
             output = horus.add_samples(data)

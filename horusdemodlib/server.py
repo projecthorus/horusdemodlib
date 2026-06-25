@@ -47,7 +47,6 @@ class HorusTCPInstance:
         
 
         self.h = None
-        self.buffer = b''
         self.connection = connection
         self.freq_hz = None
         self.freq_target_hz = None
@@ -126,7 +125,6 @@ class HorusTCPInstance:
             self.configure(data) # hack to get the json object even if there is more data after it.
             return
         
-        self.buffer += data
 
         
 
@@ -284,7 +282,7 @@ def worker(s,decoded,log_level):
                     poller.register(connection, READ_ONLY)
                 else:
                     if p.h:
-                       data = p.connection.recv(p.h.nin_bytes_required)
+                       data = p.connection.recv(p.h.read_bytes_required)
                     else:
                         data = p.connection.recv(8192) # we don't have a demod client yet, so we are probably expecting config json
                     if data:
