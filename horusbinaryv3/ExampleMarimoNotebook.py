@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.5"
+__generated_with = "0.19.4"
 app = marimo.App(width="full", app_title="HorusBinary v3 Playground")
 
 
@@ -37,12 +37,10 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     ## HorusBinaryV3 ASN.1
     ### Importing, Compiling and Encoding with the ASN.1 codec
-    """
-    )
+    """)
     return
 
 
@@ -83,6 +81,7 @@ def _(ASN1_DEF, mo):
         ],
 
         "gnssPowerSaveState": "tracking",
+        "via": "sondehub"
     }
     """,language="python",label="Data to encode", max_height=MAX_HEIGHT,min_height=MAX_HEIGHT)
 
@@ -147,16 +146,14 @@ def hexout(mo, output):
 
 @app.cell(hide_code=True)
 def _(mo, output):
-    mo.md(
-        f"""
+    mo.md(f"""
     |    |    |
     | -- | -- |
     | <p align="left"> **Payload data** </p> | `{output.hex()}` |
     | <p align="left"> **Payload bytes** </p> | <p align="left"> {len(output)} </p> |
 
     ### Packet layout
-    """
-    )
+    """)
     return
 
 
@@ -284,7 +281,9 @@ def _(HorusBinaryV3, asn1tools, builder, data, drawer, mo, parser):
 
 @app.cell
 def _(mo):
-    mo.md(r"""### Decoding""")
+    mo.md(r"""
+    ### Decoding
+    """)
     return
 
 

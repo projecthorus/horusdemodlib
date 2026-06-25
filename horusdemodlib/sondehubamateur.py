@@ -133,10 +133,12 @@ class SondehubAmateurUploader(object):
         # self.log_debug("Telem: %s" % str(_telem))
 
         # Add it to the queue if we are running.
-        if self.input_processing_running and _telem:
+        if not _telem:
+            logging.debug("Reformat_data returned nothing, discarding.")
+        elif self.input_processing_running:
             self.input_queue.put(_telem)
         else:
-            self.log_debug("Processing not running, discarding.")
+            logging.debug("Processing not running, discarding.")
 
     def reformat_data(self, telemetry):
         """ Take an input dictionary and convert it to the universal format """
@@ -153,7 +155,6 @@ class SondehubAmateurUploader(object):
                 "%Y-%m-%dT%H:%M:%S.%fZ"
             ),
         }
-
         return telem_to_sondehub(telemetry, metadata=_output)
 
     def process_queue(self):
