@@ -4,6 +4,7 @@ on:
   push:
       branches-ignore:
         - main # main is built by release
+        - master
   workflow_dispatch:
   release:
     types: [published]
