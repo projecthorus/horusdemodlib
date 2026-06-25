@@ -23,6 +23,7 @@ from .decoder import decode_packet, parse_ukhas_string
 import multiprocessing
 import queue
 import signal
+from .horusudp import send_payload_summary
 
 
 horus_api = _horus_api_cffi.lib
@@ -374,6 +375,7 @@ def main():
                 sondehub_data = decoded.get(block=True,timeout=1)
                 if sondehub_data:
                     sondehub_uploader.add(sondehub_data)
+                    send_payload_summary(sondehub_data, port=user_config['summary_port'])
                     if _logfile:
                         if sondehub_data['modulation'] == 'RTTY':
                             _logfile.write("$$" + sondehub_data['raw'].split('$')[-1] + '\n')
