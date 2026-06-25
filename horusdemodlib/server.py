@@ -25,9 +25,6 @@ import queue
 import signal
 
 
-# TODO
-# log to file
-
 horus_api = _horus_api_cffi.lib
 
 MAX_CLIENTS=1000
@@ -115,49 +112,28 @@ class HorusTCPInstance:
         self.connection.close()
 
     def write(self,data):
-        if not self.h:
-            self.configure(data) # hack to get the json object even if there is more data after it.
-            return
-        
 
-        
-
-        output = self.h.add_samples(data)
-        stats_out = {
-            "EbNodB": self.h.stats.snr_est,
-            "ppm": self.h.stats.clock_offset,
-            "f1_est": self.h.stats.f_est[0],
-            "f2_est": self.h.stats.f_est[1]
-        }
-    
-        if self.h.mfsk == 4:
-            stats_out["f3_est"] = self.h.stats.f_est[2]
-            stats_out["f4_est"] = self.h.stats.f_est[3]
-
-        eye_diagram = []
-        
-        stats_out['eye_diagram'] = eye_diagram
-        stats_out['samp_fft']=[]
-        
-        self.demod_stats.update(stats_out)
+        if self.h.add_samples(data): # only update states if the demodulator ran
+            stats_out = {
+                "EbNodB": self.h.stats.snr_est,
+                "ppm": self.h.stats.clock_offset,
+                "f1_est": self.h.stats.f_est[0],
+                "f2_est": self.h.stats.f_est[1],
+                "eye_diagram": [],
+                "samp_fft": []
+            }
+            if self.h.mfsk == 4:
+                stats_out["f3_est"] = self.h.stats.f_est[2]
+                stats_out["f4_est"] = self.h.stats.f_est[3]
+            self.demod_stats.update(stats_out)
 
     def frame_callback(self, frame):
-        # Print out only CRC-passing frames, unless we are in verbose mode
         if frame.crc_pass:
-            if type(frame.data) == bytes:
-                logging.info(frame.data.hex().upper())
-            else:
-                logging.info(frame.data)
-        
-
-        if frame.crc_pass:
-            if frame.data.startswith(b'$$'):
-                data = frame.data.decode()
+            if type(frame.data) == str and frame.data.startswith('$$'):
                 # RTTY packet handling.
                 # Attempt to extract fields from it:
-                logging.info(f"Received raw RTTY packet: {frame.data}")
                 try:
-                    _decoded = parse_ukhas_string(data)
+                    _decoded = parse_ukhas_string(frame.data)
                     # If we get here, the string is valid!
 
                     # Add in SNR data.
@@ -177,15 +153,11 @@ class HorusTCPInstance:
 
 
                     # Logfile string
-                    _decoded_str = "$$" + data.split('$')[-1] + '\n'
+                    _decoded_str = "$$" + frame.data.split('$')[-1] + '\n'
 
                     # Upload the string to Sondehub Amateur
                     self.decoded.put(_decoded)
                     
-
-                    # if self.logfile:
-                    #     self.logfile.write(_decoded_str)
-                    #     self.logfile.flush()
 
                     logging.info(f"Decoded String (SNR {self.demod_stats.snr:.1f} dB): {_decoded_str[:-1]}")
 
@@ -236,16 +208,8 @@ class HorusTCPInstance:
                     # Upload the string to Sondehub Amateur
                     self.decoded.put(_decoded)
 
-                    # if self.logfile:
-                    #     self.logfile.write(_decoded['ukhas_str']+'\n')
-                    #     self.logfile.flush()
 
                     logging.info(f"Decoded Binary Packet (SNR {self.demod_stats.snr:.1f} dB): {_decoded['ukhas_str']}")
-                    # Remove a few fields from the packet before printing.
-                    _temp_packet = _decoded.copy()
-                    _temp_packet.pop('packet_format')
-                    _temp_packet.pop('ukhas_str')
-                    logging.debug(f"Binary Packet Contents: {_temp_packet}")
                 
                 except Exception as e:
                     logging.error(f"Decode Failed: {e}")
@@ -286,21 +250,27 @@ def worker(s,decoded,log_level):
                        data = p.connection.recv(p.h.read_bytes_required)
                     else:
                         data = p.connection.recv(8192) # we don't have a demod client yet, so we are probably expecting config json
+                        try:
+                            p.configure(data)
+                            continue
+                        except:
+                            logging.error(f"Error trying to configure horus: {traceback.format_exc()}")
+                            poller.unregister(p.connection)
+                            p.close()
+                            del fd_to_socket[fd]
                     if data:
                         try:
                             p.write(data)
                         except:
-                            if p.h:
-                                logging.error(f"Error trying to process audio: {traceback.format_exc()}")
-                            else:
-                                logging.error(f"Error trying to configure horus: {traceback.format_exc()}")
+                            logging.error(f"Error trying to process audio: {traceback.format_exc()}")
+                            poller.unregister(p.connection)
                             p.close()
+                            del fd_to_socket[fd]
                     else:
                         logging.info(f"Connection with {client_address} lost")
                         # Stop listening for input on the connection
                         poller.unregister(p.connection)
                         p.close()
-                        
                         del fd_to_socket[fd]
 
 
@@ -385,6 +355,11 @@ def main():
     s.listen(MAX_CLIENTS)
 
 
+    if args.log != "none":
+        _logfile = open(args.log, 'a')
+        logging.info(f"Opened log file {args.log}.")
+    else:
+        _logfile = None
 
 
     decoded = multiprocessing.Queue()
@@ -399,6 +374,12 @@ def main():
                 sondehub_data = decoded.get(block=True,timeout=1)
                 if sondehub_data:
                     sondehub_uploader.add(sondehub_data)
+                    if _logfile:
+                        if sondehub_data['modulation'] == 'RTTY':
+                            _logfile.write("$$" + sondehub_data['raw'].split('$')[-1] + '\n')
+                        else:
+                            _logfile.write(sondehub_data['ukhas_str']+'\n')
+                        _logfile.flush()
             except queue.Empty:
                 pass
     except KeyboardInterrupt:

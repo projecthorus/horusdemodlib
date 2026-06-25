@@ -126,9 +126,20 @@ class HorusLib():
 
         
 
+        for x in range(8,50):
+            if (sample_rate/rate)%x == 0:
+                p = x
+                logging.debug(f"Found P value: {p}")
+                self.modem_sample_rate = sample_rate
+                break
+        else:
+            self.modem_sample_rate = 48000
+            raise("Could not find suitable P value")
+
+
         # try to open the modem and set the verbosity
-        self.hstates = horus_api.horus_open_advanced(
-            self.mode.value, rate, tone_spacing
+        self.hstates = horus_api.horus_open_advanced_sample_rate(
+            self.mode.value, rate, tone_spacing, sample_rate, p
         )
         horus_api.horus_set_verbose(self.hstates, int(verbose))
 
@@ -144,13 +155,12 @@ class HorusLib():
         self.max_ascii_out = horus_api.horus_get_max_ascii_out_len(self.hstates)
 
         self.data_out = _horus_api_cffi.ffi.new("char[]", self.max_ascii_out)
-        self.stats_struct = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
+        self.stats= _horus_api_cffi.ffi.new("struct MODEM_STATS *")
 
         self.mfsk = horus_api.horus_get_mFSK(self.hstates)
 
         self.resampler_state = None
         self.audio_sample_rate = sample_rate
-        self.modem_sample_rate = 48000
 
 
     # in case someone wanted to use `with` style. I'm not sure if closing the modem does a lot.
@@ -190,9 +200,7 @@ class HorusLib():
         horus_api.horus_rx(self.hstates, self.data_out, data_in, int(self.stereo_iq))
         data_out = bytes(_horus_api_cffi.ffi.buffer(self.data_out))
 
-        
-        horus_api.horus_get_modem_extended_stats(self.hstates, self.stats_struct)
-
+        horus_api.horus_get_modem_extended_stats(self.hstates, self.stats)
 
         crc = horus_api.horus_crc_ok(self.hstates)
 
@@ -218,10 +226,10 @@ class HorusLib():
 
         frame = Frame(
             data=data_out,
-            snr=float(self.stats_struct.snr_est),
-            sync=bool(self.stats_struct.sync),
+            snr=float(self.stats.snr_est),
+            sync=bool(self.stats.sync),
             crc_pass=crc,
-            extended_stats=self.stats_struct,
+            extended_stats=self.stats,
         )
         return frame
     
@@ -262,12 +270,7 @@ class HorusLib():
                         self.callback(_frame)
             else:
                 _processing = False
-        
         return _frame
-    @property
-    def stats(self):
-        horus_api.horus_get_modem_extended_stats(self.hstates,self.stats_struct)
-        return self.stats_struct
 
 
 def main():
