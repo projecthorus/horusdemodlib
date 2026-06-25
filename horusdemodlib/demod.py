@@ -197,8 +197,11 @@ class HorusLib():
         data_in = _horus_api_cffi.ffi.from_buffer("short *",demod_in)
 
 
-        horus_api.horus_rx(self.hstates, self.data_out, data_in, int(self.stereo_iq))
-        data_out = bytes(_horus_api_cffi.ffi.buffer(self.data_out))
+        horus_out = horus_api.horus_rx(self.hstates, self.data_out, data_in, int(self.stereo_iq))
+        if horus_out:
+            data_out = bytes(_horus_api_cffi.ffi.buffer(self.data_out))
+        else:
+            data_out=b""
 
         horus_api.horus_get_modem_extended_stats(self.hstates, self.stats)
 
