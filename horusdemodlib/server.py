@@ -283,7 +283,10 @@ def worker(s,decoded,log_level):
                     fd_to_socket[ connection.fileno() ] = HorusTCPInstance(connection=connection, decoded=decoded)
                     poller.register(connection, READ_ONLY)
                 else:
-                    data = p.connection.recv(1024)
+                    if p.h:
+                       data = p.connection.recv(p.h.nin_bytes_required)
+                    else:
+                        data = p.connection.recv(8192) # we don't have a demod client yet, so we are probably expecting config json
                     if data:
                         try:
                             p.write(data)

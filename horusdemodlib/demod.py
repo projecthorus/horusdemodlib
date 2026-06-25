@@ -229,7 +229,9 @@ class HorusLib():
         """ Update the modems internal frequency estimator limits """
         horus_api.horus_set_freq_est_limits(self.hstates, lower, upper)
 
-
+    @property
+    def nin_bytes_required(self):
+        return int(self.nin*(self.audio_sample_rate/self.modem_sample_rate)) * (2 if self.stereo_iq else 1) * 2
     def add_samples(self, samples: bytes):
         """ Add samples to a input buffer, to pass on to demodulate when we have nin samples """
 
@@ -240,13 +242,13 @@ class HorusLib():
         _frame = None
         while _processing:
             # Process data until we have less than _nin samples.
-            _nin = int(self.nin*(self.audio_sample_rate/self.modem_sample_rate)) * (2 if self.stereo_iq else 1)
-            if len(self.input_buffer) > (_nin * 2):
+            _nin = self.nin_bytes_required
+            if len(self.input_buffer) > (_nin ):
                 # Demodulate
-                _frame = self.demodulate(self.input_buffer[:(_nin*2)])
+                _frame = self.demodulate(self.input_buffer[:(_nin)])
 
                 # Advance sample buffer.
-                self.input_buffer = self.input_buffer[(_nin*2):]
+                self.input_buffer = self.input_buffer[(_nin):]
 
                 # If we have decoded a packet, send it on to the callback
                 if len(_frame.data) > 0:
