@@ -33,12 +33,6 @@ horus_api = _horus_api_cffi.lib
 MAX_CLIENTS=1000
 
 
-READ_ONLY = ( select.POLLIN |
-              select.POLLPRI |
-              select.POLLHUP |
-              select.POLLERR )
-READ_WRITE = READ_ONLY | select.POLLOUT
-
 class HorusTCPInstance:
     def __init__(self,
              connection,
@@ -259,6 +253,13 @@ class HorusTCPInstance:
 
 
 def worker(s,decoded,log_level):
+
+    READ_ONLY = ( select.POLLIN |
+                select.POLLPRI |
+                select.POLLHUP |
+                select.POLLERR )
+    READ_WRITE = READ_ONLY | select.POLLOUT
+
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     poller = select.poll()
     poller.register(s, READ_ONLY)
