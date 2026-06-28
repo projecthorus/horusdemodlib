@@ -44,7 +44,6 @@ class HorusTCPInstance:
         self.freq_target_hz = None
         self.demod_stats = None
         self.decoded = decoded
-        # self.logfile = logfile
 
         # Some variables to handle re-downloading of payload ID lists.
         self.min_download_time = 30*60 # Only try and download new payload ID / custom field lists every 30 min.
@@ -241,7 +240,10 @@ def worker(s,decoded,log_level):
             if flag & (select.POLLIN | select.POLLPRI):
 
                 if p is s: # server
-                    connection, client_address = p.accept()
+                    try:
+                        connection, client_address = p.accept()
+                    except (BlockingIOError, InterruptedError):
+                        continue
                     logging.info(f"New client connected: {client_address}")
                     connection.setblocking(0)
                     fd_to_socket[ connection.fileno() ] = HorusTCPInstance(connection=connection, decoded=decoded)
@@ -308,13 +310,6 @@ def main():
     logging.info(f"horusdemodlib v{horusdemodlib.__version__} - horus_demod")
 
 
-    # if args.log != "none":
-    #     _logfile = open(args.log, 'a')
-    #     logging.info(f"Opened log file {args.log}.")
-    # else:
-    #     _logfile = None
-
-
     # Read in the configuration file.
     user_config = read_config(args.config)
 
@@ -354,6 +349,7 @@ def main():
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(("0.0.0.0", args.tcp_port))
     s.listen(MAX_CLIENTS)
+    s.setblocking(False)
 
 
     if args.log != "none":
