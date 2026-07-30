@@ -19,7 +19,6 @@ async def _(micropip, mo):
     await micropip.install("asn1tools")
     await micropip.install("wcwidth")
     await micropip.install(str(mo.notebook_location() / "public" / "blockdiag-3.3.0-py3-none-any.whl" ))
-    await micropip.install("sqlite3")
     await micropip.install("nwdiag")
     return
 
