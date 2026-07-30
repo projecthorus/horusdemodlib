@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "horusdemodlib"
-version = "0.6.2"
+version = "0.6.3"
 description = "Project Horus HAB Telemetry Demodulators"
 readme = "README.md"
 authors = ["Mark Jessop", "Michaela Wheeler"]
@@ -36,4 +36,5 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 horus_demod = 'horusdemodlib:demod.main'
+horus_server = 'horusdemodlib:server.main'
 horus_uploader = 'horusdemodlib:uploader.main'

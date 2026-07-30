@@ -122,13 +122,24 @@ class HorusLib():
 
         self.callback = callback
 
-        self.input_buffer = bytearray(b"")
+        self.input_buffer = b""
 
         
 
+        for x in range(8,50):
+            if (sample_rate/rate)%x == 0:
+                p = x
+                logging.debug(f"Found P value: {p}")
+                self.modem_sample_rate = sample_rate
+                break
+        else:
+            self.modem_sample_rate = 48000
+            raise("Could not find suitable P value")
+
+
         # try to open the modem and set the verbosity
-        self.hstates = horus_api.horus_open_advanced(
-            self.mode.value, rate, tone_spacing
+        self.hstates = horus_api.horus_open_advanced_sample_rate(
+            self.mode.value, rate, tone_spacing, sample_rate, p
         )
         horus_api.horus_set_verbose(self.hstates, int(verbose))
 
@@ -143,12 +154,13 @@ class HorusLib():
         self.max_demod_in = horus_api.horus_get_max_demod_in(self.hstates)
         self.max_ascii_out = horus_api.horus_get_max_ascii_out_len(self.hstates)
 
+        self.data_out = _horus_api_cffi.ffi.new("char[]", self.max_ascii_out)
+        self.stats= _horus_api_cffi.ffi.new("struct MODEM_STATS *")
 
         self.mfsk = horus_api.horus_get_mFSK(self.hstates)
 
         self.resampler_state = None
         self.audio_sample_rate = sample_rate
-        self.modem_sample_rate = 48000
 
 
     # in case someone wanted to use `with` style. I'm not sure if closing the modem does a lot.
@@ -179,22 +191,19 @@ class HorusLib():
             16bit, signed for audio in. You'll need .nin frames in to work correctly.
         """
         # resample to 48khz
-        (demod_in, self.resampler_state) = audioop.ratecv(demod_in, 2, 1+int(self.stereo_iq), self.audio_sample_rate, self.modem_sample_rate, self.resampler_state)
+        if self.audio_sample_rate != self.modem_sample_rate:
+            (demod_in, self.resampler_state) = audioop.ratecv(demod_in, 2, 1+int(self.stereo_iq), self.audio_sample_rate, self.modem_sample_rate, self.resampler_state)
+
+        data_in = _horus_api_cffi.ffi.from_buffer("short *",demod_in)
 
 
-        audio_id_data = _horus_api_cffi.ffi.new("char[]",demod_in)
-        data_in = _horus_api_cffi.ffi.cast( # cast bytes to short
-            "short *",
-            audio_id_data
-        )
-        data_out = _horus_api_cffi.ffi.new("char[]", self.max_ascii_out)
+        horus_out = horus_api.horus_rx(self.hstates, self.data_out, data_in, int(self.stereo_iq))
+        if horus_out:
+            data_out = bytes(_horus_api_cffi.ffi.buffer(self.data_out))
+        else:
+            data_out=b""
 
-        horus_api.horus_rx(self.hstates, data_out, data_in, int(self.stereo_iq))
-        data_out = bytes(_horus_api_cffi.ffi.buffer(data_out))
-
-        stats = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
-        horus_api.horus_get_modem_extended_stats(self.hstates, stats)
-
+        horus_api.horus_get_modem_extended_stats(self.hstates, self.stats)
 
         crc = horus_api.horus_crc_ok(self.hstates)
 
@@ -220,10 +229,10 @@ class HorusLib():
 
         frame = Frame(
             data=data_out,
-            snr=float(stats.snr_est),
-            sync=bool(stats.sync),
+            snr=float(self.stats.snr_est),
+            sync=bool(self.stats.sync),
             crc_pass=crc,
-            extended_stats=stats,
+            extended_stats=self.stats,
         )
         return frame
     
@@ -231,24 +240,32 @@ class HorusLib():
         """ Update the modems internal frequency estimator limits """
         horus_api.horus_set_freq_est_limits(self.hstates, lower, upper)
 
-
+    @property
+    def nin_bytes_required(self):
+        return int(self.nin*(self.audio_sample_rate/self.modem_sample_rate)) * (2 if self.stereo_iq else 1) * 2
+    @property
+    def read_bytes_required(self):
+        return self.nin_bytes_required - len(self.input_buffer)
     def add_samples(self, samples: bytes):
         """ Add samples to a input buffer, to pass on to demodulate when we have nin samples """
 
         # Add samples to input buffer
-        self.input_buffer.extend(samples)
+        if not self.input_buffer:
+            self.input_buffer = samples
+        else:
+            self.input_buffer += samples
 
         _processing = True
         _frame = None
         while _processing:
             # Process data until we have less than _nin samples.
-            _nin = int(self.nin*(self.audio_sample_rate/self.modem_sample_rate)) * (2 if self.stereo_iq else 1)
-            if len(self.input_buffer) > (_nin * 2):
+            _nin = self.nin_bytes_required
+            if len(self.input_buffer) >= (_nin ):
                 # Demodulate
-                _frame = self.demodulate(self.input_buffer[:(_nin*2)])
+                _frame = self.demodulate(self.input_buffer[:(_nin)])
 
                 # Advance sample buffer.
-                self.input_buffer = self.input_buffer[(_nin*2):]
+                self.input_buffer = self.input_buffer[(_nin):]
 
                 # If we have decoded a packet, send it on to the callback
                 if len(_frame.data) > 0:
@@ -256,13 +273,7 @@ class HorusLib():
                         self.callback(_frame)
             else:
                 _processing = False
-        
         return _frame
-    @property
-    def stats(self):
-        stats = _horus_api_cffi.ffi.new("struct MODEM_STATS *")
-        horus_api.horus_get_modem_extended_stats(self.hstates,stats)
-        return stats
 
 
 def main():
@@ -348,7 +359,7 @@ def main():
         
         stats_counter = args.stats
         while True:
-            data = f.read(horus.nin * 2 * (2 if horus.stereo_iq else 1))
+            data = f.read(horus.read_bytes_required)
             if not data: # EOF
                 break
             output = horus.add_samples(data)
